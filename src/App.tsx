@@ -16,6 +16,8 @@ function App() {
       </div>
 
       <Input className="mt-6 max-w-sm" placeholder="Campo de prueba" />
+
+      <p className="cifra mt-6 text-4xl font-medium text-tinta">28 / 30</p>
     </main>
   )
 }

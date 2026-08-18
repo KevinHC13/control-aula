@@ -1,6 +1,54 @@
 @import "tailwindcss";
 
 /* ---------------------------------------------------------------------------
+   Tipografías auto-hospedadas — Archivo para interfaz, DM Mono para cifras.
+   No se cargan desde fonts.googleapis.com: la app tiene que arrancar en un
+   salón sin red, y una fuente remota sin caché se cae al fallback justo en la
+   primera carga. Los woff2 se empaquetan en dist/ y los sirve el service
+   worker.
+
+   Se declaran a mano en vez de importar el CSS de @fontsource para embarcar
+   solo el subset latino: los paquetes traen además vietnamita y latin-ext, y
+   un .woff legacy que Safari no necesita. El español entra completo en latin
+   (U+0000-00FF cubre á é í ó ú ñ ü ¿ ¡).
+   --------------------------------------------------------------------------- */
+@font-face {
+  font-family: "Archivo";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 700;
+  src: url("@fontsource-variable/archivo/files/archivo-latin-wght-normal.woff2")
+    format("woff2-variations");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "DM Mono";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url("@fontsource/dm-mono/files/dm-mono-latin-400-normal.woff2")
+    format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "DM Mono";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url("@fontsource/dm-mono/files/dm-mono-latin-500-normal.woff2")
+    format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ---------------------------------------------------------------------------
    Tokens del lápiz bicolor — fuente de verdad del color.
    Las variables semánticas de shadcn los consumen (nunca al revés): correr los
    dos sistemas en paralelo produce dos azules distintos en la misma pantalla.
@@ -16,6 +64,9 @@
   --color-linea: #e2e5e1;
   --color-tinta: #1e2124;
   --color-tinta-2: #6b7178;
+
+  --font-sans: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "DM Mono", ui-monospace, "SF Mono", monospace;
 
   --radius: 0.625rem;
 }
@@ -77,6 +128,13 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* Toda cifra de la app: DM Mono con números tabulares. Sin tabular-nums las
+   columnas de calificaciones y porcentajes bailan al cambiar de dígito. */
+@utility cifra {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -86,9 +144,7 @@
     @apply bg-background text-foreground;
   }
 
-  /* Toda cifra con numeros tabulares: sin esto las columnas de calificaciones
-     y porcentajes bailan al cambiar de digito. */
-  :where(input, output, td, th, .cifra) {
+  :where(input, output, td, th) {
     font-variant-numeric: tabular-nums;
   }
 }

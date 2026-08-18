@@ -73,9 +73,14 @@ codificación semántica.
 | `--tinta` | `#1E2124` | Texto primario |
 | `--tinta-2` | `#6B7178` | Texto secundario |
 
-**Tipografía:** Archivo para interfaz (400/500/600/700), DM Mono con
-`font-variant-numeric: tabular-nums` para toda cifra. Los números tabulares
+**Tipografía:** Archivo para interfaz (variable, 400-700), DM Mono (400 y 500)
+con `font-variant-numeric: tabular-nums` para toda cifra. Los números tabulares
 importan: sin ellos las columnas de calificaciones y porcentajes bailan.
+
+Las dos son **auto-hospedadas**, nunca desde `fonts.googleapis.com`: una fuente
+remota se cae al fallback en la primera carga sin red. Ver
+[DECISIONES.md](./DECISIONES.md) D-011. Toda cifra se marca con la utilidad
+`cifra`, que aplica DM Mono y `tabular-nums` de una vez.
 
 **Elemento distintivo:** cada fila de la lista lleva una barra de color de 7 px a
 la izquierda. Convierte la lista en una columna bicolor que se escanea de un

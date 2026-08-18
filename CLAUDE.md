@@ -9,14 +9,15 @@ español también (`asistencia`, `calificaciones`, `alumnos`).
 
 ## Estado actual del repo
 
-C1 hecho: el scaffold de Vite está limpio, Tailwind v4 corre como plugin de Vite,
-el alias `@/` resuelve, `strict` está activo y existen las carpetas de las cuatro
-capas (vacías, con `.gitkeep`).
+C1 y C1b hechos: el scaffold de Vite está limpio, Tailwind v4 corre como plugin
+de Vite, el alias `@/` resuelve, `strict` está activo, existen las carpetas de
+las cuatro capas (vacías, con `.gitkeep`), shadcn está configurado con los tokens
+del bicolor (`Button` e `Input` ya corregidos a 44 px / 16 px) y Archivo y DM Mono
+están auto-hospedadas.
 
 Todavía **no** hay nada de dominio, datos ni pantallas, y **no** están instalados
-shadcn, Dexie, Zustand ni `vite-plugin-pwa`. Eso está descrito en `docs/` como
-destino, no como hecho consumado. Antes de afirmar que algo existe, verificarlo
-en `src/`.
+Dexie, Zustand ni `vite-plugin-pwa`. Eso está descrito en `docs/` como destino, no
+como hecho consumado. Antes de afirmar que algo existe, verificarlo en `src/`.
 
 El plan de construcción con criterios de aceptación por commit está en
 `docs/COMMITS.md` (C1 … C16). Seguir ese orden.

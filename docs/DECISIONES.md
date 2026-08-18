@@ -153,6 +153,36 @@ necesita para un solo grupo.
 
 ---
 
+## D-011 · Tipografías auto-hospedadas, no desde Google Fonts
+
+**Estado:** aceptada
+
+`Archivo` y `DM Mono` se sirven desde el propio bundle (`@fontsource-variable/archivo`
+y `@fontsource/dm-mono`), nunca con un `<link>` a `fonts.googleapis.com`.
+
+Una fuente remota contradice el offline-first: en un salón sin red, la primera
+carga sin caché se cae al fallback, y con `font-display: swap` eso significa que
+la app se ve distinta el día que se instala. Además agrega dos dominios ajenos al
+camino crítico de arranque.
+
+**Se declaran los `@font-face` a mano** en `src/index.css` en vez de importar el
+CSS de `@fontsource`. Los paquetes traen los subsets vietnamita y latin-ext y un
+`.woff` legacy que Safari no necesita; importarlos mete seis archivos al bundle y
+al precaché del service worker. El español entra completo en el subset latino
+(`U+0000-00FF` cubre á é í ó ú ñ ü ¿ ¡).
+
+Total embarcado: tres woff2, ~65 KB — Archivo variable 400-700 en un solo archivo,
+DM Mono en 400 y 500.
+
+**Consecuencia:** al actualizar cualquiera de los dos paquetes hay que revisar que
+los nombres de archivo en `files/` no hayan cambiado; el `url()` los referencia
+directo y un cambio de nombre rompe el build, no la apariencia en silencio.
+
+**Costo asumido:** si más adelante hace falta un peso o un idioma fuera del
+subset latino, hay que agregar el `@font-face` a mano.
+
+---
+
 ## D-010 · shadcn/ui para primitivos, componentes propios para la identidad
 
 **Estado:** aceptada
