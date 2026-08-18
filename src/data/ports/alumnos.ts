@@ -1,4 +1,4 @@
-import type { Alumno } from '@/domain/entities'
+import type { Alumno, DatosAlumno } from '@/domain/entities'
 import type { Suscribible } from '@/domain/values'
 
 /**
@@ -12,4 +12,16 @@ export interface AlumnosRepo {
 
   /** Lo mismo, reactivo: emite de nuevo cuando el grupo cambia. */
   observarLista(): Suscribible<Alumno[]>
+
+  /**
+   * Carga la lista oficial. Idempotente: la identidad de un alumno es su
+   * `numero_lista`, así que correrlo dos veces no duplica, y si el archivo
+   * cambió un nombre lo actualiza conservando el `id` —y con él su asistencia y
+   * sus calificaciones—.
+   *
+   * No borra: un alumno que ya no está en el archivo se queda en la base. Dar
+   * de baja es una decisión con datos de por medio, no un efecto secundario de
+   * arrancar la app.
+   */
+  sembrar(datos: DatosAlumno[]): Promise<void>
 }

@@ -8,6 +8,13 @@ export interface Alumno extends Sincronizable {
   fecha_nacimiento: Fecha | null
 }
 
+/**
+ * Un alumno tal como viene de la lista oficial, sin los campos que genera el
+ * dispositivo (`id`, `updated_at`, `deleted_at`). Es la forma que tiene la
+ * semilla.
+ */
+export type DatosAlumno = Pick<Alumno, 'nombre' | 'numero_lista' | 'fecha_nacimiento'>
+
 export interface RegistroAsistencia extends Sincronizable {
   alumno_id: Id
   fecha: Fecha
