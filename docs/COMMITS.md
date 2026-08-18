@@ -185,18 +185,20 @@ la pantalla antes de seguir.
 ### C10b · `feat(asistencia): abrir calendario del mes con mosaico de estatus`
 
 Ajuste de alcance salido de ver la pantalla armada, antes de la pausa. La tira
-deja de estar fija en siete días —muestra los que caben, con el seleccionado al
-centro y sin pasar de hoy— y en su posición 0 aparece un botón de calendario que
-abre el mes completo como mosaico: hueco si el día no se ha capturado, azul si no
-faltó nadie, rojo con la cifra de ausentes si hubo faltas.
+deja de estar fija en siete días: carga tres meses, se recorre deslizando, centra
+el día seleccionado y lleva `‹` y `›` fijos en los extremos para caminar de un día
+en uno. En su posición 0, separado por una línea, un botón de calendario abre el
+mes completo como mosaico: hueco si el día no se ha capturado, azul si no faltó
+nadie, rojo con la cifra de ausentes si hubo faltas.
 
 **Aceptación**
-- [ ] La tira llena el ancho: al angostar la ventana muestra menos días y al ensancharla más
-- [ ] El día seleccionado queda al centro mientras esté lejos de hoy
-- [ ] Con hoy seleccionado, hoy es el último de la tira y no se pinta ningún día futuro
-- [ ] Tocar el día del extremo izquierdo lo selecciona y recorre la tira hacia atrás
-- [ ] Girar el iPad recalcula la cantidad de días sin recargar
-- [ ] El botón de calendario mide al menos 44 × 44 px y está en la posición 0
+- [ ] La tira se recorre deslizando con el dedo, sin tocar ningún día
+- [ ] `‹` y `›` no se mueven con el desplazamiento
+- [ ] `‹` pasa al día anterior y `›` al siguiente; `›` está apagado en hoy
+- [ ] Al cambiar de día, la tira lo centra sola
+- [ ] Con hoy seleccionado no se pinta ningún día futuro y hoy se ve completo, no cortado contra el borde
+- [ ] Girar el iPad no deja el día seleccionado fuera de vista
+- [ ] El botón de calendario mide al menos 44 × 44 px, está en la posición 0 y lo separa una línea de las flechas
 - [ ] Un día sin registrar se ve hueco; uno capturado sin faltas, azul; uno con faltas, rojo con la cifra
 - [ ] `‹` va al mes anterior; `›` está deshabilitado en el mes de hoy
 - [ ] Tocar un día cierra el diálogo, lo deja seleccionado y la lista muestra su detalle

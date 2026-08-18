@@ -1,5 +1,5 @@
 /**
- * Los dos íconos que usa la app, en línea. No se instala `lucide-react`: una
+ * Los íconos que usa la app, en línea. No se instala `lucide-react`: una
  * dependencia entera por dos trazos no se paga, y `currentColor` los deja seguir
  * al token de color de quien los contiene.
  */
@@ -25,6 +25,22 @@ export function IconoCerrar({ className }: { className?: string }) {
   return (
     <svg aria-hidden viewBox="0 0 24 24" className={className} {...trazo}>
       <path d="M6 6l12 12M18 6L6 18" />
+    </svg>
+  )
+}
+
+export function IconoAnterior({ className }: { className?: string }) {
+  return (
+    <svg aria-hidden viewBox="0 0 24 24" className={className} {...trazo}>
+      <path d="M15 5l-7 7 7 7" />
+    </svg>
+  )
+}
+
+export function IconoSiguiente({ className }: { className?: string }) {
+  return (
+    <svg aria-hidden viewBox="0 0 24 24" className={className} {...trazo}>
+      <path d="M9 5l7 7-7 7" />
     </svg>
   )
 }

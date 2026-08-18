@@ -24,14 +24,19 @@ presente → ausente → retardo → justificada → presente
 Cuatro estados en un ciclo es el límite. Un quinto vuelve el ciclo más lento que
 un menú.
 
-La tira de días de arriba responde al mismo criterio: muestra los días que caben
-en el ancho —no siete fijos, que en un iPad horizontal desperdician media
-pantalla— con el seleccionado al centro y sin pasar de hoy. Se recorre tocando el
-día del extremo, que recentra la ventana; un par de flechas serían dos objetivos
-más peleando por el mismo espacio.
+La tira de días de arriba responde al mismo criterio. Carga tres meses y se
+recorre **deslizando**: nadie tiene que tocar los días que no le interesan para
+llegar al que busca. El seleccionado se centra solo al cambiar, y la tira nunca
+pasa de hoy —un día que no ha pasado no tiene asistencia que capturar.
 
-Para saltos largos, y para ver el mes de un vistazo, en la posición 0 de la tira
-va un botón de calendario. Abre el mes como mosaico: **hueco** si el día no se ha
+En los extremos van `‹` y `›`, **fuera** del área que se desliza: no se van con el
+desplazamiento y avanzan o retroceden **un día**, que es el movimiento de quien
+corrige. `›` se apaga en hoy. Un separador los aparta del botón de calendario,
+porque hacen cosas distintas: las flechas caminan de uno en uno, el calendario
+salta a cualquier día.
+
+Para esos saltos largos, y para ver el mes de un vistazo, en la posición 0 de la
+tira va un botón de calendario. Abre el mes como mosaico: **hueco** si el día no se ha
 capturado, **azul** si no faltó nadie, **rojo con la cifra** si hubo faltas.
 Distinguir el hueco del azul es el punto —pintar igual "todavía no lo capturé" y
 "ese día no faltó nadie" sería mentir. Tocar un día lo selecciona y cierra.
