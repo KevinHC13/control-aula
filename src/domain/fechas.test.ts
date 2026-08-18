@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { fechaLocal, fechaMas } from './fechas'
+import { comoDate, fechaLocal, fechaMas, ultimosDias } from './fechas'
 
 describe('fechaLocal', () => {
   it('la zona de las pruebas está fijada, o esta suite no prueba nada', () => {
@@ -54,5 +54,35 @@ describe('fechaMas', () => {
 
   it('retroceder una semana desde el lunes cae en el lunes anterior', () => {
     expect(fechaMas('2026-08-17', -7)).toBe('2026-08-10')
+  })
+})
+
+describe('ultimosDias', () => {
+  it('termina en la fecha dada y va en orden ascendente', () => {
+    expect(ultimosDias('2026-08-18', 3)).toEqual(['2026-08-16', '2026-08-17', '2026-08-18'])
+  })
+
+  it('cruza el inicio de mes hacia atrás', () => {
+    expect(ultimosDias('2026-09-01', 2)).toEqual(['2026-08-31', '2026-09-01'])
+  })
+
+  it('uno solo es el día dado', () => {
+    expect(ultimosDias('2026-08-18', 1)).toEqual(['2026-08-18'])
+  })
+})
+
+describe('comoDate', () => {
+  it('cae al mediodía local, no a medianoche', () => {
+    const d = comoDate('2026-08-18')
+    expect(d.getFullYear()).toBe(2026)
+    expect(d.getMonth()).toBe(7)
+    expect(d.getDate()).toBe(18)
+    expect(d.getHours()).toBe(12)
+  })
+
+  it('ida y vuelta con fechaLocal no cambia el día', () => {
+    for (const fecha of ['2026-01-01', '2026-04-05', '2026-10-25', '2026-12-31']) {
+      expect(fechaLocal(comoDate(fecha))).toBe(fecha)
+    }
   })
 })

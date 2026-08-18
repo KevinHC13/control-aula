@@ -17,12 +17,23 @@ export function fechaLocal(instante: Date): Fecha {
   return `${anio}-${mes}-${dia}`
 }
 
+/**
+ * La fecha como `Date` local, al mediodía. El mediodía no es un detalle: operar
+ * sobre medianoche puede caer en un cambio de horario y devolver el día anterior.
+ */
+export function comoDate(fecha: Fecha): Date {
+  const [anio = 0, mes = 1, dia = 1] = fecha.split('-').map(Number)
+  return new Date(anio, mes - 1, dia, 12)
+}
+
 /** Días de diferencia a partir de una fecha, para moverse por la tira de días. */
 export function fechaMas(fecha: Fecha, dias: number): Fecha {
-  const [anio = 0, mes = 1, dia = 1] = fecha.split('-').map(Number)
-  // Mediodía: sumar días sobre medianoche puede caer en un cambio de horario y
-  // devolver el mismo día o saltarse uno.
-  const d = new Date(anio, mes - 1, dia, 12)
+  const d = comoDate(fecha)
   d.setDate(d.getDate() + dias)
   return fechaLocal(d)
+}
+
+/** Los últimos `cuantos` días terminando en `hasta`, en orden ascendente. */
+export function ultimosDias(hasta: Fecha, cuantos: number): Fecha[] {
+  return Array.from({ length: cuantos }, (_, i) => fechaMas(hasta, i - (cuantos - 1)))
 }

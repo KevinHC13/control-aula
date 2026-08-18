@@ -1,10 +1,62 @@
-/** Placeholder: la pantalla real llega en un commit propio. */
+import { useMemo } from 'react'
+
+import { type FilaAsistencia, marcarEstado, pasarLista } from '@/application/asistencia'
+import { fechaLocal } from '@/domain/fechas'
+import { ContadorPresentes } from '@/ui/components/ContadorPresentes'
+import { FilaAlumno } from '@/ui/components/FilaAlumno'
+import { TiraDeDias } from '@/ui/components/TiraDeDias'
+import { useAsistenciaDelDia } from '@/ui/hooks/useAsistenciaDelDia'
+import { useInterfaz } from '@/ui/store/interfaz'
+
 export function Asistencia() {
+  const diaSeleccionado = useInterfaz((s) => s.diaSeleccionado)
+  const seleccionarDia = useInterfaz((s) => s.seleccionarDia)
+  const { filas, cargando } = useAsistenciaDelDia(diaSeleccionado)
+
+  // Se calcula una vez por montaje: si la app queda abierta al cruzar la
+  // medianoche, "hoy" se corrige al volver a entrar, que es cuando importa.
+  const hoy = useMemo(() => fechaLocal(new Date()), [])
+
+  const diaSinRegistrar = filas.some((f) => !f.registrado)
+
+  async function alTocar(fila: FilaAsistencia) {
+    // El primer toque del día lo materializa completo: los demás quedan
+    // registrados en presente y el porcentaje de todos compara lo mismo
+    // (docs/DECISIONES.md D-013). Es idempotente, así que del segundo toque en
+    // adelante no escribe nada extra.
+    if (diaSinRegistrar) await pasarLista(diaSeleccionado)
+    await marcarEstado(fila.alumno.id, diaSeleccionado, fila.estado)
+  }
+
   return (
-    <section aria-labelledby="titulo-asistencia">
-      <h1 id="titulo-asistencia" className="text-2xl font-bold text-tinta">
+    <section aria-labelledby="titulo-asistencia" className="flex flex-col gap-4">
+      <h1 id="titulo-asistencia" className="sr-only">
         Asistencia
       </h1>
+
+      <TiraDeDias
+        diaSeleccionado={diaSeleccionado}
+        hoy={hoy}
+        alSeleccionar={seleccionarDia}
+      />
+
+      <ContadorPresentes filas={filas} />
+
+      {/* -mx-4 para que la barra de color toque el borde de la pantalla: es lo
+          que hace que la columna bicolor se lea de corrido. */}
+      <ul className="-mx-4 border-t border-linea">
+        {filas.map((fila) => (
+          <li key={fila.alumno.id}>
+            <FilaAlumno fila={fila} alTocar={() => void alTocar(fila)} />
+          </li>
+        ))}
+      </ul>
+
+      {!cargando && filas.length === 0 && (
+        <p className="text-base text-tinta-2">
+          Todavía no hay alumnos. La lista se carga desde el archivo del grupo.
+        </p>
+      )}
     </section>
   )
 }
