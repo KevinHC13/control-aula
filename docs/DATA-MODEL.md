@@ -160,8 +160,12 @@ Notas sobre los índices:
   garantiza un solo registro por alumno por día y permite el upsert directo.
 - `outbox` es la única tabla con clave autoincremental, y es correcto: es local,
   efímera y nunca se sincroniza como contenido.
-- Los índices sobre `deleted_at` sirven para que un filtro de no-borrados no
-  recorra toda la tabla. Con 30 alumnos es irrelevante, pero mantiene el hábito.
+- Los índices sobre `deleted_at` **no** sirven para encontrar los registros
+  vivos: IndexedDB no admite `null` como clave, así que un registro con
+  `deleted_at: null` simplemente no aparece en ese índice. Sirven para lo
+  contrario —listar los borrados— y el filtro de vivos se hace en memoria, que
+  con 30 alumnos no cuesta nada. Si algún día la tabla crece, la salida es un
+  campo `vivo: 0 | 1` indexable, no este índice.
 
 ## Outbox
 

@@ -2,8 +2,17 @@
  * Contenedor de la capa de datos: el único archivo que sabe qué adaptador
  * concreto se usa. `ui/` y `application/` importan de aquí, nunca de
  * `data/dexie/` (docs/ARCHITECTURE.md).
+ *
+ * Cambiar de fuente de datos es cambiar estas líneas. Nada más.
  */
+import { DexieAlumnosRepo } from './dexie/alumnos.adapter'
+import { DexieAsistenciaRepo } from './dexie/asistencia.adapter'
 import { db } from './dexie/db'
+
+export const repos = {
+  alumnos: new DexieAlumnosRepo(),
+  asistencia: new DexieAsistenciaRepo(),
+} as const
 
 /**
  * Abre la base. Dexie abriría sola en la primera consulta, pero llamarla al

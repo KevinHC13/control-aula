@@ -41,6 +41,19 @@ db.version(1).stores({
 })
 
 /**
+ * ID de un registro nuevo. Siempre UUID del cliente, nunca autoincremento: con
+ * enteros locales dos dispositivos generan el mismo `id: 1` y el respaldo se
+ * corrompe al restaurar (docs/DATA-MODEL.md).
+ *
+ * Ojo: `crypto.randomUUID()` requiere contexto seguro. Funciona en HTTPS y en
+ * `localhost`, pero **no** en `http://192.168.x.x`, así que probar en el iPad
+ * por red local rompe la creación del primer registro (docs/PWA-IOS.md).
+ */
+export function nuevoId(): Id {
+  return crypto.randomUUID()
+}
+
+/**
  * Marca de tiempo para `updated_at`, en ISO 8601 UTC. Se escribe en cada
  * mutación, sin excepción: es lo único que le dice al motor de sincronía qué
  * falta subir (docs/DATA-MODEL.md).
