@@ -19,4 +19,13 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  {
+    // Código de shadcn copiado al repo: exporta su `cva` junto al componente
+    // (`buttonVariants`), lo que react-refresh marca. Se desactiva aquí, una
+    // vez, para no divergir del upstream en cada componente que se agregue.
+    files: ['src/ui/components/ui/**/*.tsx'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ])

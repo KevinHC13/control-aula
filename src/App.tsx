@@ -1,16 +1,21 @@
+import { Button } from '@/ui/components/ui/button'
+import { Input } from '@/ui/components/ui/input'
+
 function App() {
   return (
-    <main className="min-h-dvh bg-white p-6">
-      <h1 className="text-2xl font-bold text-blue-800">Palomita</h1>
-      <p className="mt-2 text-base text-neutral-600">
+    <main className="min-h-dvh p-6">
+      <h1 className="text-2xl font-bold text-azul">Palomita</h1>
+      <p className="mt-2 text-base text-tinta-2">
         Cimientos listos. La pantalla de asistencia llega en C6.
       </p>
-      <button
-        type="button"
-        className="mt-6 h-11 min-w-11 rounded-lg bg-blue-800 px-4 text-base font-medium text-white"
-      >
-        Botón de 44 px
-      </button>
+
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        <Button>Presente</Button>
+        <Button variant="destructive">Ausente</Button>
+        <Button variant="outline">Retardo</Button>
+      </div>
+
+      <Input className="mt-6 max-w-sm" placeholder="Campo de prueba" />
     </main>
   )
 }

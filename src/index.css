@@ -1,1 +1,94 @@
 @import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Tokens del lápiz bicolor — fuente de verdad del color.
+   Las variables semánticas de shadcn los consumen (nunca al revés): correr los
+   dos sistemas en paralelo produce dos azules distintos en la misma pantalla.
+   Ver docs/UX.md e docs/DECISIONES.md D-010.
+   --------------------------------------------------------------------------- */
+@theme {
+  --color-azul: #1b4f9c;
+  --color-rojo: #c3382e;
+  --color-ambar: #c77a08;
+  --color-verde: #2f6f4e;
+  --color-papel: #fbfaf7;
+  --color-cuadro: #edefea;
+  --color-linea: #e2e5e1;
+  --color-tinta: #1e2124;
+  --color-tinta-2: #6b7178;
+
+  --radius: 0.625rem;
+}
+
+/* Variables semánticas de shadcn, todas apuntadas a un token del bicolor.
+   No agregar una variable de shadcn sin mapearla aquí. */
+:root {
+  --background: var(--color-papel);
+  --foreground: var(--color-tinta);
+
+  --card: var(--color-papel);
+  --card-foreground: var(--color-tinta);
+  --popover: var(--color-papel);
+  --popover-foreground: var(--color-tinta);
+
+  --primary: var(--color-azul);
+  --primary-foreground: var(--color-papel);
+  --secondary: var(--color-cuadro);
+  --secondary-foreground: var(--color-tinta);
+  --muted: var(--color-cuadro);
+  --muted-foreground: var(--color-tinta-2);
+  --accent: var(--color-cuadro);
+  --accent-foreground: var(--color-azul);
+
+  --destructive: var(--color-rojo);
+  --destructive-foreground: var(--color-papel);
+
+  --border: var(--color-linea);
+  --input: var(--color-linea);
+  --ring: var(--color-azul);
+}
+
+/* Puente para las utilidades de Tailwind que usan los componentes de shadcn
+   (bg-background, text-muted-foreground, border-border...). */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  /* Toda cifra con numeros tabulares: sin esto las columnas de calificaciones
+     y porcentajes bailan al cambiar de digito. */
+  :where(input, output, td, th, .cifra) {
+    font-variant-numeric: tabular-nums;
+  }
+}
