@@ -23,4 +23,15 @@ export interface AsistenciaRepo {
    * índice `[fecha+alumno_id]` es lo que lo garantiza.
    */
   marcar(alumnoId: Id, fecha: Fecha, estado: EstadoAsistencia): Promise<void>
+
+  /**
+   * Materializa el día: deja en `presente` a los alumnos que todavía no tienen
+   * registro, sin tocar a los que ya lo tienen. Es idempotente.
+   *
+   * Existe porque el porcentaje de asistencia se calcula sobre registros: si un
+   * día solo tuviera la fila del único ausente, el denominador de ese alumno y
+   * el de sus compañeros serían distintos y los porcentajes no compararían lo
+   * mismo. Todo en una transacción, no 30.
+   */
+  pasarLista(fecha: Fecha, alumnoIds: Id[]): Promise<void>
 }

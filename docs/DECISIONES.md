@@ -153,6 +153,40 @@ necesita para un solo grupo.
 
 ---
 
+## D-013 · Navegar un día no escribe; materializarlo es explícito
+
+**Estado:** aceptada
+
+Abrir un día muestra a todos presentes **sin escribir nada**: `filasDelDia` cruza
+el grupo con los registros que haya y rellena con `presente` lo que falta. Ir y
+venir por la tira de días es de solo lectura, así que hojear la semana no llena
+la base de días que nadie pasó.
+
+Pero el porcentaje de asistencia se calcula sobre registros, y ahí la ausencia de
+registro es ambigua. Si un día solo existiera la fila del único ausente, ese
+alumno tendría un día en su denominador y sus compañeros ninguno: los
+porcentajes dejarían de comparar lo mismo. Por eso existe `pasarLista(fecha)`,
+que deja al grupo completo registrado en `presente` en **una** transacción, sin
+tocar lo ya capturado, y es idempotente.
+
+**Consecuencia para la pantalla (C8):** hay que decidir cuándo se llama.
+
+| Momento | Costo |
+|---|---|
+| Al abrir el día | hojear la semana escribe días que nadie pasó |
+| Con un botón *Pasar lista* | un toque extra en el camino diario |
+| Al primer toque del día | ninguno visible; el día se materializa junto con la primera falta |
+
+La tercera es la que respeta el presupuesto de 15 segundos: la maestra toca al
+primer ausente y el día queda completo sin que ella haga nada más. Un día que
+nadie tocó queda sin registros, que es la verdad — ese día no se pasó lista.
+
+**Lo que se acepta:** un día en que todos asistieron y ella no toca nada no
+queda registrado. Si eso importa para el informe, se resuelve con un toque
+explícito en la interfaz, no cambiando esta regla.
+
+---
+
 ## D-012 · Vitest para el dominio y los adaptadores, no para la interfaz
 
 **Estado:** aceptada

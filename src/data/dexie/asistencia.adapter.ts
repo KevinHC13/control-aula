@@ -53,4 +53,39 @@ export class DexieAsistenciaRepo implements AsistenciaRepo {
       })
     })
   }
+
+  async pasarLista(fecha: Fecha, alumnoIds: Id[]): Promise<void> {
+    await db.transaction('rw', db.asistencia, db.outbox, async () => {
+      const yaRegistrados = new Set(
+        (await db.asistencia.where('fecha').equals(fecha).toArray())
+          .filter((r) => r.deleted_at === null)
+          .map((r) => r.alumno_id),
+      )
+
+      const faltantes = alumnoIds.filter((id) => !yaRegistrados.has(id))
+      if (faltantes.length === 0) return
+
+      const momento = ahora()
+      const nuevos = faltantes.map((alumnoId) => ({
+        id: nuevoId(),
+        alumno_id: alumnoId,
+        fecha,
+        // El estado más probable es el estado por defecto: nadie marca alumno
+        // por alumno (docs/UX.md).
+        estado: 'presente' as const,
+        updated_at: momento,
+        deleted_at: null,
+      }))
+
+      await db.asistencia.bulkPut(nuevos)
+      await db.outbox.bulkAdd(
+        nuevos.map((r) => ({
+          tabla: 'asistencia' as const,
+          registro_id: r.id,
+          op: 'upsert' as const,
+          at: momento,
+        })),
+      )
+    })
+  }
 }
