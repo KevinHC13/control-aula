@@ -2,7 +2,8 @@ import { liveQuery } from 'dexie'
 
 import type { AsistenciaRepo } from '@/data/ports/asistencia'
 import type { RegistroAsistencia } from '@/domain/entities'
-import type { EstadoAsistencia, Fecha, Id, Suscribible } from '@/domain/values'
+import { rangoDelMes } from '@/domain/fechas'
+import type { EstadoAsistencia, Fecha, Id, Mes, Suscribible } from '@/domain/values'
 
 import { ahora, db, nuevoId } from './db'
 
@@ -16,6 +17,21 @@ export class DexieAsistenciaRepo implements AsistenciaRepo {
 
   observarDia(fecha: Fecha): Suscribible<RegistroAsistencia[]> {
     return liveQuery(() => this.porDia(fecha))
+  }
+
+  /**
+   * El mes completo en una sola consulta por rango sobre el índice `fecha`. No se
+   * itera día por día: 31 consultas para pintar una rejilla es justo lo que hace
+   * que abrir el calendario se sienta lento.
+   */
+  async porMes(mes: Mes): Promise<RegistroAsistencia[]> {
+    const { desde, hasta } = rangoDelMes(mes)
+    const delMes = await db.asistencia.where('fecha').between(desde, hasta, true, true).toArray()
+    return delMes.filter((r) => r.deleted_at === null)
+  }
+
+  observarMes(mes: Mes): Suscribible<RegistroAsistencia[]> {
+    return liveQuery(() => this.porMes(mes))
   }
 
   /**

@@ -15,6 +15,7 @@ import {
   filasDelDia,
   marcarEstado,
   pasarLista,
+  resumenDelMes,
 } from './asistencia'
 
 const HOY = '2026-08-18'
@@ -49,6 +50,59 @@ beforeEach(async () => {
   await db.alumnos.clear()
   await db.asistencia.clear()
   await db.outbox.clear()
+})
+
+const enFecha = (
+  alumnoId: string,
+  fecha: string,
+  estado: EstadoAsistencia,
+): RegistroAsistencia => ({ ...registro(alumnoId, estado), id: `reg-${alumnoId}-${fecha}`, fecha })
+
+describe('resumenDelMes', () => {
+  it('un mes sin registros da todos los días sin registrar', () => {
+    const dias = resumenDelMes('2026-08', [])
+
+    expect(dias).toHaveLength(31)
+    expect(dias.every((d) => !d.registrado)).toBe(true)
+    expect(dias.every((d) => d.ausentes === 0 && d.total === 0)).toBe(true)
+    expect(dias[0]?.fecha).toBe('2026-08-01')
+    expect(dias.at(-1)?.fecha).toBe('2026-08-31')
+  })
+
+  it('cuenta ausentes y total del día', () => {
+    const dias = resumenDelMes('2026-08', [
+      enFecha('alumno-1', HOY, 'ausente'),
+      enFecha('alumno-2', HOY, 'presente'),
+      enFecha('alumno-3', HOY, 'ausente'),
+    ])
+
+    const dia = dias.find((d) => d.fecha === HOY)
+    expect(dia).toEqual({ fecha: HOY, registrado: true, ausentes: 2, total: 3 })
+  })
+
+  it('retardo y justificada no son ausencias', () => {
+    const dias = resumenDelMes('2026-08', [
+      enFecha('alumno-1', HOY, 'retardo'),
+      enFecha('alumno-2', HOY, 'justificada'),
+    ])
+
+    const dia = dias.find((d) => d.fecha === HOY)
+    expect(dia?.ausentes).toBe(0)
+    expect(dia?.registrado).toBe(true)
+  })
+
+  it('un día capturado sin faltas está registrado, no hueco', () => {
+    const dias = resumenDelMes('2026-08', [enFecha('alumno-1', '2026-08-03', 'presente')])
+
+    expect(dias.find((d) => d.fecha === '2026-08-03')?.registrado).toBe(true)
+    expect(dias.find((d) => d.fecha === '2026-08-04')?.registrado).toBe(false)
+  })
+
+  it('los registros de otro mes no aparecen', () => {
+    const dias = resumenDelMes('2026-08', [enFecha('alumno-1', '2026-09-01', 'ausente')])
+
+    expect(dias.every((d) => !d.registrado)).toBe(true)
+  })
 })
 
 describe('filasDelDia', () => {

@@ -1,4 +1,4 @@
-import type { Fecha } from './values'
+import type { Fecha, Mes } from './values'
 
 /**
  * La fecha de un instante **en la zona del dispositivo**, no en UTC.
@@ -36,4 +36,64 @@ export function fechaMas(fecha: Fecha, dias: number): Fecha {
 /** Los últimos `cuantos` días terminando en `hasta`, en orden ascendente. */
 export function ultimosDias(hasta: Fecha, cuantos: number): Fecha[] {
   return Array.from({ length: cuantos }, (_, i) => fechaMas(hasta, i - (cuantos - 1)))
+}
+
+/**
+ * Los `cuantos` días consecutivos que contienen al seleccionado, centrado cuando
+ * se puede. Es la ventana de la tira de días.
+ *
+ * Nunca pasa de `hoy`: cerca de hoy la ventana termina ahí y el seleccionado se
+ * corre a la derecha, porque un día que no ha pasado no tiene asistencia que
+ * capturar. Si el seleccionado ya es futuro —la app pudo quedar abierta al cruzar
+ * la medianoche— la ventana termina en él para seguir conteniéndolo.
+ */
+export function ventanaDeDias(seleccionado: Fecha, hoy: Fecha, cuantos: number): Fecha[] {
+  const mitad = Math.floor((cuantos - 1) / 2)
+  const tope = seleccionado > hoy ? seleccionado : hoy
+  // Comparar `Fecha` como cadena ordena bien: ISO-8601 con ceros a la izquierda
+  // es lexicográficamente igual que cronológicamente.
+  const centrado = fechaMas(seleccionado, mitad)
+  const fin = centrado > tope ? tope : centrado
+
+  return ultimosDias(fin, cuantos)
+}
+
+/** El mes al que pertenece una fecha. */
+export function mesDe(fecha: Fecha): Mes {
+  return fecha.slice(0, 7)
+}
+
+/** El primer día del mes, que es de donde se opera todo lo demás. */
+function primerDia(mes: Mes): Fecha {
+  return `${mes}-01`
+}
+
+/** Meses de diferencia, para las flechas del calendario. */
+export function mesMas(mes: Mes, meses: number): Mes {
+  const d = comoDate(primerDia(mes))
+  // Sobre el día 1: `setMonth` desde el 31 de enero daría el 3 de marzo.
+  d.setMonth(d.getMonth() + meses)
+  return mesDe(fechaLocal(d))
+}
+
+/** Primer y último día del mes, para pedir el rango a la base. */
+export function rangoDelMes(mes: Mes): { desde: Fecha; hasta: Fecha } {
+  return { desde: primerDia(mes), hasta: fechaMas(primerDia(mesMas(mes, 1)), -1) }
+}
+
+/** Todos los días del mes, en orden ascendente. */
+export function diasDelMes(mes: Mes): Fecha[] {
+  const { desde, hasta } = rangoDelMes(mes)
+  // El último día del mes es también cuántos días tiene.
+  const cuantos = Number(hasta.slice(-2))
+  return Array.from({ length: cuantos }, (_, i) => fechaMas(desde, i))
+}
+
+/**
+ * Celdas vacías antes del día 1 en una rejilla que **empieza en lunes**, como se
+ * lee un calendario escolar. `getDay()` cuenta desde el domingo, de ahí el
+ * corrimiento.
+ */
+export function huecosIniciales(mes: Mes): number {
+  return (comoDate(primerDia(mes)).getDay() + 6) % 7
 }

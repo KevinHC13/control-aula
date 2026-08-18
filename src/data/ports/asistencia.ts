@@ -1,5 +1,5 @@
 import type { RegistroAsistencia } from '@/domain/entities'
-import type { EstadoAsistencia, Fecha, Id, Suscribible } from '@/domain/values'
+import type { EstadoAsistencia, Fecha, Id, Mes, Suscribible } from '@/domain/values'
 
 /**
  * Contrato de la pantalla principal. Los métodos se nombran por caso de uso y no
@@ -16,6 +16,15 @@ export interface AsistenciaRepo {
    * fila cambien de color sin recargar.
    */
   observarDia(fecha: Fecha): Suscribible<RegistroAsistencia[]>
+
+  /** Los registros de un mes completo, sin los borrados. */
+  porMes(mes: Mes): Promise<RegistroAsistencia[]>
+
+  /**
+   * Lo mismo, reactivo. Sostiene el mosaico del calendario: marcar una falta se
+   * ve reflejada en el día correspondiente sin volver a abrir nada.
+   */
+  observarMes(mes: Mes): Suscribible<RegistroAsistencia[]>
 
   /**
    * Deja al alumno en ese estado ese día. Es un upsert: marcar dos veces el

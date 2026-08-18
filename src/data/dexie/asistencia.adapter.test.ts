@@ -147,6 +147,56 @@ describe('porDia', () => {
   })
 })
 
+describe('porMes', () => {
+  it('incluye los días frontera y excluye los meses vecinos', async () => {
+    await repo.marcar(ALUMNO, '2026-07-31', 'ausente')
+    await repo.marcar(ALUMNO, '2026-08-01', 'ausente')
+    await repo.marcar(ALUMNO, '2026-08-31', 'retardo')
+    await repo.marcar(ALUMNO, '2026-09-01', 'ausente')
+
+    const fechas = (await repo.porMes('2026-08')).map((r) => r.fecha)
+    expect(fechas.sort()).toEqual(['2026-08-01', '2026-08-31'])
+  })
+
+  it('acierta el último día de un febrero bisiesto', async () => {
+    await repo.marcar(ALUMNO, '2028-02-29', 'ausente')
+
+    expect(await repo.porMes('2028-02')).toHaveLength(1)
+  })
+
+  it('filtra los borrados', async () => {
+    await repo.marcar(ALUMNO, HOY, 'ausente')
+    await repo.marcar(OTRO, HOY, 'presente')
+    const id = (await repo.porDia(HOY)).find((r) => r.alumno_id === ALUMNO)?.id ?? ''
+    await db.asistencia.update(id, { deleted_at: '2026-08-18T09:00:00.000Z' })
+
+    const registros = await repo.porMes('2026-08')
+    expect(registros).toHaveLength(1)
+    expect(registros[0]?.alumno_id).toBe(OTRO)
+  })
+
+  it('un mes sin registros devuelve lista vacía, no falla', async () => {
+    expect(await repo.porMes('2026-01')).toEqual([])
+  })
+})
+
+describe('observarMes', () => {
+  it('vuelve a emitir cuando se marca un día del mes', async () => {
+    const emisiones: number[] = []
+    const sub = repo.observarMes('2026-08').subscribe((registros) => {
+      emisiones.push(registros.length)
+    })
+
+    await vi.waitFor(() => expect(emisiones.length).toBeGreaterThan(0))
+    expect(emisiones[0]).toBe(0)
+
+    await repo.marcar(ALUMNO, AYER, 'ausente')
+    await vi.waitFor(() => expect(emisiones.at(-1)).toBe(1))
+
+    sub.unsubscribe()
+  })
+})
+
 describe('observarDia', () => {
   it('emite el estado actual y vuelve a emitir cuando cambia', async () => {
     const emisiones: number[] = []

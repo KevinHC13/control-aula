@@ -6,6 +6,9 @@
 /** ISO 8601, solo fecha: "2026-08-18" */
 export type Fecha = string
 
+/** ISO 8601, solo mes: "2026-08". La rejilla del calendario se pide por mes. */
+export type Mes = string
+
 /** UUID v4 generado en el cliente con `crypto.randomUUID()` */
 export type Id = string
 

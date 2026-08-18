@@ -1,7 +1,8 @@
 import { repos } from '@/data'
 import type { Alumno, RegistroAsistencia } from '@/domain/entities'
+import { diasDelMes } from '@/domain/fechas'
 import { cuentaComoAsistencia, siguienteEstado } from '@/domain/rules'
-import type { EstadoAsistencia, Fecha, Id } from '@/domain/values'
+import type { EstadoAsistencia, Fecha, Id, Mes } from '@/domain/values'
 
 /**
  * Una fila de la pantalla de asistencia. `registrado` distingue "presente
@@ -47,6 +48,45 @@ export function contarPresentes(filas: FilaAsistencia[]): {
     presentes: filas.filter((f) => cuentaComoAsistencia(f.estado)).length,
     total: filas.length,
   }
+}
+
+/**
+ * Un día visto desde el calendario. `registrado` distingue un día que todavía no
+ * se capturó de uno capturado sin faltas: el primero es un hueco, el segundo es
+ * un día bueno, y pintarlos igual sería mentir.
+ */
+export interface DiaDelMes {
+  fecha: Fecha
+  registrado: boolean
+  ausentes: number
+  total: number
+}
+
+/**
+ * Un renglón por día del mes, tenga registros o no. Los días sin capturar salen
+ * en la lista porque el mosaico los pinta como huecos.
+ *
+ * Función pura: no lee la base.
+ */
+export function resumenDelMes(mes: Mes, registros: RegistroAsistencia[]): DiaDelMes[] {
+  const porFecha = new Map<Fecha, RegistroAsistencia[]>()
+  for (const registro of registros) {
+    const delDia = porFecha.get(registro.fecha)
+    if (delDia) delDia.push(registro)
+    else porFecha.set(registro.fecha, [registro])
+  }
+
+  return diasDelMes(mes).map((fecha) => {
+    const delDia = porFecha.get(fecha) ?? []
+    return {
+      fecha,
+      registrado: delDia.length > 0,
+      // Por la regla de dominio y no comparando contra 'ausente': retardo y
+      // justificada cuentan como asistencia.
+      ausentes: delDia.filter((r) => !cuentaComoAsistencia(r.estado)).length,
+      total: delDia.length,
+    }
+  })
 }
 
 /** El día completo, listo para pintar. */
