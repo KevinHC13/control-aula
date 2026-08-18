@@ -9,11 +9,14 @@ español también (`asistencia`, `calificaciones`, `alumnos`).
 
 ## Estado actual del repo
 
-`src/` todavía es el scaffold de Vite (`App.tsx` de ejemplo). Las carpetas
-`domain/`, `data/`, `application/`, `ui/` **no existen aún**; tampoco están
-instalados Tailwind, Dexie, Zustand ni `vite-plugin-pwa`. Todo eso está descrito
-en `docs/` como destino, no como hecho consumado. Antes de afirmar que algo
-existe, verificarlo en `src/`.
+C1 hecho: el scaffold de Vite está limpio, Tailwind v4 corre como plugin de Vite,
+el alias `@/` resuelve, `strict` está activo y existen las carpetas de las cuatro
+capas (vacías, con `.gitkeep`).
+
+Todavía **no** hay nada de dominio, datos ni pantallas, y **no** están instalados
+shadcn, Dexie, Zustand ni `vite-plugin-pwa`. Eso está descrito en `docs/` como
+destino, no como hecho consumado. Antes de afirmar que algo existe, verificarlo
+en `src/`.
 
 El plan de construcción con criterios de aceptación por commit está en
 `docs/COMMITS.md` (C1 … C16). Seguir ese orden.
@@ -25,8 +28,12 @@ npm run dev       # Vite dev server
 npm run build     # tsc -b && vite build
 npm run lint      # eslint .
 npm run preview   # servir dist/
-npx tsc --noEmit  # chequeo de tipos, requisito antes de cada commit
+npm run typecheck # tsc -b, chequeo de tipos, requisito antes de cada commit
 ```
+
+No usar `npx tsc --noEmit` a secas: `tsconfig.json` es un archivo-solución con
+`files: []`, así que ese comando no chequea nada y pasa incluso con errores de
+tipos. El chequeo real es `tsc -b` (`npm run typecheck`).
 
 No hay runner de tests configurado. Si se agrega uno, actualizar esta sección.
 
@@ -131,7 +138,7 @@ Alcances: `domain`, `data`, `app`, `ui`, `asistencia`, `calificaciones`, `notas`
 feat(asistencia): ciclar estado con un toque en la fila
 ```
 
-Un commit compila, pasa `tsc --noEmit` y es un incremento verificable: si no se
+Un commit compila, pasa `npm run typecheck` y es un incremento verificable: si no se
 le puede escribir un criterio de aceptación, está mal cortado.
 
 ## Datos reales

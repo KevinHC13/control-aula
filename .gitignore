@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Semilla real del grupo: nombres de menores, nunca al repositorio
+src/data/seed/grupo.ts

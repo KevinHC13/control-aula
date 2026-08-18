@@ -24,7 +24,7 @@ docs: registrar la decisión sobre notificaciones push
 
 ## Reglas del repositorio
 
-1. **Un commit compila y pasa `tsc --noEmit`.** No se rompe `main`.
+1. **Un commit compila y pasa `npm run typecheck` (`tsc -b`).** No se rompe `main`.
 2. **Un commit es un incremento verificable**, no un archivo suelto. Si no se
    puede escribir un criterio de aceptación, el commit está mal cortado.
 3. **Los criterios de aceptación se verifican en el navegador**, no en la
@@ -55,7 +55,7 @@ Scaffold, Tailwind v4 como plugin de Vite, estructura de carpetas vacía según
 **Aceptación**
 - [ ] `npm run dev` arranca sin advertencias
 - [ ] `npm run build` genera `dist/`
-- [ ] `tsc --noEmit` pasa en modo `strict`
+- [ ] `npm run typecheck` pasa en modo `strict`
 - [ ] Una clase de Tailwind aplica estilo visible
 - [ ] Existen `src/domain`, `src/data/ports`, `src/data/dexie`, `src/application`, `src/ui`
 
