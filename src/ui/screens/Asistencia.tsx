@@ -1,11 +1,21 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 
 import { type FilaAsistencia, marcarEstado, pasarLista } from '@/application/asistencia'
-import { fechaLocal } from '@/domain/fechas'
+import { fechaLocal, mesDe } from '@/domain/fechas'
+import type { Fecha } from '@/domain/values'
+import { CalendarioMes } from '@/ui/components/CalendarioMes'
 import { ContadorPresentes } from '@/ui/components/ContadorPresentes'
 import { FilaAlumno } from '@/ui/components/FilaAlumno'
 import { TiraDeDias } from '@/ui/components/TiraDeDias'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/ui/components/ui/dialog'
 import { useAsistenciaDelDia } from '@/ui/hooks/useAsistenciaDelDia'
+import { useAsistenciaDelMes } from '@/ui/hooks/useAsistenciaDelMes'
 import { useInterfaz } from '@/ui/store/interfaz'
 
 export function Asistencia() {
@@ -16,6 +26,24 @@ export function Asistencia() {
   // Se calcula una vez por montaje: si la app queda abierta al cruzar la
   // medianoche, "hoy" se corrige al volver a entrar, que es cuando importa.
   const hoy = useMemo(() => fechaLocal(new Date()), [])
+
+  // Estado local y no del store: el calendario vive y muere con el diálogo, no
+  // cruza pantallas (docs/ARCHITECTURE.md).
+  const [calendarioAbierto, setCalendarioAbierto] = useState(false)
+  const [mesVisible, setMesVisible] = useState(() => mesDe(diaSeleccionado))
+  // Suscrito siempre: así el mosaico ya está pintado cuando el diálogo abre, en
+  // vez de aparecer vacío un cuadro.
+  const { dias } = useAsistenciaDelMes(mesVisible)
+
+  function abrirCalendario() {
+    setMesVisible(mesDe(diaSeleccionado))
+    setCalendarioAbierto(true)
+  }
+
+  function seleccionarDesdeCalendario(fecha: Fecha) {
+    seleccionarDia(fecha)
+    setCalendarioAbierto(false)
+  }
 
   const diaSinRegistrar = filas.some((f) => !f.registrado)
 
@@ -38,7 +66,29 @@ export function Asistencia() {
         diaSeleccionado={diaSeleccionado}
         hoy={hoy}
         alSeleccionar={seleccionarDia}
+        alAbrirCalendario={abrirCalendario}
       />
+
+      <Dialog open={calendarioAbierto} onOpenChange={setCalendarioAbierto}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Calendario</DialogTitle>
+            <DialogDescription>
+              Un día azul se capturó completo; uno rojo tiene faltas; uno hueco todavía no se
+              pasa. Toca un día para verlo.
+            </DialogDescription>
+          </DialogHeader>
+
+          <CalendarioMes
+            mesVisible={mesVisible}
+            dias={dias}
+            diaSeleccionado={diaSeleccionado}
+            hoy={hoy}
+            alCambiarMes={setMesVisible}
+            alSeleccionar={seleccionarDesdeCalendario}
+          />
+        </DialogContent>
+      </Dialog>
 
       <ContadorPresentes filas={filas} />
 

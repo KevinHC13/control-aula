@@ -1,5 +1,6 @@
 import { comoDate, ventanaDeDias } from '@/domain/fechas'
 import type { Fecha } from '@/domain/values'
+import { IconoCalendario } from '@/ui/components/iconos'
 import { useDiasQueCaben } from '@/ui/hooks/useDiasQueCaben'
 import { cn } from '@/ui/lib/utils'
 
@@ -19,16 +20,32 @@ export function TiraDeDias({
   diaSeleccionado,
   hoy,
   alSeleccionar,
+  alAbrirCalendario,
 }: {
   diaSeleccionado: Fecha
   hoy: Fecha
   alSeleccionar: (fecha: Fecha) => void
+  alAbrirCalendario: () => void
 }) {
   const [refDias, cuantos] = useDiasQueCaben<HTMLUListElement>()
   const dias = ventanaDeDias(diaSeleccionado, hoy, cuantos)
 
   return (
     <nav aria-label="Días" className="flex gap-2">
+      <button
+        type="button"
+        onClick={alAbrirCalendario}
+        aria-label="Abrir calendario"
+        aria-haspopup="dialog"
+        className={cn(
+          'flex min-h-14 w-12 shrink-0 items-center justify-center rounded-lg border border-linea',
+          'bg-papel text-tinta-2',
+          'outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+        )}
+      >
+        <IconoCalendario className="size-6" />
+      </button>
+
       {/* `flex-1 min-w-0` es lo que hace que el `ul` mida el espacio que sobra:
           el hook mide este elemento, no la pantalla. `overflow-x-auto` es la red
           por si la medición se queda corta un cuadro al girar el iPad. */}
