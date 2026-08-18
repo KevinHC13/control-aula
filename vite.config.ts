@@ -17,5 +17,9 @@ export default defineConfig({
     // entorno con `// @vitest-environment`.
     environment: 'node',
     include: ['src/**/*.test.ts', 'tests/**/*.test.ts'],
+    // La app se usa en un solo iPad en horario de México, y el manejo de fechas
+    // depende de la zona: sin fijarla, las pruebas de `fechaLocal` pasarían
+    // igual con una implementación en UTC en cualquier máquina que corra en UTC.
+    env: { TZ: 'America/Mexico_City' },
   },
 })

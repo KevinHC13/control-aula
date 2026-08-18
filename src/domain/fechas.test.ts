@@ -3,11 +3,25 @@ import { describe, expect, it } from 'vitest'
 import { fechaLocal, fechaMas } from './fechas'
 
 describe('fechaLocal', () => {
+  it('la zona de las pruebas está fijada, o esta suite no prueba nada', () => {
+    // Con TZ=UTC, una implementación con `toISOString().slice(0, 10)` pasaría
+    // todas las pruebas de abajo. La zona se fija en vite.config.ts.
+    expect(new Date().getTimezoneOffset()).not.toBe(0)
+  })
+
   it('da la fecha del dispositivo, no la de UTC', () => {
-    // 19:00 del 18 de agosto en México son las 01:00 del 19 en UTC. El día del
-    // salón es el 18: `toISOString().slice(0, 10)` daría el 19.
-    const tarde = new Date(2026, 7, 18, 19, 0, 0)
+    // Este instante es 01:00 del 19 en UTC y 19:00 del 18 en México. El día del
+    // salón es el 18; `toISOString().slice(0, 10)` daría el 19.
+    const tarde = new Date('2026-08-19T01:00:00.000Z')
+
     expect(fechaLocal(tarde)).toBe('2026-08-18')
+    expect(fechaLocal(tarde)).not.toBe(tarde.toISOString().slice(0, 10))
+  })
+
+  it('la madrugada tampoco se corre de día', () => {
+    // 00:30 del 18 en México son las 06:30 del 18 en UTC: aquí coinciden, y es
+    // el caso que la implementación ingenua acierta por casualidad.
+    expect(fechaLocal(new Date('2026-08-18T06:30:00.000Z'))).toBe('2026-08-18')
   })
 
   it('rellena mes y día con cero', () => {
