@@ -29,3 +29,6 @@ src/data/seed/grupo.ts
 # Variables de entorno: la anon key es pública, pero el archivo local no va al repo
 .env
 .env.local
+
+# CLI de Supabase
+supabase/.temp/
