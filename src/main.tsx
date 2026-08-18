@@ -1,7 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import App from './App.tsx'
+import { App } from '@/ui/App'
 import { abrirBase } from '@/data'
 
 // Se abre al arrancar para que un fallo de IndexedDB se vea de entrada y no a
