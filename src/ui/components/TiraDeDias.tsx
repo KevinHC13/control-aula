@@ -1,15 +1,19 @@
-import { comoDate, ultimosDias } from '@/domain/fechas'
+import { comoDate, ventanaDeDias } from '@/domain/fechas'
 import type { Fecha } from '@/domain/values'
+import { useDiasQueCaben } from '@/ui/hooks/useDiasQueCaben'
 import { cn } from '@/ui/lib/utils'
-
-const DIAS_VISIBLES = 7
 
 const inicial = new Intl.DateTimeFormat('es-MX', { weekday: 'narrow' })
 
 /**
- * Los últimos siete días, con hoy al final. No hay calendario: la maestra captura
- * hoy, y a lo más corrige ayer o antier. Un selector de mes sería un toque más en
- * el camino diario para un caso que casi no ocurre (docs/UX.md).
+ * Los días que caben en el ancho disponible, con el seleccionado al centro y sin
+ * pasar de hoy: un día que no ha pasado no tiene asistencia que capturar.
+ *
+ * La ventana se **deriva** del día seleccionado, así que tocar el día del extremo
+ * izquierdo lo recentra y revela media ventana de días anteriores. Eso es el
+ * recorrido: un toque por salto, sin flechas que compitan con los días ni un
+ * gesto que pelee con el desplazamiento. Para saltos largos está el calendario
+ * (docs/UX.md).
  */
 export function TiraDeDias({
   diaSeleccionado,
@@ -20,14 +24,15 @@ export function TiraDeDias({
   hoy: Fecha
   alSeleccionar: (fecha: Fecha) => void
 }) {
-  // Termina en hoy, salvo que se esté viendo un día anterior: así la tira
-  // siempre contiene al día seleccionado.
-  const ultimo = diaSeleccionado > hoy ? diaSeleccionado : hoy
-  const dias = ultimosDias(ultimo, DIAS_VISIBLES)
+  const [refDias, cuantos] = useDiasQueCaben<HTMLUListElement>()
+  const dias = ventanaDeDias(diaSeleccionado, hoy, cuantos)
 
   return (
-    <nav aria-label="Días" className="-mx-4 overflow-x-auto px-4">
-      <ul className="flex gap-2">
+    <nav aria-label="Días" className="flex gap-2">
+      {/* `flex-1 min-w-0` es lo que hace que el `ul` mida el espacio que sobra:
+          el hook mide este elemento, no la pantalla. `overflow-x-auto` es la red
+          por si la medición se queda corta un cuadro al girar el iPad. */}
+      <ul ref={refDias} className="flex min-w-0 flex-1 gap-2 overflow-x-auto">
         {dias.map((fecha) => {
           const seleccionado = fecha === diaSeleccionado
           const fin = [0, 6].includes(comoDate(fecha).getDay())
