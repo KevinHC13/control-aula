@@ -182,6 +182,28 @@ la pantalla antes de seguir.
 - [ ] Al haber versión nueva aparece un aviso, sin recarga automática
 - [ ] Se completa la lista de verificación de [PWA-IOS.md](./PWA-IOS.md)
 
+### C10b · `feat(asistencia): abrir calendario del mes con mosaico de estatus`
+
+Ajuste de alcance salido de ver la pantalla armada, antes de la pausa. La tira
+deja de estar fija en siete días —muestra los que caben, con el seleccionado al
+centro y sin pasar de hoy— y en su posición 0 aparece un botón de calendario que
+abre el mes completo como mosaico: hueco si el día no se ha capturado, azul si no
+faltó nadie, rojo con la cifra de ausentes si hubo faltas.
+
+**Aceptación**
+- [ ] La tira llena el ancho: al angostar la ventana muestra menos días y al ensancharla más
+- [ ] El día seleccionado queda al centro mientras esté lejos de hoy
+- [ ] Con hoy seleccionado, hoy es el último de la tira y no se pinta ningún día futuro
+- [ ] Tocar el día del extremo izquierdo lo selecciona y recorre la tira hacia atrás
+- [ ] Girar el iPad recalcula la cantidad de días sin recargar
+- [ ] El botón de calendario mide al menos 44 × 44 px y está en la posición 0
+- [ ] Un día sin registrar se ve hueco; uno capturado sin faltas, azul; uno con faltas, rojo con la cifra
+- [ ] `‹` va al mes anterior; `›` está deshabilitado en el mes de hoy
+- [ ] Tocar un día cierra el diálogo, lo deja seleccionado y la lista muestra su detalle
+- [ ] Marcar una falta y volver a abrir el calendario muestra el mosaico ya actualizado
+- [ ] `Esc` y el toque fuera cierran, y el foco regresa al botón de calendario
+- [ ] El mes del mosaico se pide en una sola consulta por rango, no 31 por día
+
 ---
 
 ## Hito · Entrega y pausa de una semana

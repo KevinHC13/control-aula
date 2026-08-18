@@ -24,6 +24,18 @@ presente → ausente → retardo → justificada → presente
 Cuatro estados en un ciclo es el límite. Un quinto vuelve el ciclo más lento que
 un menú.
 
+La tira de días de arriba responde al mismo criterio: muestra los días que caben
+en el ancho —no siete fijos, que en un iPad horizontal desperdician media
+pantalla— con el seleccionado al centro y sin pasar de hoy. Se recorre tocando el
+día del extremo, que recentra la ventana; un par de flechas serían dos objetivos
+más peleando por el mismo espacio.
+
+Para saltos largos, y para ver el mes de un vistazo, en la posición 0 de la tira
+va un botón de calendario. Abre el mes como mosaico: **hueco** si el día no se ha
+capturado, **azul** si no faltó nadie, **rojo con la cifra** si hubo faltas.
+Distinguir el hueco del azul es el punto —pintar igual "todavía no lo capturé" y
+"ese día no faltó nadie" sería mentir. Tocar un día lo selecciona y cierra.
+
 ### 2. Nada de teclado donde se pueda evitar
 
 Las calificaciones se capturan con **seis botones (5 a 10)**, no con un campo
@@ -136,7 +148,7 @@ Cuatro pestañas al fondo, dentro del alcance del pulgar:
 
 | Pestaña | Contenido |
 |---|---|
-| Asistencia | Tira de días + lista con ciclo de estados |
+| Asistencia | Tira de días con calendario + lista con ciclo de estados |
 | Calificaciones | Selector de actividad + captura por botones |
 | Notas | Anecdotario: alumno, texto, historial |
 | Grupo | Resumen por alumno: % asistencia y promedio |
