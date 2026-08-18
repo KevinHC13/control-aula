@@ -153,6 +153,39 @@ necesita para un solo grupo.
 
 ---
 
+## D-012 · Vitest para el dominio y los adaptadores, no para la interfaz
+
+**Estado:** aceptada
+
+Hasta C2 no había runner de tests y los criterios de aceptación de las reglas
+puras —`promedioDe([])` es null, `porcentajeAsistencia([])` es 100— se
+verificaban a mano. Eso funciona una vez; no sobrevive a C5, donde hay que
+comprobar que cada mutación escribe `updated_at` y encola en el `outbox` **en la
+misma transacción**, ni al refactor que en tres semanas cambie un umbral.
+
+Vitest reutiliza la configuración de Vite: el alias `@/` y el pipeline de
+TypeScript ya funcionan sin duplicar nada.
+
+**Alcance acordado, para que la suite no se vuelva el proyecto:**
+
+| Se prueba | No se prueba |
+|---|---|
+| `domain/rules.ts` — funciones puras | Componentes de shadcn (código ajeno) |
+| Adaptadores de Dexie: transacción, `outbox`, `updated_at` | Estilos y layout |
+| Casos de uso de `application/` | Estado de Zustand por sí mismo |
+
+Las pruebas van **junto al archivo que prueban** (`rules.test.ts` al lado de
+`rules.ts`), en entorno `node`, importando `describe`/`it`/`expect`
+explícitamente de `vitest`. Sin `globals: true`: evita configurar tipos globales
+en tsconfig y una excepción en ESLint.
+
+**Lo que no cubre:** el zoom de Safari, el objetivo táctil de 44 px, el service
+worker y `crypto.randomUUID()` en contexto seguro no se pueden probar aquí. Esos
+siguen verificándose en el iPad con `docs/PWA-IOS.md`. Una suite verde no
+significa que la app funcione en el dispositivo.
+
+---
+
 ## D-011 · Tipografías auto-hospedadas, no desde Google Fonts
 
 **Estado:** aceptada

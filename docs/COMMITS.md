@@ -24,11 +24,14 @@ docs: registrar la decisión sobre notificaciones push
 
 ## Reglas del repositorio
 
-1. **Un commit compila y pasa `npm run typecheck` (`tsc -b`).** No se rompe `main`.
+1. **Un commit compila y pasa `npm run typecheck` (`tsc -b`) y `npm test`.** No se
+   rompe `main`.
 2. **Un commit es un incremento verificable**, no un archivo suelto. Si no se
    puede escribir un criterio de aceptación, el commit está mal cortado.
-3. **Los criterios de aceptación se verifican en el navegador**, no en la
-   descripción del commit.
+3. **Los criterios de aceptación se verifican corriéndolos**, no en la
+   descripción del commit: los que son afirmaciones sobre funciones puras van a
+   Vitest; los que son de pantalla o de dispositivo, en el navegador y en el
+   iPad.
 4. **Cero imports de `data/dexie` fuera de `data/`.** Verificar antes de cada
    commit que toque UI o casos de uso:
    ```bash

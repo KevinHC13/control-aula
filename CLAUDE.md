@@ -30,13 +30,19 @@ npm run build     # tsc -b && vite build
 npm run lint      # eslint .
 npm run preview   # servir dist/
 npm run typecheck # tsc -b, chequeo de tipos, requisito antes de cada commit
+npm test          # vitest run, una vez
+npm run test:watch # vitest en modo watch
 ```
 
 No usar `npx tsc --noEmit` a secas: `tsconfig.json` es un archivo-solución con
 `files: []`, así que ese comando no chequea nada y pasa incluso con errores de
 tipos. El chequeo real es `tsc -b` (`npm run typecheck`).
 
-No hay runner de tests configurado. Si se agrega uno, actualizar esta sección.
+Vitest corre en entorno `node` sobre `src/**/*.test.ts`, colocados junto al
+archivo que prueban. Las pruebas se importan explícitamente de `vitest` (sin
+`globals: true`), así que no hace falta configurar tipos globales ni tocar
+ESLint. Un archivo que necesite DOM o IndexedDB pide su propio entorno con
+`// @vitest-environment` en la primera línea.
 
 ## Qué es esto
 
@@ -139,7 +145,8 @@ Alcances: `domain`, `data`, `app`, `ui`, `asistencia`, `calificaciones`, `notas`
 feat(asistencia): ciclar estado con un toque en la fila
 ```
 
-Un commit compila, pasa `npm run typecheck` y es un incremento verificable: si no se
+Un commit compila, pasa `npm run typecheck` y `npm test`, y es un incremento
+verificable: si no se
 le puede escribir un criterio de aceptación, está mal cortado.
 
 ## Datos reales
