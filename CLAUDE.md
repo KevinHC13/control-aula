@@ -65,7 +65,11 @@ Cuatro capas, dependencias en una sola dirección (detalle en
 3. `ui/` importa `application/`, `domain/` y `ui/hooks/`. **Nunca** `data/dexie/`.
 4. Solo `data/index.ts` sabe qué adaptador concreto se usa.
 
-Verificación obligatoria antes de cualquier commit que toque UI o casos de uso:
+Las cuatro reglas están verificadas en `tests/arquitectura.test.ts`, que corre con
+`npm test`: lee los archivos y falla si `domain/` importa algo externo, si `ui/` o
+`application/` importan `data/dexie`, si un puerto importa Dexie o declara un
+método por consulta (`find`, `query`, `where`), o si `liveQuery` aparece fuera de
+`data/dexie`. Ya no hay que acordarse de correr el grep:
 
 ```bash
 grep -rn "from.*data/dexie" src/ui src/application   # debe dar cero

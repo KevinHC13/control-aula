@@ -38,3 +38,16 @@ export interface Sincronizable {
   updated_at: Instante
   deleted_at: Instante | null
 }
+
+/**
+ * Suscripción mínima, declarada aquí para que `data/ports/` no tenga que
+ * importar el `Observable` de Dexie: la reactividad es parte del contrato del
+ * puerto, no un detalle del adaptador (docs/ARCHITECTURE.md).
+ *
+ * El observable de Dexie satisface esta interfaz sin adaptación. Un adaptador
+ * de Supabase la cumpliría con Realtime, y uno de SQL con un emisor propio
+ * invalidado tras cada escritura.
+ */
+export interface Suscribible<T> {
+  subscribe(next: (valor: T) => void): { unsubscribe(): void }
+}

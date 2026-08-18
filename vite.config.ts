@@ -16,6 +16,6 @@ export default defineConfig({
     // toque probar los adaptadores de Dexie, ese archivo pedirá su propio
     // entorno con `// @vitest-environment`.
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'tests/**/*.test.ts'],
   },
 })
