@@ -63,6 +63,29 @@ describe('reglas de dependencia', () => {
     }
   })
 
+  it('services/ es una hoja: nadie de dentro depende de él salvo application/', () => {
+    // `src/services/` es la única salida a red del cliente y no pasa por el
+    // repositorio (docs/ARCHITECTURE.md). La frontera solo sirve si el dominio y
+    // los datos siguen sin saber que existe.
+    for (const dir of ['domain', 'data']) {
+      for (const ruta of archivos(dir)) {
+        for (const especificador of imports(leer(ruta))) {
+          expect(especificador, `${ruta} importa ${especificador}`).not.toMatch(/services/)
+        }
+      }
+    }
+  })
+
+  it('services/ no toca la base ni la interfaz: solo habla con la red', () => {
+    for (const ruta of archivos('services')) {
+      for (const especificador of imports(leer(ruta))) {
+        expect(especificador, `${ruta} importa ${especificador}`).not.toMatch(
+          /@\/data|@\/ui|\.\.\/data|\.\.\/ui/,
+        )
+      }
+    }
+  })
+
   it('solo data/index.ts conoce el adaptador concreto', () => {
     const culpables = archivos('.')
       .filter((ruta) => !ruta.startsWith(join('data', 'dexie')))
