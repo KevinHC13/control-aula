@@ -1,3 +1,4 @@
+import { AvisoActualizacion } from '@/ui/components/AvisoActualizacion'
 import { BarraPestanas } from '@/ui/components/BarraPestanas'
 import { Asistencia } from '@/ui/screens/Asistencia'
 import { Calificaciones } from '@/ui/screens/Calificaciones'
@@ -23,6 +24,7 @@ export function App() {
 
   return (
     <div className="min-h-dvh bg-papel">
+      <AvisoActualizacion />
       {/* pb-24 reserva el alto de la barra fija: sin esto la última fila de la
           lista queda tapada justo cuando hay 30 alumnos. */}
       <main className="px-4 pt-6 pb-24">

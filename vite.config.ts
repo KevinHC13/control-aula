@@ -2,10 +2,49 @@ import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    VitePWA({
+      // 'prompt' y nunca 'autoUpdate': con actualización automática el service
+      // worker puede recargar la app a mitad de una captura, y una recarga
+      // inesperada mientras pasa asistencia es motivo de abandono (docs/UX.md).
+      registerType: 'prompt',
+      // Safari históricamente ha ignorado partes del manifest, así que el
+      // apple-touch-icon va además como <link> en el índice.
+      includeAssets: ['apple-touch-icon.png', 'favicon.svg'],
+      manifest: {
+        name: 'Palomita',
+        short_name: 'Palomita',
+        description: 'Asistencia, calificaciones y notas de un grupo',
+        lang: 'es-MX',
+        theme_color: '#1B4F9C',
+        background_color: '#FBFAF7',
+        display: 'standalone',
+        orientation: 'any',
+        start_url: '/',
+        icons: [
+          { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+          {
+            src: '/icon-512-maskable.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
+        ],
+      },
+      workbox: {
+        // Las tipografías y los iconos entran al precaché: la app tiene que
+        // arrancar completa en modo avión, sin caer al tipo de letra de respaldo.
+        globPatterns: ['**/*.{js,css,html,woff2,png,svg}'],
+      },
+    }),
+  ],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

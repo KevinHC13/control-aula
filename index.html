@@ -3,8 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Sin apple-touch-icon el ícono de la pantalla de inicio sale como una
+         captura borrosa de la página. Va como link aparte porque Safari ha
+         ignorado partes del manifest (docs/PWA-IOS.md). -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <!-- El de arriba está deprecado y Chrome lo avisa, pero Safari todavía lo
+         usa; el estándar es este. Van los dos hasta que Safari deje de pedirlo. -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Palomita" />
+    <meta name="theme-color" content="#1B4F9C" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>palomita</title>
+    <title>Palomita</title>
   </head>
   <body>
     <div id="root"></div>

@@ -15,6 +15,16 @@ void abrirBase()
     console.error('No se pudo preparar la base local', error)
   })
 
+// Safari puede borrar los datos locales de un sitio tras 7 días sin uso. Las PWA
+// instaladas en la pantalla de inicio están exentas, y esto lo pide explícito.
+// No se puede dar por hecho: si devuelve false, el respaldo es la única red
+// (docs/PWA-IOS.md).
+void navigator.storage?.persist?.().then((persistente) => {
+  if (!persistente) {
+    console.warn('El almacenamiento no es persistente: los datos locales podrían borrarse')
+  }
+})
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />

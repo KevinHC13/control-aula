@@ -32,12 +32,16 @@ Consecuencias operativas:
 ```html
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 ```
 
 - `viewport-fit=cover` habilita `env(safe-area-inset-*)`, necesario para que la
   barra de pestañas no quede bajo el indicador de home.
+- `apple-mobile-web-app-capable` está deprecado y Chrome lo avisa en consola,
+  pero Safari sigue usándolo: van los dos metas hasta que Safari acepte solo el
+  estándar.
 - `apple-touch-icon` de 180 × 180 px en `/public`. Sin él, el ícono en la pantalla
   de inicio sale como una captura borrosa de la página. Safari históricamente ha
   ignorado partes del manifest, así que este link va aparte.
