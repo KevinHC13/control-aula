@@ -35,3 +35,7 @@ supabase/.temp/
 
 # Artefactos de Playwright MCP
 .playwright-mcp/
+
+# IA
+.agents
+.claude
