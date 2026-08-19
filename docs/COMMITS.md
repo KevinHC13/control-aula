@@ -206,6 +206,38 @@ nadie, rojo con la cifra de ausentes si hubo faltas.
 - [ ] `Esc` y el toque fuera cierran, y el foco regresa al botón de calendario
 - [ ] El mes del mosaico se pide en una sola consulta por rango, no 31 por día
 
+### C10c · Carga de la lista de alumnos con IA
+
+Ajuste de alcance acordado el 2026-08-18, plan completo en
+[CARGA-LISTA-IA.md](./CARGA-LISTA-IA.md), decisión en D-014. La lista deja de
+depender de que el desarrollador esté disponible cada ciclo escolar.
+
+Va en cuatro commits:
+
+1. `chore: proteger la clave de gemini y documentar el entorno`
+2. `chore(sync): desplegar la funcion de extraccion de listas`
+3. `feat(app): extraer una lista de alumnos de un archivo`
+4. `feat(grupo): cargar la lista de alumnos desde ajustes`
+5. `fix(data): sembrar el grupo solo si la base esta vacia`
+
+Los dos últimos del plan original —abrir Ajustes y la pantalla de carga— se
+juntaron: Ajustes con una sola opción que no lleva a ningún lado no tiene
+criterio de aceptación que escribir.
+
+**Aceptación**
+- [ ] `git status` no muestra `.env` ni ningún archivo de prueba con nombres reales
+- [ ] La clave de Gemini no aparece en el bundle: `grep` sobre `dist/` no la encuentra
+- [ ] La función responde a un `curl` con un PDF de nombres inventados
+- [ ] El engrane del tab Grupo mide al menos 44 × 44 px y abre Ajustes
+- [ ] Subir un PDF muestra la pantalla de revisión con el conteo leído
+- [ ] Una fila con número repetido, nombre vacío o fecha mal formada se ve marcada
+- [ ] Corregir un número repetido apaga la marca en las **dos** filas
+- [ ] Guardar está deshabilitado mientras quede una fila marcada
+- [ ] Reimportar el mismo archivo no duplica y conserva la asistencia ya capturada
+- [ ] Recargar la app no devuelve los nombres de la semilla
+- [ ] Con las DevTools en *Offline*, el mensaje dice que hace falta conexión
+- [ ] En el iPad, sobre el deploy real, *Tomar foto* abre la cámara
+
 ---
 
 ## Hito · Entrega y pausa de una semana

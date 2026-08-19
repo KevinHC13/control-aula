@@ -9,15 +9,26 @@ español también (`asistencia`, `calificaciones`, `alumnos`).
 
 ## Estado actual del repo
 
-C1 y C1b hechos: el scaffold de Vite está limpio, Tailwind v4 corre como plugin
-de Vite, el alias `@/` resuelve, `strict` está activo, existen las carpetas de
-las cuatro capas (vacías, con `.gitkeep`), shadcn está configurado con los tokens
-del bicolor (`Button` e `Input` ya corregidos a 44 px / 16 px) y Archivo y DM Mono
-están auto-hospedadas.
+Hecho hasta C10c. Existen y funcionan:
 
-Todavía **no** hay nada de dominio, datos ni pantallas, y **no** están instalados
-Dexie, Zustand ni `vite-plugin-pwa`. Eso está descrito en `docs/` como destino, no
-como hecho consumado. Antes de afirmar que algo existe, verificarlo en `src/`.
+- **`domain/`** completo para asistencia: entidades, `values.ts`, `fechas.ts`,
+  `rules.ts`, con pruebas.
+- **`data/`** con Dexie: `db.ts`, adaptadores de alumnos y asistencia, los dos
+  puertos, la `outbox` y la semilla (`grupo.ts` ignorado, `grupo.example.ts`
+  versionado).
+- **`application/`**: `asistencia.ts`, `grupo.ts`, `importacion.ts`.
+- **`services/`**: `extraccion.ts`, la única salida a red del cliente.
+- **`ui/`**: las cuatro pestañas, la de asistencia terminada (tira de días,
+  calendario del mes, contador, filas), Ajustes y la carga de lista con IA.
+  `Calificaciones`, `Notas` y el resumen de `Grupo` siguen siendo placeholders.
+- PWA con `vite-plugin-pwa`, Zustand y el aviso de actualización.
+- Una Edge Function desplegada en Supabase, `extraer-lista`, en
+  `supabase/functions/`.
+
+Falta de C11 en adelante: calificaciones, notas, resumen del grupo, respaldo
+JSON, cumpleaños y el motor de sincronía.
+
+Antes de afirmar que algo existe, verificarlo en `src/`.
 
 El plan de construcción con criterios de aceptación por commit está en
 `docs/COMMITS.md` (C1 … C16). Seguir ese orden.
@@ -64,8 +75,11 @@ Cuatro capas, dependencias en una sola dirección (detalle en
 2. `application/` importa `domain/` y `data/ports/`. **Nunca** `data/dexie/`.
 3. `ui/` importa `application/`, `domain/` y `ui/hooks/`. **Nunca** `data/dexie/`.
 4. Solo `data/index.ts` sabe qué adaptador concreto se usa.
+5. `services/` es la única salida a red del cliente y no pasa por el
+   repositorio. `domain/` y `data/` no lo conocen; él no importa `data/` ni
+   `ui/`.
 
-Las cuatro reglas están verificadas en `tests/arquitectura.test.ts`, que corre con
+Las reglas están verificadas en `tests/arquitectura.test.ts`, que corre con
 `npm test`: lee los archivos y falla si `domain/` importa algo externo, si `ui/` o
 `application/` importan `data/dexie`, si un puerto importa Dexie o declara un
 método por consulta (`find`, `query`, `where`), o si `liveQuery` aparece fuera de
@@ -158,6 +172,11 @@ le puede escribir un criterio de aceptación, está mal cortado.
 **Nada de nombres de alumnos reales en el repositorio.** La semilla real va en
 `src/data/seed/grupo.ts`, ignorada por git, con un `grupo.example.ts`
 versionado. Verificar `git status` antes de commitear la semilla.
+
+Lo mismo con los archivos de prueba de la carga de lista: nunca subir a un
+servicio externo la lista real durante las pruebas, y nunca dejar el PDF en el
+repositorio. `.env` está ignorado; `.env.example` es el versionado. La clave de
+Gemini no va en el front: es secret de la Edge Function.
 
 ## Supuestos sin validar
 

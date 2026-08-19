@@ -190,6 +190,31 @@ Reglas:
   vectores de versión, sin resolución de conflictos.
 - Se ejecuta al abrir y al cerrar la app. iOS no tiene Background Sync.
 
+## Servicios externos
+
+`src/services/` es la **única salida a red del cliente** y no pasa por el
+repositorio. Hoy tiene un módulo: `extraccion.ts`, que manda un archivo a la Edge
+Function que lee la lista de alumnos con Gemini (D-014).
+
+Es el mismo criterio que el motor de sincronía. Un servicio externo no es una
+fuente de datos de la app: se consulta una vez, su resultado se revisa, y solo
+entonces entra por el repositorio como cualquier otra escritura.
+
+```
+UI (CargarLista)
+  → application/importacion.ts   ← orquesta y normaliza, puro y testeable
+      → services/extraccion.ts   ← el fetch
+      → repos.alumnos.sembrar()  ← la escritura, por el camino de siempre
+```
+
+`domain/` y `data/` no saben que `services/` existe, y `services/` no importa
+`data/` ni `ui/`. Las dos direcciones están verificadas en
+`tests/arquitectura.test.ts`.
+
+La clave de Gemini nunca está en el cliente: es secret de la Edge Function. Lo
+que viaja en el bundle es la clave publicable de Supabase, que es pública por
+diseño.
+
 ## Lo que no está en la arquitectura, y por qué
 
 **TanStack Query.** Con `observarDia` en el puerto no hay invalidación manual, y
@@ -199,5 +224,6 @@ cuando haya red real y latencia real — no aquí.
 **Inyección de dependencias formal.** El contenedor es un objeto literal. Un
 usuario, sin tests de integración que necesiten mocks distintos por escenario.
 
-**Capa de servicios además de casos de uso.** Sería una indirección sin
-contenido.
+**Capa de servicios además de casos de uso, para envolver el repositorio.** Sería
+una indirección sin contenido. `src/services/` no es eso: no envuelve nada, es la
+frontera con lo que está fuera del dispositivo.

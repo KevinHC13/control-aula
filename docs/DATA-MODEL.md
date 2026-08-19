@@ -219,9 +219,16 @@ suposición. Ella sabe cuál es el criterio que su escuela usa.
 
 ## Semilla
 
-La lista real de sus alumnos se carga **una vez, por el desarrollador**, desde
-un archivo en `src/data/seed/grupo.ts`. Ella no importa nada, no teclea 30
-nombres y no pasa por una pantalla de alta.
+La lista entra por uno de dos caminos, y por ninguno se teclean 30 nombres:
 
-Cuando cambie el ciclo escolar, se edita el archivo y se despliega. No hay CRUD
-de alumnos en la v1.
+1. **La semilla**, `src/data/seed/grupo.ts`, que carga el desarrollador. Corre al
+   arrancar **solo si la base está vacía**: si ya hay grupo, no se toca.
+2. **La carga desde Ajustes**, donde ella sube un PDF o una foto de la lista
+   oficial y una IA la extrae (D-014). Revisa el resultado antes de guardar.
+
+Los dos caminos terminan en `sembrar()`, que fusiona por `numero_lista`
+conservando el `id`. La condición de "base vacía" del primero existe por eso: sin
+ella, la semilla pisaría lo importado en el siguiente arranque, en silencio.
+
+No hay CRUD de alumnos en la v1: no existe alta, baja ni edición uno por uno. La
+lista entra completa o no entra.

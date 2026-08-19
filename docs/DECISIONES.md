@@ -142,7 +142,7 @@ hay que rediseñar la captura.
 
 ## D-008 · Sin CRUD de alumnos
 
-**Estado:** aceptada
+**Estado:** aceptada, revocada en parte por [D-014](#d-014--la-lista-puede-entrar-por-importación-asistida-por-ia)
 
 La lista real se carga una vez, por el desarrollador, desde un archivo de semilla.
 Ella no importa nada ni teclea 30 nombres. Cuando cambie el ciclo escolar, se
@@ -150,6 +150,12 @@ edita el archivo y se despliega.
 
 Una pantalla de alta de alumnos es trabajo de construcción y de uso que nadie
 necesita para un solo grupo.
+
+**Lo que sigue en pie:** no hay alta, baja ni edición de alumnos uno por uno. La
+lista entra completa o no entra.
+
+**Lo que revoca D-014:** que la cargue solo el desarrollador. Ella puede subir la
+lista oficial desde Ajustes.
 
 ---
 
@@ -304,3 +310,46 @@ contratistas, donde sí hay multiusuario y conflictos reales.
 **Límite acordado:** los puertos declaran solo los métodos que alguna pantalla
 usa hoy. **No** crear `BaseRepository<T>` ni genéricos especulativos. Si la capa
 empieza a ser indirección sin contenido, se colapsa.
+
+---
+
+## D-014 · La lista puede entrar por importación asistida por IA
+
+**Estado:** aceptada — 2026-08-18
+
+Desde el tab Grupo, un botón de ajustes lleva a una pantalla donde la maestra
+sube un PDF o una foto de la lista oficial y una IA extrae nombre, número de
+lista y fecha de nacimiento. Revisa el resultado y guarda.
+
+**Qué revoca.** De [D-008](#d-008--sin-crud-de-alumnos), que la lista la cargue
+el desarrollador una vez al año: eso funciona mientras siga disponible cada
+ciclo escolar, y esa es una dependencia que la app no tiene por qué tener. De
+"Cero configuración" (`docs/UX.md` §4), que no exista ninguna pantalla fuera del
+camino diario. La regla real nunca fue *ninguna pantalla*, era *ninguna pantalla
+en el camino diario*: cargar la lista se hace una vez al año, no todas las
+mañanas, y Ajustes está a dos toques de distancia de él.
+
+**Por qué la clave vive en el servidor.** Una clave de Gemini en el bundle es
+una clave publicada: cualquiera abre las DevTools y la copia, y la factura la
+paga el proyecto. La llamada pasa por una Edge Function de Supabase que la
+guarda como secret. Esto adelanta la infraestructura que C16 ya contemplaba, así
+que no compra deuda nueva.
+
+**Por qué la revisión es obligatoria.** La IA lee bien los nombres sencillos y
+falla justo en los que importan: acentos y apellidos compuestos. Como no hay
+edición de alumnos, lo que se guarde mal se queda mal todo el ciclo escolar. La
+pantalla de revisión marca las filas con problema —nombre vacío, número
+repetido, fecha que no es `AAAA-MM-DD`— y guardar está deshabilitado mientras
+quede una.
+
+**Por qué no se convierte una fecha como `12/03/2015`.** Es 12 de marzo o 3 de
+diciembre según quién la escribió. Se marca para que la corrija quien sí sabe.
+
+**Fusión.** Se reutiliza `sembrar()` sin cambiarlo: fusiona por `numero_lista`
+conservando el `id`, así que reimportar con un nombre corregido no pierde la
+asistencia ya capturada, y nadie desaparece del grupo por no venir en el archivo
+nuevo. La contrapartida es que la semilla, que fusiona igual, pisaría lo
+importado en el siguiente arranque; por eso ahora solo corre con la base vacía.
+
+**Sin CURP.** No existe en el modelo y agregarla obligaría a `db.version(2)`
+sobre datos reales del salón. No hay nada hoy que la use.

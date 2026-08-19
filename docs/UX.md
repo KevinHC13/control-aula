@@ -63,8 +63,14 @@ Nada de gráficas, tendencias ni tarjetas de métricas.
 
 ### 4. Cero configuración
 
-No hay pantalla de ajustes en la v1. Cada opción configurable es una decisión
-que el desarrollador no tomó y que el usuario tiene que tomar en su lugar.
+Nada que configurar para que la app funcione. Cada opción configurable es una
+decisión que el desarrollador no tomó y que el usuario tiene que tomar en su
+lugar.
+
+Hay una pantalla de Ajustes, a dos toques del camino diario, y no contradice lo
+anterior: no ajusta nada, guarda las cosas que se hacen una vez al año —cargar la
+lista del grupo (D-014), y más adelante el respaldo en JSON—. La regla nunca fue
+*ninguna pantalla*, era *ninguna pantalla en el camino diario*.
 
 ### 5. Los errores no piden perdón
 
