@@ -345,6 +345,20 @@ quede una.
 **Por qué no se convierte una fecha como `12/03/2015`.** Es 12 de marzo o 3 de
 diciembre según quién la escribió. Se marca para que la corrija quien sí sabe.
 
+**Por qué sí se bajan las MAYÚSCULAS.** Las listas oficiales vienen así, y ese
+texto acaba en la pantalla que se lee todos los días. Se capitaliza al extraer,
+respetando las partículas del apellido (`De la Cruz Ríos`), y solo cuando el
+nombre no trae ninguna minúscula: uno con mezcla ya viene bien, o lo está
+tecleando ella.
+
+Los **acentos no se restituyen**: `RIOS` sale `Rios`, no `Ríos`. Es el mismo
+criterio que la fecha —no adivinar lo que el documento no dice— y es exactamente
+lo que la revisión existe para atrapar.
+
+De ahí que `normalizarExtraccion()` y `revalidar()` sean dos funciones. La
+pantalla revalida en cada tecla; recortar espacios o recapitalizar ahí le pelea
+al teclado a media palabra.
+
 **Fusión.** Se reutiliza `sembrar()` sin cambiarlo: fusiona por `numero_lista`
 conservando el `id`, así que reimportar con un nombre corregido no pierde la
 asistencia ya capturada, y nadie desaparece del grupo por no venir en el archivo
