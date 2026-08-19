@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { aDatosAlumno, normalizarExtraccion } from './importacion'
+import { aDatosAlumno, normalizarExtraccion, revalidar } from './importacion'
 
 const problema = (crudo: Parameters<typeof normalizarExtraccion>[0]) =>
   normalizarExtraccion(crudo).map((f) => f.problema)
@@ -88,6 +88,79 @@ describe('normalizarExtraccion', () => {
   it('no devuelve la clave `problema` cuando la fila está bien', () => {
     // La pantalla de revisión resalta por presencia de la clave, no por su valor.
     const [fila] = normalizarExtraccion([{ nombre: 'Aguilar, Bruno', numero_lista: 1 }])
+    expect(fila && 'problema' in fila).toBe(false)
+  })
+})
+
+describe('capitalización de la lista oficial', () => {
+  const nombre = (crudo: string) => normalizarExtraccion([{ nombre: crudo }])[0]?.nombre
+
+  it('baja las mayúsculas de la lista oficial', () => {
+    // Las listas de la SEP vienen así, y son 30 nombres gritando en una pantalla
+    // que se lee todos los días.
+    expect(nombre('AGUILAR MENDOZA, BRUNO ALEJANDRO')).toBe('Aguilar Mendoza, Bruno Alejandro')
+  })
+
+  it('deja las partículas del apellido en minúscula', () => {
+    expect(nombre('DE LA CRUZ RIOS, ELENA SOFIA')).toBe('De la Cruz Rios, Elena Sofia')
+    expect(nombre('NUÑEZ DEL ÁNGEL, JOSE MARIA')).toBe('Nuñez del Ángel, Jose Maria')
+  })
+
+  it('una partícula al principio del apellido sí lleva mayúscula', () => {
+    expect(nombre('DEL TORO, LUIS')).toBe('Del Toro, Luis')
+    expect(nombre('DE LA O, ANA')).toBe('De la O, Ana')
+  })
+
+  it('capitaliza también después de un guion o un apóstrofo', () => {
+    expect(nombre('MARTINEZ-CANO, JEAN-PIERRE')).toBe('Martinez-Cano, Jean-Pierre')
+    expect(nombre("D'ANGELO, MARIA")).toBe("D'Angelo, Maria")
+  })
+
+  it('no inventa acentos: eso es justo lo que la revisión existe para atrapar', () => {
+    // "RIOS" puede ser Ríos o Rios; adivinarlo sería el mismo error que
+    // convertir "12/03/2015" a una fecha concreta.
+    expect(nombre('RIOS PEREZ, JOSE')).toBe('Rios Perez, Jose')
+  })
+
+  it('no toca un nombre que ya trae minúsculas', () => {
+    // Puede venir bien de la IA, o estarlo tecleando ella. Recapitalizar en cada
+    // tecla haría imposible escribir "de la Cruz" a mano.
+    expect(nombre('de la Cruz Ríos, Elena')).toBe('de la Cruz Ríos, Elena')
+    expect(nombre('McDonald, Ana')).toBe('McDonald, Ana')
+  })
+
+  it('sobrevive a un nombre sin coma', () => {
+    expect(nombre('BRUNO AGUILAR')).toBe('Bruno Aguilar')
+  })
+})
+
+describe('revalidar', () => {
+  it('recalcula los problemas sin tocar el texto', () => {
+    // Es lo que corre en cada tecla: no recorta espacios ni recapitaliza, porque
+    // le pelearía al teclado a media palabra.
+    const [fila] = revalidar([
+      { nombre: 'DE LA ', numero_lista: 1, fecha_nacimiento: '2015-' },
+    ])
+
+    expect(fila?.nombre).toBe('DE LA ')
+    expect(fila?.fecha_nacimiento).toBe('2015-')
+    expect(fila?.problema).toBe('La fecha debe ser AAAA-MM-DD')
+  })
+
+  it('quitar una fila apaga la marca de la que quedaba repetida', () => {
+    const filas = normalizarExtraccion([
+      { nombre: 'Aguilar, Bruno', numero_lista: 7 },
+      { nombre: 'Bautista, Carla', numero_lista: 7 },
+    ])
+    expect(filas.map((f) => f.problema !== undefined)).toEqual([true, true])
+
+    expect(revalidar(filas.slice(0, 1)).map((f) => f.problema)).toEqual([undefined])
+  })
+
+  it('no arrastra un problema ya resuelto', () => {
+    const [fila] = revalidar([
+      { nombre: 'Aguilar, Bruno', numero_lista: 1, fecha_nacimiento: '', problema: 'Falta el nombre' },
+    ])
     expect(fila && 'problema' in fila).toBe(false)
   })
 })

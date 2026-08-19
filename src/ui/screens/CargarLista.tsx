@@ -4,6 +4,7 @@ import {
   type FilaImportada,
   importarLista,
   normalizarExtraccion,
+  revalidar,
 } from '@/application/importacion'
 import { extraerLista } from '@/services/extraccion'
 import { FilaRevision } from '@/ui/components/FilaRevision'
@@ -55,11 +56,13 @@ export function CargarLista({ alVolver }: { alVolver: () => void }) {
     }
   }
 
-  // Se revalida entero en cada tecla: son 30 filas, es instantáneo, y así al
-  // corregir un número repetido se apaga la marca en las dos filas a la vez.
+  // `revalidar` y no `normalizarExtraccion`: se recalculan los problemas —son 30
+  // filas, es instantáneo, y así corregir un número repetido apaga la marca en
+  // las dos a la vez— pero no se recorta ni se recapitaliza el texto, que le
+  // pelearía al teclado mientras ella escribe.
   const editar = (i: number, campo: keyof FilaImportada, valor: string) =>
     setFilas((previas) =>
-      normalizarExtraccion(
+      revalidar(
         previas.map((fila, j) =>
           j === i
             ? {
@@ -72,7 +75,7 @@ export function CargarLista({ alVolver }: { alVolver: () => void }) {
     )
 
   const quitar = (i: number) =>
-    setFilas((previas) => normalizarExtraccion(previas.filter((_, j) => j !== i)))
+    setFilas((previas) => revalidar(previas.filter((_, j) => j !== i)))
 
   async function guardar() {
     await importarLista(filas)

@@ -25,6 +25,48 @@ function limpiar(texto: string): string {
 }
 
 /**
+ * Partículas que van en minúscula dentro de un apellido español: "De la Cruz",
+ * "Núñez del Ángel". Al principio de los apellidos o de los nombres sí llevan
+ * mayúscula, y por eso la posición se mira antes que la lista.
+ */
+const PARTICULAS = new Set(['de', 'del', 'la', 'las', 'los', 'y', 'e', 'da', 'do', 'dos', 'van', 'von', 'di'])
+
+/** Mayúscula tras el inicio, un guion o un apóstrofo: "Jean-Pierre", "D'Angelo". */
+function capitalizarPalabra(palabra: string): string {
+  return palabra.replace(/(^|[-'’])(\p{Ll})/gu, (_, separador: string, letra: string) =>
+    separador + letra.toLocaleUpperCase('es'),
+  )
+}
+
+function capitalizarSegmento(segmento: string): string {
+  return segmento
+    .split(' ')
+    .map((palabra, i) => (i > 0 && PARTICULAS.has(palabra) ? palabra : capitalizarPalabra(palabra)))
+    .join(' ')
+}
+
+/**
+ * "AGUILAR MENDOZA, BRUNO ALEJANDRO" → "Aguilar Mendoza, Bruno Alejandro".
+ *
+ * Las listas oficiales vienen en mayúsculas y así se quedarían todo el ciclo
+ * escolar: son 30 nombres gritando en una pantalla que se lee todos los días.
+ *
+ * **Solo actúa si no hay una sola minúscula.** Un nombre que ya trae mezcla —
+ * porque la IA lo leyó bien, o porque lo está tecleando la maestra— no se toca:
+ * si se recapitalizara en cada tecla, escribir "de la Cruz" a mano sería
+ * imposible. Los acentos no se inventan: "RIOS" sale "Rios", no "Ríos", porque
+ * adivinarlos es exactamente el error que la revisión existe para atrapar.
+ */
+function capitalizar(nombre: string): string {
+  if (/\p{Ll}/u.test(nombre)) return nombre
+  return nombre
+    .toLocaleLowerCase('es')
+    .split(',')
+    .map((segmento, i) => (i === 0 ? '' : ' ') + capitalizarSegmento(segmento.trim()))
+    .join(',')
+}
+
+/**
  * Una fecha es válida si sobrevive el viaje de ida y vuelta: `comoDate` corrige
  * en silencio un 31 de febrero a un 3 de marzo, así que si vuelve distinta es
  * que el día no existe. El formato lo filtra antes la expresión regular —una
@@ -44,18 +86,30 @@ function fechaValida(fecha: string): boolean {
  * se marca y lo resuelve la maestra en la pantalla de revisión.
  */
 export function normalizarExtraccion(crudo: AlumnoExtraido[]): FilaImportada[] {
-  const filas = crudo.map((alumno, i) => ({
-    nombre: limpiar(alumno.nombre ?? ''),
-    numero_lista: alumno.numero_lista ?? i + 1,
-    fecha_nacimiento: limpiar(alumno.fecha_nacimiento ?? ''),
-  }))
+  return revalidar(
+    crudo.map((alumno, i) => ({
+      nombre: capitalizar(limpiar(alumno.nombre ?? '')),
+      numero_lista: alumno.numero_lista ?? i + 1,
+      fecha_nacimiento: limpiar(alumno.fecha_nacimiento ?? ''),
+    })),
+  )
+}
 
+/**
+ * Recalcula los problemas de una lista que ya se normalizó. Es lo que corre en
+ * cada tecla de la pantalla de revisión, y por eso está separada de
+ * `normalizarExtraccion`: no recorta espacios ni recapitaliza, que le pelearía
+ * al teclado. Marcar un número repetido depende de la lista entera, así que
+ * revisar una sola fila no sirve.
+ */
+export function revalidar(filas: FilaImportada[]): FilaImportada[] {
   const veces = new Map<number, number>()
   for (const { numero_lista } of filas) {
     veces.set(numero_lista, (veces.get(numero_lista) ?? 0) + 1)
   }
 
-  return filas.map((fila) => {
+  return filas.map(({ nombre, numero_lista, fecha_nacimiento }) => {
+    const fila = { nombre, numero_lista, fecha_nacimiento }
     const problema = revisar(fila, veces)
     return problema ? { ...fila, problema } : fila
   })
