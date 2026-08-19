@@ -32,3 +32,6 @@ src/data/seed/grupo.ts
 
 # CLI de Supabase
 supabase/.temp/
+
+# Artefactos de Playwright MCP
+.playwright-mcp/
