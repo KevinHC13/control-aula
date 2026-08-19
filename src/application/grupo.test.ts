@@ -118,10 +118,37 @@ describe('sembrarGrupo', () => {
     await db.alumnos.update(alumno?.id ?? '', { deleted_at: '2026-08-18T09:00:00.000Z' })
     expect(await repos.alumnos.lista()).toHaveLength(GRUPO.length - 1)
 
-    await sembrarGrupo()
+    // Sobre el puerto y no sobre `sembrarGrupo`: revivir es una propiedad de
+    // `sembrar()`, y `sembrarGrupo` ya no lo llamaría con la base poblada.
+    await repos.alumnos.sembrar(GRUPO)
 
     const lista = await repos.alumnos.lista()
     expect(lista).toHaveLength(GRUPO.length)
     expect(lista.find((a) => a.numero_lista === 1)?.id).toBe(alumno?.id)
+  })
+
+  it('no siembra si ya hay grupo: la lista importada no se pisa', async () => {
+    // El caso que esto evita: la maestra carga su lista desde Ajustes, cierra la
+    // app, y al abrirla vuelven los nombres del archivo de desarrollo. La semilla
+    // fusiona por `numero_lista` igual que la importación, así que el estropicio
+    // sería silencioso.
+    await repos.alumnos.sembrar([
+      { nombre: 'Importada Real, Alumna', numero_lista: 1, fecha_nacimiento: null },
+    ])
+
+    await sembrarGrupo()
+
+    const lista = await repos.alumnos.lista()
+    expect(lista).toHaveLength(1)
+    expect(lista[0]?.nombre).toBe('Importada Real, Alumna')
+  })
+
+  it('vuelve a sembrar si la base quedó vacía', async () => {
+    await sembrarGrupo()
+    await db.alumnos.clear()
+
+    await sembrarGrupo()
+
+    expect(await repos.alumnos.lista()).toHaveLength(GRUPO.length)
   })
 })

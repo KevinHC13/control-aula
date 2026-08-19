@@ -6,9 +6,9 @@ import { sembrarGrupo } from '@/application/grupo'
 import { abrirBase } from '@/data'
 
 // La base se abre al arrancar para que un fallo de IndexedDB se vea de entrada y
-// no a mitad de una captura, y la semilla corre enseguida: es idempotente, así
-// que no hay que llevar cuenta de si ya se cargó. El aviso al usuario llega con
-// Sonner, más adelante.
+// no a mitad de una captura. La semilla corre enseguida, pero solo si la base
+// está vacía: si ya hay grupo —sembrado antes o importado desde Ajustes— no se
+// toca. El aviso al usuario llega con Sonner, más adelante.
 void abrirBase()
   .then(sembrarGrupo)
   .catch((error: unknown) => {
