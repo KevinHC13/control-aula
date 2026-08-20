@@ -127,16 +127,21 @@ persona. Entonces sí hace falta el aparato completo.
 
 ## D-007 · Captura de calificaciones con botones, no con teclado
 
-**Estado:** aceptada, con riesgo abierto
+**Estado:** reemplazada por [D-015](#d-015--la-evaluación-se-modela-con-rúbricas-trimestres-y-pesos) — 2026-08-20
 
 Seis botones de 5 a 10 en lugar de `<input type="number">`. Evita el teclado, el
 desplazamiento y el zoom automático de Safari. Es un toque por calificación.
 
-**Riesgo:** solo permite enteros. Si ella usa 8.5 o la evaluación de su grado es
-descriptiva por niveles de desempeño en lugar de numérica, esta decisión se cae y
-hay que rediseñar la captura.
+**El riesgo se materializó.** Se anotó así: *solo permite enteros; si ella usa 8.5
+o la evaluación de su grado es descriptiva por niveles de desempeño en lugar de
+numérica, esta decisión se cae*. La validación después de la pausa dijo que la
+evaluación es por niveles con descriptores, y la escala 5–10 desapareció del
+modelo.
 
-**Bloqueante:** validar con ella antes de construir la pantalla.
+**Lo que sigue en pie:** nada de `<input type="number">` en el camino de captura.
+Se cumple mejor que antes —se toca un nivel de rúbrica— y sigue aplicando al
+único lugar donde hay que teclear cifras, los aciertos de examen (C24), que usa
+un teclado numérico dentro de la app.
 
 ---
 
@@ -272,7 +277,7 @@ edita el `cva` del componente una vez, al agregarlo.
 
 | Usar shadcn | Componente propio |
 |---|---|
-| `ToggleGroup` — botones 5 a 10 | Fila de asistencia con barra bicolor |
+| `ToggleGroup` — niveles de rúbrica | Fila de asistencia con barra bicolor |
 | `Select` — alumno en el anecdotario | Barra de pestañas inferior |
 | `Sonner` — avisos | Tira de días |
 | `Textarea`, `Button`, `Dialog` | Contador de presentes |
@@ -367,3 +372,82 @@ importado en el siguiente arranque; por eso ahora solo corre con la base vacía.
 
 **Sin CURP.** No existe en el modelo y agregarla obligaría a `db.version(2)`
 sobre datos reales del salón. No hay nada hoy que la use.
+
+---
+
+## D-015 · La evaluación se modela con rúbricas, trimestres y pesos
+
+**Estado:** aceptada — 2026-08-20. Reemplaza a [D-007](#d-007--captura-de-calificaciones-con-botones-no-con-teclado)
+
+Salió de la semana de uso real y de la validación con la usuaria, que era
+exactamente para lo que existía la pausa después de C10. El plan anterior
+—`Calificacion` con un entero de 5 a 10, capturado con seis botones— no se
+parecía a cómo evalúa.
+
+Lo que hay en su lugar: `Ciclo → Trimestre → CriterioTrimestre → Actividad →
+Entrega | EvaluacionRubrica`, con pesos por criterio, rúbricas de cuatro niveles
+y cierre de trimestre con snapshot. El modelo completo está en
+[DATA-MODEL.md](./DATA-MODEL.md).
+
+**Qué revoca.** De D-007, la escala 5–10 y los seis botones: no existe ninguna
+escala de cinco a diez en el modelo nuevo. Lo que sí sobrevive de D-007 es su
+razón de fondo —nada de `<input type="number">` en el camino de captura— y de
+hecho se cumple mejor: se toca un nivel de rúbrica, no se teclea un número. De
+[README.md](./README.md), que «motor de rúbricas y ponderaciones configurables» y
+«multi-ciclo escolar» estuvieran fuera de alcance. Los dos entraron.
+
+**Por qué las actividades cuelgan de `CriterioTrimestre` y no del criterio.**
+Es lo que resuelve el cambio de trimestre por construcción. Un trimestre nuevo
+nace con filas nuevas de `CriterioTrimestre` y por lo tanto cero actividades: no
+hay que borrar nada ni filtrar por fecha, y cambiar un peso en T2 no puede tocar
+lo ya calculado en T1. La alternativa —actividades colgadas del criterio global,
+filtradas por fecha— habría dejado que un cambio de fechas moviera calificaciones
+de un trimestre a otro en silencio.
+
+**Por qué el cierre congela y guarda snapshot.** Sin eso, editar un porcentaje en
+enero cambiaría retroactivamente una calificación ya reportada en la boleta de
+diciembre, y la app dejaría de coincidir con el papel. El snapshot guarda nombres
+y pesos como **texto**, no referencias, para que renombrar o borrar un criterio
+después no reescriba la historia.
+
+**Por qué base 1 en todo el cálculo y base 10 solo al presentar.** Redondear en
+un paso intermedio y volver a redondear al final produce números que no cuadran
+con la suma a mano, y ella *va* a comprobarlos a mano. El porcentaje no aparece
+en ninguna pantalla: es representación interna, no algo que ella tenga que
+traducir.
+
+**Por qué no hay piso de escala.** El modelo es de puntos: 3 de 10 tareas es 3.0.
+Un piso en 5 mentiría sobre el trabajo entregado, y el ajuste que ella quiera
+hacer al reportar es suyo, no de la app.
+
+**Por qué «Mal» vale 0 y no 1.** `VALOR_NIVEL = [3, 2.5, 2, 0]` deja los tres
+niveles superiores a menos de dos puntos de distancia en base 10 y abre un
+acantilado de 6.7 entre Regular y Mal. Es deliberado: «Mal» codifica que el
+trabajo no vale nada, no que valga poco. La consecuencia a tener presente es que
+tres criterios en Excelente y uno en Mal (7.5) queda por debajo de todo en Bien
+(8.3). Si eso resulta indeseable, la palanca es la tabla `VALOR_NIVEL`, nunca la
+fórmula: guardamos el **índice** del nivel, así que cambiar los valores no migra
+un solo registro.
+
+**Por qué el general no es el promedio de los promedios por campo.** Todas las
+actividades valen lo mismo, así que un campo con seis actividades pesa el triple
+que uno con dos. Promediar los cuatro campos les daría el mismo peso y le
+quitaría significado a haber trabajado más un campo que otro.
+
+**Por qué abrir una actividad escribe 30 filas.** Es lo contrario de
+[D-013](#d-013--navegar-un-día-no-escribe-materializarlo-es-explícito), y a
+propósito: en asistencia se hojean días para consultar, así que navegar no debe
+escribir; a una actividad no se entra si no es a calificarla. Además hace
+inequívoco el criterio de «actividad sin calificar»: cero registros significa que
+no se abrió, y esa actividad se excluye del promedio en lugar de hundirlo.
+
+**Qué queda pospuesto.** Puntualidad, conducta y participación, por decisión de
+ella. `TipoCriterio` conserva los tres valores `auto_*` para no migrar el esquema
+cuando se retomen, pero no hay pantallas ni cálculo, y `Nota` sigue sin `signo`.
+El diseño de referencia queda escrito en DATA-MODEL.md; no es trabajo pendiente.
+
+**Costo asumido.** El alcance de la v1 crece bastante: quince tablas donde había
+seis, y una migración a `db.version(2)` sobre un iPad con datos reales del salón.
+Se acepta porque la alternativa es una pantalla de calificaciones que ella no
+usaría, y en ese caso el resto de la app tampoco sobrevive: si sigue evaluando en
+el cuaderno, la asistencia acaba de vuelta ahí también.

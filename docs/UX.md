@@ -43,15 +43,20 @@ Distinguir el hueco del azul es el punto —pintar igual "todavía no lo captur�
 
 ### 2. Nada de teclado donde se pueda evitar
 
-Las calificaciones se capturan con **seis botones (5 a 10)**, no con un campo
-numérico. Un `<input type="number">` en iPad abre el teclado, desplaza la
-pantalla y arriesga zoom automático. Seis botones de 44 px no hacen nada de eso.
+Un `<input type="number">` en iPad abre el teclado, desplaza la pantalla y
+arriesga zoom automático. Nada del camino de captura lo usa.
 
-Tocar el número ya seleccionado lo borra. No hay botón de limpiar.
+Las calificaciones se capturan **tocando un nivel de rúbrica** —Excelente, Bien,
+Regular, Mal— con su descriptor a la vista. Cuatro botones de 44 px por criterio
+de la rúbrica, un toque cada uno, y guarda de inmediato: no hay botón de Guardar.
 
-**Costo asumido:** solo permite enteros. Si ella usa 8.5, esta decisión se cae y
-hay que rediseñar la captura. Ver `[POR VALIDAR]` en
-[DATA-MODEL.md](./DATA-MODEL.md).
+Los seis botones de 5 a 10 del prototipo ya no existen: la evaluación resultó ser
+por niveles, no por una escala numérica (D-015). La razón de la decisión original
+sobrevivió intacta; la escala, no.
+
+El único lugar donde hay cifras que teclear son los aciertos de examen, y usa un
+**teclado numérico dentro de la app**, no el nativo. Es la misma razón de siempre,
+resuelta sin `<input type="number">`.
 
 ### 3. Un número, no un tablero
 
@@ -160,9 +165,24 @@ Cuatro pestañas al fondo, dentro del alcance del pulgar:
 | Pestaña | Contenido |
 |---|---|
 | Asistencia | Tira de días con calendario + lista con ciclo de estados |
-| Calificaciones | Selector de actividad + captura por botones |
+| Calificaciones | Trimestre → criterio → actividad → captura por niveles |
 | Notas | Anecdotario: alumno, texto, historial |
-| Grupo | Resumen por alumno: % asistencia y promedio |
+| Grupo | Resumen por alumno: % asistencia y calificación del trimestre |
+
+La pestaña de Calificaciones es la única con jerarquía adentro, y es inevitable:
+una actividad no existe fuera de un criterio de un trimestre. Lo que sí se evita
+es que ella la recorra todos los días — el trimestre activo se deduce de la fecha
+y el criterio se recuerda, así que entrar a calificar la actividad de hoy no
+cuesta navegar cuatro niveles.
+
+**Todo se muestra en base 10.** El porcentaje es representación interna y no
+aparece en ninguna pantalla. Un criterio sin actividades calificadas se ve como
+«sin calificar», nunca como 0 — la diferencia entre *no lo he calificado* y *sacó
+cero* es la misma que entre el día hueco y el día azul del calendario.
+
+Y la pantalla de consulta muestra el **desglose por criterio**, no solo el número
+final. Cuando un resultado no cuadre con su intuición, el desglose es lo único
+que dice si el error está en la fórmula o en la expectativa.
 
 Sin router en la v1. Cuatro pantallas se manejan con estado en Zustand.
 
@@ -182,7 +202,8 @@ Sin librerías de PDF. Una vista con `@media print` y `window.print()`: Safari e
 iPad ofrece *Guardar en Archivos* o AirPrint directo. Menos código y mejor
 resultado que jsPDF.
 
-Dos formatos: lista de asistencia del mes y calificaciones por actividad.
+Dos formatos: lista de asistencia del mes y calificaciones del trimestre con su
+desglose por criterio y campo formativo.
 
 ## Cumpleaños
 

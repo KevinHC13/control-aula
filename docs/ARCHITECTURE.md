@@ -9,28 +9,36 @@ el patrón se pueda reutilizar en proyectos más grandes.
 ```
 src/
 ├─ domain/                 Tipos y reglas puras
-│   ├─ entities.ts             Alumno, RegistroAsistencia, Calificacion, Nota
-│   ├─ values.ts               Fecha, Id, EstadoAsistencia
-│   └─ rules.ts                promedioDe(), porcentajeAsistencia(), enRiesgo()
+│   ├─ entities.ts             Alumno, RegistroAsistencia, Nota, y la
+│   │                          jerarquía de evaluación (Ciclo … Actividad)
+│   ├─ values.ts               Fecha, Id, EstadoAsistencia, CampoFormativo, NIVELES
+│   ├─ fechas.ts               Aritmética de fechas sin librerías
+│   └─ rules.ts                porcentajeAsistencia(), valorCriterio(), aBase10()
 │
 ├─ data/
 │   ├─ ports/                  Interfaces (contratos)
 │   │   ├─ alumnos.ts
 │   │   ├─ asistencia.ts
-│   │   ├─ calificaciones.ts
+│   │   ├─ evaluacion.ts
 │   │   └─ notas.ts
 │   ├─ dexie/                  Implementación actual
 │   │   ├─ db.ts                   Esquema y versiones
 │   │   ├─ alumnos.adapter.ts
 │   │   ├─ asistencia.adapter.ts
-│   │   ├─ calificaciones.adapter.ts
+│   │   ├─ evaluacion.adapter.ts
 │   │   └─ notas.adapter.ts
+│   ├─ seed/                   Semilla del grupo (grupo.ts ignorado por git)
 │   └─ index.ts                Contenedor: única línea que elige adaptadores
 │
 ├─ application/              Casos de uso
 │   ├─ asistencia.ts
-│   ├─ calificaciones.ts
+│   ├─ grupo.ts
+│   ├─ importacion.ts
+│   ├─ evaluacion.ts
 │   └─ notas.ts
+│
+├─ services/                 Única salida a red del cliente
+│   └─ extraccion.ts
 │
 └─ ui/
     ├─ hooks/                  Único lugar donde vive la reactividad
@@ -38,6 +46,17 @@ src/
     ├─ components/
     └─ screens/
 ```
+
+Lo que existe hoy y lo que todavía no está en
+[ESTADO.md](./ESTADO.md); este árbol es la forma final, no la foto.
+
+**Un puerto de evaluación, no seis.** Las quince tablas de evaluación no se
+reparten en un puerto por tabla: `Rubrica` sin `RubricaCriterio` no significa
+nada, y una actividad sin sus entregas tampoco. El puerto se corta por caso de
+uso —*abrir una actividad para calificar*, *cerrar un trimestre*— y cada método
+devuelve el agregado completo que una pantalla necesita. Si `evaluacion.ts` crece
+al punto de que ninguna pantalla usa la mitad de sus métodos, se parte entonces,
+por pantallas reales y no por tablas.
 
 ## Reglas de dependencia
 

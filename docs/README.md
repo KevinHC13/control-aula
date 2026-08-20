@@ -25,9 +25,10 @@ muerto en dos semanas. Todo lo demás es secundario a eso.
 Dentro:
 
 - Asistencia diaria con cuatro estados
-- Calificaciones por actividad, escala 5–10
+- Evaluación por trimestre: criterios con peso, rúbricas de cuatro niveles,
+  entregas y aciertos de examen por campo formativo
 - Anecdotario: notas libres por alumno
-- Resumen por alumno: % de asistencia y promedio
+- Resumen por alumno: % de asistencia y calificación del trimestre
 - Instalable en el iPad, funcional sin red
 
 Fuera, a propósito:
@@ -35,13 +36,17 @@ Fuera, a propósito:
 - Login y usuarios
 - Portal para padres
 - Planeación didáctica
-- Motor de rúbricas y ponderaciones configurables
-- Multi-grupo y multi-ciclo escolar
+- Multi-grupo
 - Notificaciones push
-- Pantalla de configuración
+- Criterios automáticos de puntualidad, conducta y participación — pospuestos por
+  decisión de la usuaria, no descartados
 
 Cada una de esas ausencias es una decisión, no un pendiente. Ver
 [DECISIONES.md](./DECISIONES.md).
+
+El motor de rúbricas y ponderaciones y el multi-ciclo escolar **estaban** en esta
+lista de exclusiones. Entraron después de la semana de uso real: así evalúa ella,
+y una pantalla de calificaciones que no se parezca a eso no se usaría (D-015).
 
 ## Stack
 
@@ -61,26 +66,27 @@ Cada una de esas ausencias es una decisión, no un pendiente. Ver
 
 | Archivo | Qué contiene |
 |---|---|
+| [ESTADO.md](./ESTADO.md) | **Empezar aquí.** Qué está hecho, qué sigue, qué está bloqueado |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Capas, puertos y adaptadores, reglas de dependencia |
-| [DATA-MODEL.md](./DATA-MODEL.md) | Entidades, esquema de Dexie, invariantes de sincronía |
+| [DATA-MODEL.md](./DATA-MODEL.md) | Entidades, jerarquía de evaluación, cálculo, esquema de Dexie |
 | [UX.md](./UX.md) | Principios de interacción y decisiones de interfaz |
 | [PWA-IOS.md](./PWA-IOS.md) | Restricciones reales de Safari e iPadOS |
 | [COMMITS.md](./COMMITS.md) | Convención de commits y plan con criterios de aceptación |
+| [CARGA-LISTA-IA.md](./CARGA-LISTA-IA.md) | Extracción de la lista oficial con IA, de punta a punta |
 | [DECISIONES.md](./DECISIONES.md) | Registro de decisiones técnicas y su justificación |
 
 ## Advertencia sobre el dominio
 
-Este documento y los demás contienen supuestos sobre la evaluación en primaria
-bajo la Nueva Escuela Mexicana (campos formativos, escala numérica, periodos)
-que **no están validados con la usuaria ni con la normativa vigente de su
-estado**.
+Los supuestos gruesos sobre evaluación **ya se validaron** con la usuaria después
+de la semana de uso real, y la validación tiró el modelo que estaba planeado: la
+escala 5–10 no existía en su práctica. Lo que hay hoy —rúbricas, pesos,
+trimestres, campos formativos como agrupación de reporte— sale de sus artefactos
+reales, no de la normativa en abstracto.
 
-Todo lo marcado con `[POR VALIDAR]` debe confirmarse contra tres artefactos
-reales antes de construirse:
+Quedan supuestos abiertos, todos marcados `[POR VALIDAR]` y listados con lo que
+bloquea cada uno en [ESTADO.md](./ESTADO.md). Ninguno es estructural.
 
-1. El cuaderno que usa hoy
-2. El formato de informe que entrega al final del periodo
-3. La plataforma donde captura las calificaciones oficiales
-
-Diseñar desde la normativa en abstracto es la vía rápida a que la app se vuelva
-trabajo extra y ella siga usando el cuaderno en paralelo.
+La lección se conserva porque va a volver a aplicar: diseñar desde la normativa en
+abstracto es la vía rápida a que la app se vuelva trabajo extra y ella siga usando
+el cuaderno en paralelo. Antes de construir una pantalla nueva de evaluación, se
+mira lo que ella entrega, no lo que dice el plan de estudios.
