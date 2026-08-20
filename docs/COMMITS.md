@@ -470,14 +470,48 @@ Decisiones que salieron de construirlo:
   el trimestre que viene mientras corre el actual es justo lo que necesita poder
   hacer. Arranca en el trimestre de hoy.
 
-### ▶ C21 · `feat(evaluacion): editar rúbricas con niveles y descriptores`
+### ✅ C21 · `feat(evaluacion): editar rúbricas con niveles y descriptores`
+
+Pantalla *Rúbricas* en Ajustes, más el selector de rúbrica en cada criterio
+entregable de *Criterios y pesos*. Lo segundo no estaba en los criterios de
+aceptación pero sí en el commit: una rúbrica que no se le puede asignar a nada es
+dato huérfano, y C23 no tendría de dónde leer con qué calificar.
 
 **Aceptación**
-- [ ] `niveles` y `valores` tienen la misma longitud
-- [ ] Cada `RubricaCriterio` tiene un descriptor por nivel
-- [ ] Una rúbrica en uso no se puede borrar, solo desactivar
+- [x] `niveles` y `valores` tienen la misma longitud
+- [x] Cada `RubricaCriterio` tiene un descriptor por nivel
+- [x] Una rúbrica en uso no se puede borrar, solo desactivar
 
-### ⬜ C21b · `feat(evaluacion): crear actividades por campo formativo`
+El primero ya lo cubría `src/domain/values.test.ts` desde C18, junto con que
+`NIVEL_MAXIMO` sea el valor del mejor nivel —si se desalinean, una rúbrica
+califica con el valor del nivel de al lado—.
+
+Verificado en el navegador: con tres de los cuatro descriptores llenos, el renglón
+se marca y dice **«Falta el descriptor de Bien, Mal»** —cuáles, no cuántos— y
+guardar sigue bloqueado. Asignada a «Tareas», la rúbrica pasa a «1 renglón · en
+uso» y su botón de borrar queda deshabilitado mientras *Desactivar* sigue
+disponible. Desactivada, el criterio la sigue mostrando marcada «(desactivada)»,
+porque la fila no debe mentir sobre cómo se está calificando.
+
+Decisiones que salieron de construirlo:
+
+- **`Rubrica.activa` es un campo nuevo**, aparte de `deleted_at`. Desactivar y
+  borrar no son lo mismo: la desactivada sigue resolviendo lo ya calificado, la
+  borrada no existía para nadie. Cabe sin migración porque la tabla estaba vacía.
+- **Editar una rúbrica conserva el `id` de sus renglones.** Es la clave de
+  `EvaluacionRubrica.niveles`: recrearlos dejaría huérfano todo lo ya calificado.
+  Hoy no hay nada calificado, pero un diseño que solo funciona mientras la base
+  esté vacía es una trampa puesta a plazo.
+- **Una rúbrica nueva arranca con un solo renglón**, no con cuatro en blanco:
+  cuatro campos vacíos parecen una obligación, uno parece un ejemplo.
+- **Solo los criterios `entregable` ofrecen rúbrica.** Un examen se califica con
+  aciertos por campo formativo y una rúbrica ahí no tendría dónde aplicarse.
+- **Sin rúbrica no es un estado incompleto**, es un modo: para las tareas del día,
+  palomear entregada / no entregada es exactamente lo que ella quiere.
+- **El editor marca al primer cambio, no al abrir.** Una rúbrica recién abierta con
+  todo en rojo regaña antes de que ella haya hecho nada.
+
+### ▶ C21b · `feat(evaluacion): crear actividades por campo formativo`
 
 Nombre, campo formativo y ejes articuladores. Sin esto, C22 y C23 no tienen sobre
 qué operar.

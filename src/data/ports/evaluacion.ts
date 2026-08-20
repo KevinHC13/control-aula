@@ -1,4 +1,12 @@
-import type { Ciclo, Criterio, CriterioTrimestre, TipoCriterio, Trimestre } from '@/domain/entities'
+import type {
+  Ciclo,
+  Criterio,
+  CriterioTrimestre,
+  Rubrica,
+  RubricaCriterio,
+  TipoCriterio,
+  Trimestre,
+} from '@/domain/entities'
 import type { Fecha, Id, Suscribible } from '@/domain/values'
 
 /**
@@ -30,6 +38,32 @@ export interface EsquemaTrimestre {
   trimestre: Trimestre
   /** Ordenados por `orden`. */
   criterios: CriterioDelTrimestre[]
+}
+
+/**
+ * Una rúbrica con sus renglones y si alguien la está usando.
+ *
+ * `enUso` viene en la misma lectura y no en una consulta aparte: la pantalla lo
+ * necesita para cada rúbrica que pinta, y pedirlo por separado serían N consultas
+ * para decidir N botones de borrar.
+ */
+export interface RubricaConCriterios {
+  rubrica: Rubrica
+  /** Ordenados por `orden`. */
+  criterios: RubricaCriterio[]
+  /** Si algún `CriterioTrimestre` la referencia. Una en uso no se borra. */
+  enUso: boolean
+}
+
+/**
+ * Un renglón de rúbrica tal como sale del editor. Sin `id` cuando es nuevo; con
+ * `id` cuando ya existía, y entonces se conserva —de ese `id` cuelgan los niveles
+ * ya capturados en `EvaluacionRubrica.niveles`—.
+ */
+export interface RenglonDeRubrica {
+  id?: Id
+  nombre: string
+  descriptores: [string, string, string, string]
 }
 
 /** Un trimestre por crear: todavía no tiene `id` ni `ciclo_id`. */
@@ -117,4 +151,42 @@ export interface EvaluacionRepo {
    * (docs/DATA-MODEL.md).
    */
   copiarEsquema(desdeTrimestreId: Id, haciaTrimestreId: Id): Promise<void>
+
+  /** Todas las rúbricas vivas, activas y desactivadas, con sus renglones. */
+  rubricas(): Promise<RubricaConCriterios[]>
+
+  /** Lo mismo, reactivo: el selector de rúbrica se entera de una nueva sin recargar. */
+  observarRubricas(): Suscribible<RubricaConCriterios[]>
+
+  /**
+   * Crea o actualiza una rúbrica con sus renglones, en una transacción. Devuelve
+   * su `id`.
+   *
+   * Los renglones que llegan con `id` se actualizan conservándolo, y los que
+   * faltan se borran en suave. Conservar el `id` no es cosmético: es la clave de
+   * `EvaluacionRubrica.niveles`, así que recrearlo dejaría huérfano todo lo ya
+   * calificado con esa rúbrica.
+   */
+  guardarRubrica(
+    rubrica: { id?: Id; nombre: string },
+    renglones: RenglonDeRubrica[],
+  ): Promise<Id>
+
+  /**
+   * Activa o desactiva la rúbrica. Desactivada, sale del selector pero sigue
+   * resolviendo lo que ya se calificó con ella.
+   */
+  cambiarActivaRubrica(rubricaId: Id, activa: boolean): Promise<void>
+
+  /**
+   * Borra en suave la rúbrica y sus renglones. Quien llama ya verificó que nadie
+   * la usa: la regla vive en el caso de uso.
+   */
+  borrarRubrica(rubricaId: Id): Promise<void>
+
+  /**
+   * Le pone rúbrica a un criterio del trimestre, o se la quita con `null`. Sin
+   * rúbrica, la captura de ese criterio es binaria: entregada o no entregada.
+   */
+  asignarRubrica(criterioTrimestreId: Id, rubricaId: Id | null): Promise<void>
 }

@@ -12,7 +12,7 @@ español también (`asistencia`, `calificaciones`, `alumnos`).
 **`docs/ESTADO.md` es la fuente de verdad del estatus.** Leerlo antes de decidir
 qué construir; el resumen de aquí abajo se queda viejo primero.
 
-Hecho hasta C20. Existen y funcionan:
+Hecho hasta C21. Existen y funcionan:
 
 - **`domain/`** completo para asistencia y para la **estructura** de la
   evaluación: `entities.ts` con la jerarquía `Ciclo → … → Actividad`,
@@ -22,25 +22,25 @@ Hecho hasta C20. Existen y funcionan:
   sincronizables, adaptadores de alumnos y asistencia, los dos puertos, la
   `outbox` y la semilla (`grupo.ts` ignorado, `grupo.example.ts` versionado).
   De las once tablas de evaluación tienen puerto y adaptador `ciclos`,
-  `trimestres`, `criterios` y `criterios_trimestre`; las otras siete existen en el
-  esquema y nadie las lee todavía.
+  `trimestres`, `criterios`, `criterios_trimestre`, `rubricas` y
+  `rubrica_criterios`; las otras cinco existen en el esquema y nadie las lee
+  todavía.
 - **`application/`**: `asistencia.ts`, `grupo.ts`, `importacion.ts`,
   `evaluacion.ts`.
 - **`services/`**: `extraccion.ts`, la única salida a red del cliente.
 - **`ui/`**: las cuatro pestañas, la de asistencia terminada (tira de días,
   calendario del mes, contador, filas, etiqueta del trimestre), Ajustes, la carga
-  de lista con IA, la configuración del ciclo escolar y los criterios con sus
-  pesos.
+  de lista con IA, la configuración del ciclo escolar, los criterios con sus pesos
+  y las rúbricas.
   `Calificaciones`, `Notas` y el resumen de `Grupo` siguen siendo placeholders.
 - PWA con `vite-plugin-pwa`, Zustand y el aviso de actualización.
 - Una Edge Function desplegada en Supabase, `extraer-lista`, en
   `supabase/functions/`.
 
-**Lo que sigue es C21**: rúbricas con niveles y descriptores, que llenan el
-`rubrica_id` de `CriterioTrimestre` —hoy siempre `null`, que significa captura
-binaria entregada / no entregada—. La migración a `version(2)` ya ocurrió y está
-probada en `src/data/dexie/migracion.test.ts`; no hay otra migración pendiente en
-la Fase 4.
+**Lo que sigue es C21b**: crear actividades por campo formativo. Es el primero de
+la fase que entra al camino cotidiano, así que va en la pestaña Calificaciones y no
+en Ajustes. La migración a `version(2)` ya ocurrió y está probada en
+`src/data/dexie/migracion.test.ts`; no hay otra migración pendiente en la Fase 4.
 
 Falta además de la Fase 3: notas, resumen del grupo, respaldo JSON, cumpleaños y
 el motor de sincronía. `C25` y `C26` —criterios automáticos de puntualidad,
@@ -166,6 +166,14 @@ y fórmulas en `docs/DATA-MODEL.md`; lo que no se negocia al escribir código:
   `CierreTrimestre`, no de recalcular.
 - Los pesos pueden sumar cualquier cosa mientras se editan; solo el **cierre**
   exige 100.
+- Una rúbrica **en uso** no se borra: se desactiva (`Rubrica.activa`). Desactivada
+  sale del selector pero sigue resolviendo lo ya calificado. `deleted_at` se
+  reserva para las que nadie usó.
+- Editar una rúbrica **conserva el `id` de sus renglones**: es la clave de
+  `EvaluacionRubrica.niveles`, y recrearlos dejaría huérfano lo ya calificado.
+- Un `CriterioTrimestre` sin `rubrica_id` no está incompleto: significa captura
+  binaria, entregada / no entregada. Solo los criterios `entregable` admiten
+  rúbrica.
 - La atribución al trimestre es **por fecha y nunca manual**: no existe ni debe
   existir un selector de trimestre. Una fecha fuera de todo rango devuelve `null`,
   que es un resultado normal —vacaciones, puentes— y no un error.

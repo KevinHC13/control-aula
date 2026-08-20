@@ -8,14 +8,19 @@ import type { Trimestre } from '@/domain/entities'
 
 import {
   abrirCicloEscolar,
+  activarRubrica,
   agregarCriterio,
   ajustarFechasTrimestre,
   ajustarPeso,
+  asignarRubrica,
+  borrarRubrica,
   cicloEnCurso,
   copiarEsquemaDe,
+  desactivarRubrica,
   esquemaDelTrimestre,
   estadoDelReparto,
   guardarFechas,
+  guardarRubrica,
   nombreDeCicloEn,
   type Periodo,
   periodosCompletos,
@@ -23,6 +28,11 @@ import {
   periodosVacios,
   quitarCriterio,
   revisarPeriodos,
+  revisarRubrica,
+  rubricaEnEdicion,
+  rubricaLista,
+  rubricas,
+  rubricaVacia,
   TIPOS_OFRECIDOS,
   trimestreDe,
   trimestreParaCopiar,
@@ -52,6 +62,8 @@ beforeEach(async () => {
   await db.trimestres.clear()
   await db.criterios.clear()
   await db.criterios_trimestre.clear()
+  await db.rubricas.clear()
+  await db.rubrica_criterios.clear()
   await db.outbox.clear()
 })
 
@@ -560,5 +572,252 @@ describe('TIPOS_OFRECIDOS', () => {
   it('no ofrece personalizado, que no tiene forma de captura', () => {
     // Elegirlo la llevaría a crear un criterio sin pantalla donde llenarse.
     expect(TIPOS_OFRECIDOS.map((t) => t.tipo)).not.toContain('personalizado')
+  })
+})
+
+const DESCRIPTORES: [string, string, string, string] = [
+  'Sin errores',
+  'Uno o dos',
+  'Varios',
+  'No se entiende',
+]
+
+describe('rubricaVacia', () => {
+  it('arranca con un solo renglón, no con cuatro en blanco', () => {
+    // Cuatro campos vacíos parecen una obligación; uno parece un ejemplo.
+    const borrador = rubricaVacia()
+    expect(borrador.renglones).toHaveLength(1)
+    expect(borrador.nombre).toBe('')
+  })
+
+  it('en blanco no se puede guardar', () => {
+    expect(rubricaLista(rubricaVacia())).toBe(false)
+  })
+})
+
+describe('revisarRubrica', () => {
+  it('no marca nada cuando el renglón está completo', () => {
+    const revisada = revisarRubrica({
+      nombre: 'Trabajo escrito',
+      renglones: [{ nombre: 'Ortografía', descriptores: DESCRIPTORES }],
+    })
+    expect(revisada.renglones[0]?.problema).toBeUndefined()
+    expect(rubricaLista(revisada)).toBe(true)
+  })
+
+  it('marca el renglón sin nombre', () => {
+    const revisada = revisarRubrica({
+      nombre: 'Trabajo escrito',
+      renglones: [{ nombre: '  ', descriptores: DESCRIPTORES }],
+    })
+    expect(revisada.renglones[0]?.problema).toBe('Falta el nombre del renglón')
+  })
+
+  it('dice de qué niveles falta el descriptor, por nombre', () => {
+    const revisada = revisarRubrica({
+      nombre: 'Trabajo escrito',
+      renglones: [{ nombre: 'Ortografía', descriptores: ['Sin errores', '', 'Varios', ''] }],
+    })
+    // Decir «faltan 2» obligaría a buscar cuáles; decir cuáles es la diferencia
+    // entre un aviso y una instrucción.
+    expect(revisada.renglones[0]?.problema).toBe('Falta el descriptor de Bien, Mal')
+  })
+
+  it('marca solo el renglón que está mal', () => {
+    const revisada = revisarRubrica({
+      nombre: 'Trabajo escrito',
+      renglones: [
+        { nombre: 'Ortografía', descriptores: DESCRIPTORES },
+        { nombre: 'Claridad', descriptores: ['a', 'b', 'c', ''] },
+      ],
+    })
+    expect(revisada.renglones[0]?.problema).toBeUndefined()
+    expect(revisada.renglones[1]?.problema).toBeDefined()
+  })
+
+  it('corregir apaga la marca', () => {
+    const conProblema = revisarRubrica({
+      nombre: 'Trabajo escrito',
+      renglones: [{ nombre: 'Ortografía', descriptores: ['a', '', 'c', 'd'] }],
+    })
+    expect(conProblema.renglones[0]?.problema).toBeDefined()
+
+    const corregida = revisarRubrica({
+      ...conProblema,
+      renglones: [{ nombre: 'Ortografía', descriptores: ['a', 'b', 'c', 'd'] }],
+    })
+    expect(corregida.renglones[0]?.problema).toBeUndefined()
+  })
+
+  it('no toca el texto: solo lo juzga', () => {
+    // Corre en cada tecla; recortar ahí le pelearía al teclado.
+    const revisada = revisarRubrica({
+      nombre: '  Trabajo escrito  ',
+      renglones: [{ nombre: '  Ortografía  ', descriptores: DESCRIPTORES }],
+    })
+    expect(revisada.nombre).toBe('  Trabajo escrito  ')
+    expect(revisada.renglones[0]?.nombre).toBe('  Ortografía  ')
+  })
+})
+
+describe('rubricaLista', () => {
+  it('una rúbrica sin nombre no se guarda aunque los renglones estén bien', () => {
+    expect(
+      rubricaLista({
+        nombre: '',
+        renglones: [{ nombre: 'Ortografía', descriptores: DESCRIPTORES }],
+      }),
+    ).toBe(false)
+  })
+
+  it('una rúbrica sin renglones no se guarda', () => {
+    expect(rubricaLista({ nombre: 'Trabajo escrito', renglones: [] })).toBe(false)
+  })
+})
+
+describe('guardarRubrica', () => {
+  it('recorta el nombre y los descriptores al guardar', async () => {
+    await guardarRubrica({
+      nombre: '  Trabajo escrito  ',
+      renglones: [{ nombre: '  Ortografía  ', descriptores: ['  a  ', 'b', 'c', 'd'] }],
+    })
+
+    const [guardada] = await rubricas()
+    expect(guardada?.rubrica.nombre).toBe('Trabajo escrito')
+    expect(guardada?.criterios[0]?.nombre).toBe('Ortografía')
+    expect(guardada?.criterios[0]?.descriptores[0]).toBe('a')
+  })
+
+  it('rechaza una rúbrica incompleta', async () => {
+    await expect(
+      guardarRubrica({
+        nombre: 'Trabajo escrito',
+        renglones: [{ nombre: 'Ortografía', descriptores: ['a', '', 'c', 'd'] }],
+      }),
+    ).rejects.toThrow(/descriptor/)
+    expect(await rubricas()).toEqual([])
+  })
+
+  it('editarla conserva los ids de los renglones', async () => {
+    const id = await guardarRubrica({
+      nombre: 'Trabajo escrito',
+      renglones: [{ nombre: 'Ortografía', descriptores: DESCRIPTORES }],
+    })
+    const antes = (await rubricas())[0]!
+
+    await guardarRubrica(
+      rubricaEnEdicion({
+        ...antes,
+        rubrica: { ...antes.rubrica, nombre: 'Trabajo escrito v2' },
+      }),
+    )
+
+    const despues = (await rubricas())[0]!
+    expect(despues.rubrica.id).toBe(id)
+    expect(despues.criterios[0]?.id).toBe(antes.criterios[0]?.id)
+    expect(despues.rubrica.nombre).toBe('Trabajo escrito v2')
+  })
+})
+
+describe('desactivar y borrar', () => {
+  it('una rúbrica en uso no se borra, se desactiva', async () => {
+    const ciclo = await unCiclo()
+    const t1 = ciclo.trimestres[0]!
+    const rubricaId = await guardarRubrica({
+      nombre: 'Trabajo escrito',
+      renglones: [{ nombre: 'Ortografía', descriptores: DESCRIPTORES }],
+    })
+    await agregarCriterio(t1, 'Tareas', 'entregable')
+    const criterio = (await esquemaDelTrimestre(t1.id))!.criterios[0]!
+    await asignarRubrica(t1, criterio, rubricaId)
+
+    const enUso = (await rubricas())[0]!
+    // Borrarla dejaría a ese criterio apuntando a nada y su captura pasaría a
+    // binaria de un día para otro, cambiando calificaciones ya dadas.
+    await expect(borrarRubrica(enUso)).rejects.toThrow(/en uso/)
+    expect(await rubricas()).toHaveLength(1)
+
+    await desactivarRubrica(rubricaId)
+    const desactivada = (await rubricas())[0]!
+    expect(desactivada.rubrica.activa).toBe(false)
+    // Y sigue ahí, con sus renglones: lo ya calificado se resuelve por id.
+    expect(desactivada.criterios).toHaveLength(1)
+  })
+
+  it('una rúbrica que nadie usa sí se borra', async () => {
+    await guardarRubrica({
+      nombre: 'Trabajo escrito',
+      renglones: [{ nombre: 'Ortografía', descriptores: DESCRIPTORES }],
+    })
+    const sinUso = (await rubricas())[0]!
+    expect(sinUso.enUso).toBe(false)
+
+    await borrarRubrica(sinUso)
+
+    expect(await rubricas()).toEqual([])
+  })
+
+  it('desactivar y volver a activar', async () => {
+    const id = await guardarRubrica({
+      nombre: 'Trabajo escrito',
+      renglones: [{ nombre: 'Ortografía', descriptores: DESCRIPTORES }],
+    })
+
+    await desactivarRubrica(id)
+    expect((await rubricas())[0]?.rubrica.activa).toBe(false)
+    await activarRubrica(id)
+    expect((await rubricas())[0]?.rubrica.activa).toBe(true)
+  })
+})
+
+describe('asignarRubrica', () => {
+  it('solo los criterios entregables se califican con rúbrica', async () => {
+    const ciclo = await unCiclo()
+    const t1 = ciclo.trimestres[0]!
+    const rubricaId = await guardarRubrica({
+      nombre: 'Trabajo escrito',
+      renglones: [{ nombre: 'Ortografía', descriptores: DESCRIPTORES }],
+    })
+    await agregarCriterio(t1, 'Examen final', 'examen')
+    const criterio = (await esquemaDelTrimestre(t1.id))!.criterios[0]!
+
+    // Un examen se califica con aciertos por campo: una rúbrica ahí no tendría
+    // dónde aplicarse.
+    await expect(asignarRubrica(t1, criterio, rubricaId)).rejects.toThrow(/entregables/)
+  })
+
+  it('un trimestre cerrado no admite cambiar la rúbrica', async () => {
+    const ciclo = await unCiclo()
+    const t1 = ciclo.trimestres[0]!
+    const rubricaId = await guardarRubrica({
+      nombre: 'Trabajo escrito',
+      renglones: [{ nombre: 'Ortografía', descriptores: DESCRIPTORES }],
+    })
+    await agregarCriterio(t1, 'Tareas', 'entregable')
+    const criterio = (await esquemaDelTrimestre(t1.id))!.criterios[0]!
+
+    await expect(
+      asignarRubrica({ ...t1, estado: 'cerrado' }, criterio, rubricaId),
+    ).rejects.toThrow(/cerrado/)
+  })
+
+  it('quitarla devuelve el criterio a la captura binaria', async () => {
+    const ciclo = await unCiclo()
+    const t1 = ciclo.trimestres[0]!
+    const rubricaId = await guardarRubrica({
+      nombre: 'Trabajo escrito',
+      renglones: [{ nombre: 'Ortografía', descriptores: DESCRIPTORES }],
+    })
+    await agregarCriterio(t1, 'Tareas', 'entregable')
+    const criterio = (await esquemaDelTrimestre(t1.id))!.criterios[0]!
+
+    await asignarRubrica(t1, criterio, rubricaId)
+    const conRubrica = (await esquemaDelTrimestre(t1.id))!.criterios[0]!
+    expect(conRubrica.ponderado.rubrica_id).toBe(rubricaId)
+
+    await asignarRubrica(t1, conRubrica, null)
+    expect(
+      (await esquemaDelTrimestre(t1.id))!.criterios[0]!.ponderado.rubrica_id,
+    ).toBeNull()
   })
 })

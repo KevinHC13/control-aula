@@ -21,6 +21,8 @@ beforeEach(async () => {
   await db.criterios_trimestre.clear()
   await db.actividades.clear()
   await db.entregas.clear()
+  await db.rubricas.clear()
+  await db.rubrica_criterios.clear()
   await db.outbox.clear()
 })
 
@@ -461,5 +463,271 @@ describe('copiarEsquema', () => {
     await repo.copiarEsquema(t1!.id, t2!.id)
 
     expect((await repo.esquemaDeTrimestre(t2!.id))!.criterios).toHaveLength(1)
+  })
+})
+
+const RENGLON = (nombre: string) => ({
+  nombre,
+  descriptores: ['Excelente así', 'Bien así', 'Regular así', 'Mal así'] as [
+    string,
+    string,
+    string,
+    string,
+  ],
+})
+
+describe('rubricas', () => {
+  it('sin ninguna devuelve la lista vacía', async () => {
+    expect(await repo.rubricas()).toEqual([])
+  })
+
+  it('nace activa y con sus renglones en orden', async () => {
+    await repo.guardarRubrica({ nombre: 'Trabajo escrito' }, [
+      RENGLON('Ortografía'),
+      RENGLON('Claridad'),
+    ])
+
+    const [guardada] = await repo.rubricas()
+    expect(guardada?.rubrica.nombre).toBe('Trabajo escrito')
+    expect(guardada?.rubrica.activa).toBe(true)
+    expect(guardada?.criterios.map((c) => c.nombre)).toEqual(['Ortografía', 'Claridad'])
+    expect(guardada?.criterios.map((c) => c.orden)).toEqual([0, 1])
+    expect(guardada?.enUso).toBe(false)
+  })
+
+  it('las ordena por nombre', async () => {
+    await repo.guardarRubrica({ nombre: 'Exposición' }, [RENGLON('Voz')])
+    await repo.guardarRubrica({ nombre: 'Cuaderno' }, [RENGLON('Limpieza')])
+
+    expect((await repo.rubricas()).map((r) => r.rubrica.nombre)).toEqual([
+      'Cuaderno',
+      'Exposición',
+    ])
+  })
+
+  it('marca enUso cuando un criterio del trimestre la referencia', async () => {
+    const [t1] = await conCiclo()
+    const rubricaId = await repo.guardarRubrica({ nombre: 'Trabajo escrito' }, [
+      RENGLON('Ortografía'),
+    ])
+    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
+    const ponderado = (await repo.esquemaDeTrimestre(t1!.id))!.criterios[0]!.ponderado
+
+    expect((await repo.rubricas())[0]?.enUso).toBe(false)
+    await repo.asignarRubrica(ponderado.id, rubricaId)
+    expect((await repo.rubricas())[0]?.enUso).toBe(true)
+  })
+
+  it('un criterio quitado deja de contar como uso', async () => {
+    const [t1] = await conCiclo()
+    const rubricaId = await repo.guardarRubrica({ nombre: 'Trabajo escrito' }, [
+      RENGLON('Ortografía'),
+    ])
+    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
+    const ponderado = (await repo.esquemaDeTrimestre(t1!.id))!.criterios[0]!.ponderado
+    await repo.asignarRubrica(ponderado.id, rubricaId)
+
+    await repo.quitarCriterio(ponderado.id)
+
+    expect((await repo.rubricas())[0]?.enUso).toBe(false)
+  })
+})
+
+describe('guardarRubrica', () => {
+  it('conserva el id de los renglones que ya existían', async () => {
+    const id = await repo.guardarRubrica({ nombre: 'Trabajo escrito' }, [
+      RENGLON('Ortografía'),
+      RENGLON('Claridad'),
+    ])
+    const antes = (await repo.rubricas())[0]!.criterios
+
+    await repo.guardarRubrica({ id, nombre: 'Trabajo escrito' }, [
+      { id: antes[0]!.id, ...RENGLON('Ortografía y acentos') },
+      { id: antes[1]!.id, ...RENGLON('Claridad') },
+    ])
+
+    const despues = (await repo.rubricas())[0]!.criterios
+    // El id es la clave de EvaluacionRubrica.niveles: recrearlo dejaría huérfano
+    // todo lo ya calificado con esta rúbrica.
+    expect(despues.map((c) => c.id)).toEqual(antes.map((c) => c.id))
+    expect(despues[0]?.nombre).toBe('Ortografía y acentos')
+  })
+
+  it('borra en suave los renglones que ya no vienen', async () => {
+    const id = await repo.guardarRubrica({ nombre: 'Trabajo escrito' }, [
+      RENGLON('Ortografía'),
+      RENGLON('Claridad'),
+    ])
+    const antes = (await repo.rubricas())[0]!.criterios
+
+    await repo.guardarRubrica({ id, nombre: 'Trabajo escrito' }, [
+      { id: antes[0]!.id, ...RENGLON('Ortografía') },
+    ])
+
+    expect((await repo.rubricas())[0]!.criterios.map((c) => c.nombre)).toEqual(['Ortografía'])
+    expect((await db.rubrica_criterios.get(antes[1]!.id))?.deleted_at).not.toBeNull()
+  })
+
+  it('reordena según llegan los renglones', async () => {
+    const id = await repo.guardarRubrica({ nombre: 'Trabajo escrito' }, [
+      RENGLON('Ortografía'),
+      RENGLON('Claridad'),
+    ])
+    const antes = (await repo.rubricas())[0]!.criterios
+
+    await repo.guardarRubrica({ id, nombre: 'Trabajo escrito' }, [
+      { id: antes[1]!.id, ...RENGLON('Claridad') },
+      { id: antes[0]!.id, ...RENGLON('Ortografía') },
+    ])
+
+    expect((await repo.rubricas())[0]!.criterios.map((c) => c.nombre)).toEqual([
+      'Claridad',
+      'Ortografía',
+    ])
+  })
+
+  it('guarda un descriptor por nivel, tal cual', async () => {
+    await repo.guardarRubrica({ nombre: 'Trabajo escrito' }, [RENGLON('Ortografía')])
+    const renglon = (await repo.rubricas())[0]!.criterios[0]!
+    expect(renglon.descriptores).toHaveLength(4)
+    expect(renglon.descriptores[3]).toBe('Mal así')
+  })
+
+  it('encola la rúbrica y sus renglones', async () => {
+    await db.outbox.clear()
+    await repo.guardarRubrica({ nombre: 'Trabajo escrito' }, [
+      RENGLON('Ortografía'),
+      RENGLON('Claridad'),
+    ])
+
+    const pendientes = await db.outbox.toArray()
+    expect(pendientes.filter((c) => c.tabla === 'rubricas')).toHaveLength(1)
+    expect(pendientes.filter((c) => c.tabla === 'rubrica_criterios')).toHaveLength(2)
+  })
+
+  it('editarla no la reactiva sola', async () => {
+    const id = await repo.guardarRubrica({ nombre: 'Trabajo escrito' }, [RENGLON('Ortografía')])
+    await repo.cambiarActivaRubrica(id, false)
+
+    await repo.guardarRubrica({ id, nombre: 'Trabajo escrito v2' }, [RENGLON('Ortografía')])
+
+    expect((await repo.rubricas())[0]?.rubrica.activa).toBe(false)
+  })
+})
+
+describe('cambiarActivaRubrica', () => {
+  it('desactiva y vuelve a activar', async () => {
+    const id = await repo.guardarRubrica({ nombre: 'Trabajo escrito' }, [RENGLON('Ortografía')])
+
+    await repo.cambiarActivaRubrica(id, false)
+    expect((await repo.rubricas())[0]?.rubrica.activa).toBe(false)
+
+    await repo.cambiarActivaRubrica(id, true)
+    expect((await repo.rubricas())[0]?.rubrica.activa).toBe(true)
+  })
+
+  it('desactivada sigue existiendo y conserva sus renglones', async () => {
+    // Es la diferencia con borrarla: lo ya calificado con ella se sigue
+    // resolviendo por id.
+    const id = await repo.guardarRubrica({ nombre: 'Trabajo escrito' }, [RENGLON('Ortografía')])
+    await repo.cambiarActivaRubrica(id, false)
+
+    const [guardada] = await repo.rubricas()
+    expect(guardada?.criterios).toHaveLength(1)
+  })
+
+  it('falla si no existe', async () => {
+    await expect(repo.cambiarActivaRubrica('no-existe', false)).rejects.toThrow()
+  })
+})
+
+describe('borrarRubrica', () => {
+  it('borra en suave la rúbrica y sus renglones', async () => {
+    const id = await repo.guardarRubrica({ nombre: 'Trabajo escrito' }, [
+      RENGLON('Ortografía'),
+      RENGLON('Claridad'),
+    ])
+
+    await repo.borrarRubrica(id)
+
+    expect(await repo.rubricas()).toEqual([])
+    expect((await db.rubricas.get(id))?.deleted_at).not.toBeNull()
+    const renglones = await db.rubrica_criterios.where('rubrica_id').equals(id).toArray()
+    expect(renglones.every((c) => c.deleted_at !== null)).toBe(true)
+  })
+
+  it('encola deletes', async () => {
+    const id = await repo.guardarRubrica({ nombre: 'Trabajo escrito' }, [RENGLON('Ortografía')])
+    await db.outbox.clear()
+
+    await repo.borrarRubrica(id)
+
+    const pendientes = await db.outbox.toArray()
+    expect(pendientes.every((c) => c.op === 'delete')).toBe(true)
+    expect(pendientes).toHaveLength(2)
+  })
+
+  it('borrar algo que no existe no falla', async () => {
+    await expect(repo.borrarRubrica('no-existe')).resolves.toBeUndefined()
+  })
+})
+
+describe('asignarRubrica', () => {
+  it('la pone y la quita', async () => {
+    const [t1] = await conCiclo()
+    const rubricaId = await repo.guardarRubrica({ nombre: 'Trabajo escrito' }, [
+      RENGLON('Ortografía'),
+    ])
+    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
+    const ponderado = (await repo.esquemaDeTrimestre(t1!.id))!.criterios[0]!.ponderado
+
+    // Nace sin rúbrica: la captura es binaria hasta que ella diga otra cosa.
+    expect(ponderado.rubrica_id).toBeNull()
+
+    await repo.asignarRubrica(ponderado.id, rubricaId)
+    expect(
+      (await repo.esquemaDeTrimestre(t1!.id))!.criterios[0]!.ponderado.rubrica_id,
+    ).toBe(rubricaId)
+
+    await repo.asignarRubrica(ponderado.id, null)
+    expect(
+      (await repo.esquemaDeTrimestre(t1!.id))!.criterios[0]!.ponderado.rubrica_id,
+    ).toBeNull()
+  })
+
+  it('encola el cambio del criterio, no de la rúbrica', async () => {
+    const [t1] = await conCiclo()
+    const rubricaId = await repo.guardarRubrica({ nombre: 'Trabajo escrito' }, [
+      RENGLON('Ortografía'),
+    ])
+    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
+    const ponderado = (await repo.esquemaDeTrimestre(t1!.id))!.criterios[0]!.ponderado
+    await db.outbox.clear()
+
+    await repo.asignarRubrica(ponderado.id, rubricaId)
+
+    const pendientes = await db.outbox.toArray()
+    expect(pendientes).toHaveLength(1)
+    expect(pendientes[0]?.tabla).toBe('criterios_trimestre')
+  })
+
+  it('la copia de esquema arrastra la rúbrica asignada', async () => {
+    const [t1, t2] = await conCiclo()
+    const rubricaId = await repo.guardarRubrica({ nombre: 'Trabajo escrito' }, [
+      RENGLON('Ortografía'),
+    ])
+    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
+    const ponderado = (await repo.esquemaDeTrimestre(t1!.id))!.criterios[0]!.ponderado
+    await repo.asignarRubrica(ponderado.id, rubricaId)
+
+    await repo.copiarEsquema(t1!.id, t2!.id)
+
+    expect(
+      (await repo.esquemaDeTrimestre(t2!.id))!.criterios[0]!.ponderado.rubrica_id,
+    ).toBe(rubricaId)
+  })
+
+  it('falla si el criterio no existe', async () => {
+    await expect(repo.asignarRubrica('no-existe', null)).rejects.toThrow()
   })
 })

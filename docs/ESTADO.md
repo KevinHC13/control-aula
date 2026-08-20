@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Actualizado el **2026-08-20**, con C18, C19 y C20 terminados. Este es el documento que se lee primero para saber
+Actualizado el **2026-08-20**, con C18 a C21 terminados. Este es el documento que se lee primero para saber
 dónde va el proyecto y qué sigue. El plan detallado, con criterios de aceptación
 por commit, está en [COMMITS.md](./COMMITS.md).
 
@@ -13,9 +13,10 @@ se queda viejo; el código no.
 
 Asistencia está terminada y entregada en el iPad. La semana de uso real ya pasó y
 la validación con la usuaria tiró el modelo de calificaciones que estaba planeado.
-La Fase 4 va en marcha: **C18, C19 y C20 están hechos** —dominio de evaluación,
-`db.version(2)`, el ciclo escolar con sus trimestres, y los criterios con sus
-pesos—. Lo que sigue es `C21`: las rúbricas.
+La Fase 4 va en marcha: **C18 a C21 están hechos** —dominio de evaluación,
+`db.version(2)`, el ciclo escolar con sus trimestres, los criterios con sus pesos y
+las rúbricas—. Lo que sigue es `C21b`: las actividades, que es lo primero que se
+va a tocar todos los días.
 
 ## Fases
 
@@ -25,7 +26,7 @@ pesos—. Lo que sigue es `C21`: las rúbricas.
 | 2 · Asistencia | El vertical completo hasta el iPad | ✅ Terminada |
 | Hito | Entrega, pausa de una semana, validación | ✅ Cumplido |
 | 3 · Resto de la v1 | Notas, resumen, respaldo, cumpleaños, sincronía | ⬜ Sin empezar |
-| 4 · Evaluación | Ciclo, trimestres, criterios, rúbricas, cálculo | ▶ En curso: C18–C20 hechos, sigue C21 |
+| 4 · Evaluación | Ciclo, trimestres, criterios, rúbricas, cálculo | ▶ En curso: C18–C21 hechos, sigue C21b |
 
 ## Lo que existe y funciona
 
@@ -35,10 +36,10 @@ Verificado en `src/` a esta fecha:
 |---|---|
 | `domain/` | `entities.ts` con la jerarquía de evaluación completa, `values.ts`, `fechas.ts`, `rules.ts`, `evaluacion.ts`, con pruebas |
 | `data/dexie/` | `db.ts` en `version(2)`, adaptadores de alumnos y asistencia, `outbox`, semilla |
-| `data/ports/` | `alumnos.ts`, `asistencia.ts`, `evaluacion.ts` (ciclo, trimestres, criterios y pesos) |
+| `data/ports/` | `alumnos.ts`, `asistencia.ts`, `evaluacion.ts` (ciclo, trimestres, criterios, pesos y rúbricas) |
 | `application/` | `asistencia.ts`, `grupo.ts`, `importacion.ts`, `evaluacion.ts` |
 | `services/` | `extraccion.ts` — única salida a red del cliente |
-| `ui/` | Cuatro pestañas, Asistencia completa (con la etiqueta del trimestre), Ajustes, CargarLista, CicloEscolar, CriteriosYPesos |
+| `ui/` | Cuatro pestañas, Asistencia completa (con la etiqueta del trimestre), Ajustes, CargarLista, CicloEscolar, CriteriosYPesos, Rubricas |
 | `tests/` | `arquitectura.test.ts` — verifica las reglas de dependencia en cada `npm test` |
 | Infra | PWA con `vite-plugin-pwa` y aviso de actualización; Edge Function `extraer-lista` desplegada |
 
@@ -82,22 +83,25 @@ asistencia capturada.
 
 ## Con qué continuar
 
-**Siguiente commit: `C21 · feat(evaluacion): editar rúbricas con niveles y
-descriptores`.** Los niveles ya son fijos (`NIVELES`, `VALOR_NIVEL` en
-`domain/values.ts`); lo que falta es el CRUD de rúbricas y sus criterios, y
-poderle asignar una rúbrica a un `CriterioTrimestre` —el campo `rubrica_id` existe
-y hoy siempre queda en `null`, que significa captura binaria entregada / no
-entregada—.
+**Siguiente commit: `C21b · feat(evaluacion): crear actividades por campo
+formativo`.** Es el primero de la fase que entra al camino cotidiano: sin
+actividades, C22 (entregas), C23 (rúbrica) y C28 (cálculo) no tienen sobre qué
+operar.
 
-Ojo con dos cosas de C21: una rúbrica en uso no se borra, solo se desactiva, y
-cada `RubricaCriterio` necesita un descriptor por nivel —cuatro, alineados con
-`NIVELES`—.
+Toda actividad se crea **dentro de un `CriterioTrimestre`**, nunca suelta, y el
+campo formativo se elige antes de nombrarla: es la agrupación con la que ella
+reporta, así que elegirlo después invita a dejarlo en el que venía por omisión. Los
+ejes articuladores son opcionales.
+
+Y hay una decisión de UI que tomar ahí y no después: **dónde viven las
+actividades.** No son Ajustes —se tocan varias veces por semana— así que van en la
+pestaña Calificaciones, que hoy sigue siendo un placeholder.
 
 El orden del resto de la Fase 4 es:
 
 ```
 C18 ─ C19 ─ C20 ─ C21 ─ C21b ─┬─ C22 ─┐
- ✅    ✅    ✅               ├─ C23 ─┼─ C28 ─┬─ C29
+ ✅    ✅    ✅    ✅          ├─ C23 ─┼─ C28 ─┬─ C29
                               └─ C24 ─┘       └─ C27
 ```
 
@@ -147,12 +151,15 @@ campos formativos. Los tres se resolvieron en la validación.
 ## Deuda conocida
 
 - De las once tablas nuevas, tienen puerto y adaptador `ciclos`, `trimestres`,
-  `criterios` y `criterios_trimestre`. Las otras siete existen en el esquema y
-  nadie las puede leer todavía; cada commit de la fase abre las que su pantalla
-  necesita.
-- `CriterioTrimestre.rubrica_id` y `meta_participacion` se escriben siempre en
-  `null`: la copia de esquema los arrastra, pero nada los pone. `rubrica_id` lo
-  llena C21; `meta_participacion` pertenece a participación, que está pospuesta.
+  `criterios`, `criterios_trimestre`, `rubricas` y `rubrica_criterios`. Las otras
+  cinco existen en el esquema y nadie las puede leer todavía; cada commit de la
+  fase abre las que su pantalla necesita.
+- `CriterioTrimestre.meta_participacion` se escribe siempre en `null`: la copia de
+  esquema lo arrastra, pero nada lo pone. Pertenece a participación, que está
+  pospuesta.
+- No hay forma de reordenar los renglones de una rúbrica desde la pantalla. El
+  `orden` se guarda y se respeta, y el adaptador ya sabe reordenar si le llegan en
+  otro orden; falta el gesto en la interfaz.
 - No hay forma de reordenar los criterios de un trimestre. El campo `orden`
   existe y se respeta al leer, pero solo lo fija el orden de alta.
 - Cerrar un trimestre no tiene interfaz (es C27). La regla de que un trimestre

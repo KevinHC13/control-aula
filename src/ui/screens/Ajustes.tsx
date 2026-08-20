@@ -14,11 +14,13 @@ export function Ajustes({
   alCargarLista,
   alConfigurarCiclo,
   alConfigurarCriterios,
+  alConfigurarRubricas,
 }: {
   alVolver: () => void
   alCargarLista: () => void
   alConfigurarCiclo: () => void
   alConfigurarCriterios: () => void
+  alConfigurarRubricas: () => void
 }) {
   return (
     <section aria-labelledby="titulo-ajustes" className="flex flex-col gap-4">
@@ -65,6 +67,18 @@ export function Ajustes({
             <span className="text-base font-medium text-tinta">Criterios y pesos</span>
             <span className="text-base text-tinta-2">
               Con qué se evalúa cada trimestre y cuánto vale
+            </span>
+          </button>
+        </li>
+        <li>
+          <button
+            type="button"
+            onClick={alConfigurarRubricas}
+            className="flex w-full flex-col items-start gap-0.5 px-4 py-3 text-left"
+          >
+            <span className="text-base font-medium text-tinta">Rúbricas</span>
+            <span className="text-base text-tinta-2">
+              Qué significa cada nivel al calificar un trabajo
             </span>
           </button>
         </li>

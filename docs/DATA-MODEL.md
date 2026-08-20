@@ -246,6 +246,8 @@ export interface Actividad extends Sincronizable {
 
 export interface Rubrica extends Sincronizable {
   nombre: string
+  /** Desactivada: sale del selector, pero sigue resolviendo lo ya calificado. */
+  activa: boolean
 }
 
 export interface RubricaCriterio extends Sincronizable {
@@ -266,6 +268,25 @@ export const NIVEL_MAXIMO = 3
 ```
 
 Todos los criterios de una rúbrica pesan lo mismo. No hay ponderación interna.
+
+### Desactivar no es borrar
+
+`activa` existe aparte de `deleted_at` porque son dos cosas distintas:
+
+- **Desactivar** (`activa: false`) saca la rúbrica del selector de criterios, pero
+  la deja resolviendo por `id` todo lo que ya se calificó con ella. Es la salida
+  para una rúbrica en uso que ella ya no quiere volver a usar.
+- **Borrar** (`deleted_at`) se reserva para una rúbrica que **nadie** usa. Ahí no
+  hay historia que respetar.
+
+Una rúbrica que algún `CriterioTrimestre` referencia no se borra. Hacerlo dejaría a
+ese criterio apuntando a nada y su captura pasaría a binaria de un día para otro,
+cambiando calificaciones ya dadas.
+
+El `id` de cada `RubricaCriterio` es la clave de `EvaluacionRubrica.niveles`, así
+que editar una rúbrica **conserva los ids** de los renglones que sobreviven: se
+actualizan en su lugar y solo los que desaparecen se borran en suave. Recrearlos
+dejaría huérfano todo lo ya calificado.
 
 ---
 

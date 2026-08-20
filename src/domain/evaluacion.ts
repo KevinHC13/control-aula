@@ -1,4 +1,5 @@
 import type { CriterioTrimestre, Trimestre } from './entities'
+import { NIVELES } from './values'
 import type { Fecha } from './values'
 
 /**
@@ -121,4 +122,42 @@ export function puedeCerrarse(
   if (!aceptaEscrituras(t)) return false
   if (criterios.length === 0) return false
   return pesosSuman100(criterios)
+}
+
+/*
+ * Rúbricas
+ * ========
+ */
+
+/**
+ * Si el renglón de la rúbrica tiene un descriptor por nivel, ninguno vacío.
+ *
+ * Los descriptores no son adorno: son lo único que hace repetible la
+ * calificación. Un nivel sin descriptor obliga a recordar en diciembre qué quiso
+ * decir «Bien» en septiembre, que es exactamente lo que una rúbrica existe para
+ * evitar.
+ */
+export function descriptoresCompletos(descriptores: readonly string[]): boolean {
+  return (
+    descriptores.length === NIVELES.length && descriptores.every((d) => d.trim() !== '')
+  )
+}
+
+/**
+ * Si la rúbrica está lista para usarse: con nombre, con al menos un renglón y con
+ * todos sus descriptores escritos.
+ *
+ * Una rúbrica sin renglones no calificaría nada: `valorConRubrica([])` no tiene
+ * respuesta buena, y dejarla guardar sería dejar pasar una división entre cero
+ * hasta la pantalla de captura.
+ */
+export function rubricaCompleta(rubrica: {
+  nombre: string
+  criterios: readonly { nombre: string; descriptores: readonly string[] }[]
+}): boolean {
+  if (rubrica.nombre.trim() === '') return false
+  if (rubrica.criterios.length === 0) return false
+  return rubrica.criterios.every(
+    (c) => c.nombre.trim() !== '' && descriptoresCompletos(c.descriptores),
+  )
 }

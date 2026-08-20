@@ -3,9 +3,11 @@ import { describe, expect, it } from 'vitest'
 import {
   aceptaEscrituras,
   contieneFecha,
+  descriptoresCompletos,
   pesosSuman100,
   puedeCerrarse,
   rangoValido,
+  rubricaCompleta,
   seTraslapan,
   sumaDePesos,
   traslapes,
@@ -185,5 +187,62 @@ describe('puedeCerrarse', () => {
 
   it('un trimestre ya cerrado no se vuelve a cerrar', () => {
     expect(puedeCerrarse({ estado: 'cerrado' }, pesos(50, 30, 20))).toBe(false)
+  })
+})
+
+describe('descriptoresCompletos', () => {
+  it('acepta un descriptor por nivel', () => {
+    expect(descriptoresCompletos(['Sin errores', 'Uno o dos', 'Varios', 'No se entiende'])).toBe(
+      true,
+    )
+  })
+
+  it('rechaza uno vacío o con solo espacios', () => {
+    // Un nivel sin descriptor obliga a recordar en diciembre qué quiso decir
+    // «Bien» en septiembre.
+    expect(descriptoresCompletos(['a', 'b', '', 'd'])).toBe(false)
+    expect(descriptoresCompletos(['a', 'b', '   ', 'd'])).toBe(false)
+  })
+
+  it('rechaza una cantidad distinta a la de niveles', () => {
+    expect(descriptoresCompletos(['a', 'b', 'c'])).toBe(false)
+    expect(descriptoresCompletos(['a', 'b', 'c', 'd', 'e'])).toBe(false)
+    expect(descriptoresCompletos([])).toBe(false)
+  })
+})
+
+describe('rubricaCompleta', () => {
+  const renglon = { nombre: 'Ortografía', descriptores: ['a', 'b', 'c', 'd'] }
+
+  it('acepta una rúbrica con nombre y un renglón completo', () => {
+    expect(rubricaCompleta({ nombre: 'Trabajo escrito', criterios: [renglon] })).toBe(true)
+  })
+
+  it('rechaza la que no tiene nombre', () => {
+    expect(rubricaCompleta({ nombre: '  ', criterios: [renglon] })).toBe(false)
+  })
+
+  it('rechaza la que no tiene renglones', () => {
+    // Sin renglones no calificaría nada: sería una división entre cero que llega
+    // hasta la pantalla de captura.
+    expect(rubricaCompleta({ nombre: 'Trabajo escrito', criterios: [] })).toBe(false)
+  })
+
+  it('rechaza la que tiene un renglón sin nombre', () => {
+    expect(
+      rubricaCompleta({
+        nombre: 'Trabajo escrito',
+        criterios: [renglon, { nombre: '', descriptores: ['a', 'b', 'c', 'd'] }],
+      }),
+    ).toBe(false)
+  })
+
+  it('rechaza la que tiene un renglón con un descriptor vacío', () => {
+    expect(
+      rubricaCompleta({
+        nombre: 'Trabajo escrito',
+        criterios: [{ nombre: 'Claridad', descriptores: ['a', '', 'c', 'd'] }],
+      }),
+    ).toBe(false)
   })
 })

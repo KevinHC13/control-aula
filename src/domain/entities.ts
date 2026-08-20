@@ -122,6 +122,16 @@ export interface Actividad extends Sincronizable {
 
 export interface Rubrica extends Sincronizable {
   nombre: string
+  /**
+   * Una rúbrica que ya se usó no se borra: se desactiva.
+   *
+   * `activa: false` la saca del selector de criterios nuevos, pero **no** rompe
+   * las actividades que ya se calificaron con ella —esas la siguen resolviendo
+   * por `id`, sin mirar este campo—. Es distinto de `deleted_at`, que se reserva
+   * para una rúbrica que nadie llegó a usar: ahí sí se puede borrar de verdad,
+   * porque no hay historia que respetar.
+   */
+  activa: boolean
 }
 
 /**

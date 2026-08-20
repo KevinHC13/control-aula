@@ -1,15 +1,24 @@
 import { repos } from '@/data'
-import type { CicloEnCurso, EsquemaTrimestre, PeriodoNuevo } from '@/data/ports/evaluacion'
+import type {
+  CicloEnCurso,
+  CriterioDelTrimestre,
+  EsquemaTrimestre,
+  PeriodoNuevo,
+  RubricaConCriterios,
+} from '@/data/ports/evaluacion'
 import type { TipoCriterio, Trimestre } from '@/domain/entities'
 import {
   aceptaEscrituras,
+  descriptoresCompletos,
   pesosSuman100,
   rangoValido,
+  rubricaCompleta,
   seTraslapan,
   sumaDePesos,
   trimestreDeFecha,
 } from '@/domain/evaluacion'
 import { fechaValida } from '@/domain/fechas'
+import { NIVELES } from '@/domain/values'
 import type { Fecha, Id } from '@/domain/values'
 
 const NUMEROS = [1, 2, 3] as const
@@ -317,4 +326,158 @@ export function trimestreParaCopiar(
   ciclo: CicloEnCurso,
 ): Trimestre | null {
   return ciclo.trimestres.find((t) => t.numero === destino.numero - 1) ?? null
+}
+
+/*
+ * Rúbricas (C21)
+ * ==============
+ */
+
+/**
+ * Un renglón de rúbrica en el editor, con lo que está mal con él.
+ *
+ * Mismo patrón que los periodos y que la revisión de la lista: la validación
+ * marca y no corrige, y guardar se bloquea mientras quede una marca.
+ */
+export interface RenglonEnEdicion {
+  id?: Id
+  nombre: string
+  descriptores: [string, string, string, string]
+  problema?: string
+}
+
+/** Una rúbrica en el editor. */
+export interface RubricaEnEdicion {
+  id?: Id
+  nombre: string
+  renglones: RenglonEnEdicion[]
+}
+
+export function renglonVacio(): RenglonEnEdicion {
+  return { nombre: '', descriptores: ['', '', '', ''] }
+}
+
+/**
+ * Una rúbrica nueva arranca con un solo renglón, no con cuatro en blanco: cuatro
+ * campos vacíos parecen una obligación, uno parece un ejemplo.
+ */
+export function rubricaVacia(): RubricaEnEdicion {
+  return { nombre: '', renglones: [renglonVacio()] }
+}
+
+/** Una rúbrica guardada, en la forma que el editor manipula. */
+export function rubricaEnEdicion(guardada: RubricaConCriterios): RubricaEnEdicion {
+  return {
+    id: guardada.rubrica.id,
+    nombre: guardada.rubrica.nombre,
+    renglones: guardada.criterios.map((c) => ({
+      id: c.id,
+      nombre: c.nombre,
+      descriptores: [...c.descriptores] as [string, string, string, string],
+    })),
+  }
+}
+
+/** Recalcula los problemas de cada renglón. Corre en cada tecla: no toca el texto. */
+export function revisarRubrica(rubrica: RubricaEnEdicion): RubricaEnEdicion {
+  return {
+    ...rubrica,
+    renglones: rubrica.renglones.map((renglon) => {
+      const limpio: RenglonEnEdicion = {
+        ...renglon,
+        problema: undefined,
+      }
+      delete limpio.problema
+
+      if (renglon.nombre.trim() === '') {
+        return { ...limpio, problema: 'Falta el nombre del renglón' }
+      }
+      if (!descriptoresCompletos(renglon.descriptores)) {
+        const faltan = renglon.descriptores
+          .map((d, i) => (d.trim() === '' ? NIVELES[i] : null))
+          .filter((n): n is (typeof NIVELES)[number] => n !== null)
+        return { ...limpio, problema: `Falta el descriptor de ${faltan.join(', ')}` }
+      }
+      return limpio
+    }),
+  }
+}
+
+/** Si la rúbrica se puede guardar. */
+export function rubricaLista(rubrica: RubricaEnEdicion): boolean {
+  return rubricaCompleta({
+    nombre: rubrica.nombre,
+    criterios: rubrica.renglones,
+  })
+}
+
+export async function rubricas(): Promise<RubricaConCriterios[]> {
+  return repos.evaluacion.rubricas()
+}
+
+/**
+ * Guarda la rúbrica. Recorta el texto aquí y no en cada tecla: recapitalizar o
+ * recortar mientras ella escribe le pelea al teclado a media palabra.
+ */
+export async function guardarRubrica(rubrica: RubricaEnEdicion): Promise<Id> {
+  if (!rubricaLista(rubrica)) {
+    throw new Error('La rúbrica necesita nombre y un descriptor por nivel en cada renglón')
+  }
+
+  return repos.evaluacion.guardarRubrica(
+    { id: rubrica.id, nombre: rubrica.nombre.trim() },
+    rubrica.renglones.map((r) => ({
+      id: r.id,
+      nombre: r.nombre.trim(),
+      descriptores: r.descriptores.map((d) => d.trim()) as [string, string, string, string],
+    })),
+  )
+}
+
+/**
+ * Desactiva la rúbrica: sale del selector, pero sigue resolviendo lo que ya se
+ * calificó con ella. Es la salida para una rúbrica en uso que ella ya no quiere
+ * usar más.
+ */
+export async function desactivarRubrica(rubricaId: Id): Promise<void> {
+  await repos.evaluacion.cambiarActivaRubrica(rubricaId, false)
+}
+
+export async function activarRubrica(rubricaId: Id): Promise<void> {
+  await repos.evaluacion.cambiarActivaRubrica(rubricaId, true)
+}
+
+/**
+ * Borra la rúbrica, y **solo** si nadie la usa.
+ *
+ * Una rúbrica que algún criterio referencia no se borra: hacerlo dejaría a ese
+ * criterio apuntando a nada y convertiría su captura en binaria de un día para
+ * otro, cambiando calificaciones ya dadas. Para esas está `desactivarRubrica`.
+ */
+export async function borrarRubrica(rubrica: RubricaConCriterios): Promise<void> {
+  if (rubrica.enUso) {
+    throw new Error('Esta rúbrica está en uso: se puede desactivar, no borrar')
+  }
+  await repos.evaluacion.borrarRubrica(rubrica.rubrica.id)
+}
+
+/**
+ * Le pone rúbrica a un criterio del trimestre, o se la quita con `null`.
+ *
+ * Solo tiene sentido en criterios de tipo `entregable`: un examen se califica con
+ * aciertos por campo, y una rúbrica ahí no tendría dónde aplicarse.
+ */
+export async function asignarRubrica(
+  trimestre: Trimestre,
+  criterio: CriterioDelTrimestre,
+  rubricaId: Id | null,
+): Promise<void> {
+  if (!aceptaEscrituras(trimestre)) {
+    throw new Error('Un trimestre cerrado no admite cambiar la rúbrica')
+  }
+  if (criterio.criterio.tipo !== 'entregable') {
+    throw new Error('Solo los criterios entregables se califican con rúbrica')
+  }
+
+  await repos.evaluacion.asignarRubrica(criterio.ponderado.id, rubricaId)
 }

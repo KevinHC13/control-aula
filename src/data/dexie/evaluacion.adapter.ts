@@ -6,11 +6,15 @@ import type {
   EsquemaTrimestre,
   EvaluacionRepo,
   PeriodoNuevo,
+  RenglonDeRubrica,
+  RubricaConCriterios,
 } from '@/data/ports/evaluacion'
 import type {
   Ciclo,
   Criterio,
   CriterioTrimestre,
+  Rubrica,
+  RubricaCriterio,
   TipoCriterio,
   Trimestre,
 } from '@/domain/entities'
@@ -271,6 +275,170 @@ export class DexieEvaluacionRepo implements EvaluacionRepo {
           at: momento,
         })),
       )
+    })
+  }
+
+  async rubricas(): Promise<RubricaConCriterios[]> {
+    const rubricas = (await db.rubricas.toArray()).filter((r) => r.deleted_at === null)
+    if (rubricas.length === 0) return []
+
+    const renglones = (await db.rubrica_criterios.toArray()).filter(
+      (c) => c.deleted_at === null,
+    )
+    // Una sola pasada por los criterios del trimestre para saber cuáles están en
+    // uso: son pocos, y así `enUso` no cuesta una consulta por rúbrica.
+    const usadas = new Set(
+      (await db.criterios_trimestre.toArray())
+        .filter((c) => c.deleted_at === null && c.rubrica_id !== null)
+        .map((c) => c.rubrica_id),
+    )
+
+    return rubricas
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+      .map((rubrica) => ({
+        rubrica,
+        criterios: renglones
+          .filter((c) => c.rubrica_id === rubrica.id)
+          .sort((a, b) => a.orden - b.orden),
+        enUso: usadas.has(rubrica.id),
+      }))
+  }
+
+  observarRubricas(): Suscribible<RubricaConCriterios[]> {
+    return liveQuery(() => this.rubricas())
+  }
+
+  async guardarRubrica(
+    rubrica: { id?: Id; nombre: string },
+    renglones: RenglonDeRubrica[],
+  ): Promise<Id> {
+    return db.transaction('rw', db.rubricas, db.rubrica_criterios, db.outbox, async () => {
+      const momento = ahora()
+      const existente = rubrica.id ? await db.rubricas.get(rubrica.id) : undefined
+
+      const guardada: Rubrica = existente
+        ? { ...existente, nombre: rubrica.nombre, updated_at: momento }
+        : {
+            id: rubrica.id ?? nuevoId(),
+            nombre: rubrica.nombre,
+            activa: true,
+            updated_at: momento,
+            deleted_at: null,
+          }
+
+      await db.rubricas.put(guardada)
+      await db.outbox.add({
+        tabla: 'rubricas',
+        registro_id: guardada.id,
+        op: 'upsert',
+        at: momento,
+      })
+
+      const anteriores = (
+        await db.rubrica_criterios.where('rubrica_id').equals(guardada.id).toArray()
+      ).filter((c) => c.deleted_at === null)
+      const porId = new Map(anteriores.map((c) => [c.id, c]))
+
+      const escritos: RubricaCriterio[] = renglones.map((renglon, orden) => {
+        const previo = renglon.id ? porId.get(renglon.id) : undefined
+        // Conservar el `id` es lo que mantiene vivo lo ya calificado: es la clave
+        // de `EvaluacionRubrica.niveles`.
+        return {
+          id: previo?.id ?? renglon.id ?? nuevoId(),
+          rubrica_id: guardada.id,
+          nombre: renglon.nombre,
+          descriptores: renglon.descriptores,
+          orden,
+          updated_at: momento,
+          deleted_at: null,
+        }
+      })
+
+      const conservados = new Set(escritos.map((c) => c.id))
+      const quitados = anteriores.filter((c) => !conservados.has(c.id))
+
+      await db.rubrica_criterios.bulkPut([
+        ...escritos,
+        ...quitados.map((c) => ({ ...c, deleted_at: momento, updated_at: momento })),
+      ])
+      await db.outbox.bulkAdd([
+        ...escritos.map((c) => ({
+          tabla: 'rubrica_criterios' as const,
+          registro_id: c.id,
+          op: 'upsert' as const,
+          at: momento,
+        })),
+        ...quitados.map((c) => ({
+          tabla: 'rubrica_criterios' as const,
+          registro_id: c.id,
+          op: 'delete' as const,
+          at: momento,
+        })),
+      ])
+
+      return guardada.id
+    })
+  }
+
+  async cambiarActivaRubrica(rubricaId: Id, activa: boolean): Promise<void> {
+    await db.transaction('rw', db.rubricas, db.outbox, async () => {
+      const rubrica = await db.rubricas.get(rubricaId)
+      if (!rubrica) throw new Error(`No existe la rúbrica ${rubricaId}`)
+
+      const momento = ahora()
+      await db.rubricas.put({ ...rubrica, activa, updated_at: momento })
+      await db.outbox.add({
+        tabla: 'rubricas',
+        registro_id: rubrica.id,
+        op: 'upsert',
+        at: momento,
+      })
+    })
+  }
+
+  async borrarRubrica(rubricaId: Id): Promise<void> {
+    await db.transaction('rw', db.rubricas, db.rubrica_criterios, db.outbox, async () => {
+      const rubrica = await db.rubricas.get(rubricaId)
+      if (!rubrica) return
+
+      const momento = ahora()
+      const renglones = (
+        await db.rubrica_criterios.where('rubrica_id').equals(rubricaId).toArray()
+      ).filter((c) => c.deleted_at === null)
+
+      await db.rubricas.put({ ...rubrica, deleted_at: momento, updated_at: momento })
+      await db.rubrica_criterios.bulkPut(
+        renglones.map((c) => ({ ...c, deleted_at: momento, updated_at: momento })),
+      )
+      await db.outbox.bulkAdd([
+        { tabla: 'rubricas' as const, registro_id: rubrica.id, op: 'delete' as const, at: momento },
+        ...renglones.map((c) => ({
+          tabla: 'rubrica_criterios' as const,
+          registro_id: c.id,
+          op: 'delete' as const,
+          at: momento,
+        })),
+      ])
+    })
+  }
+
+  async asignarRubrica(criterioTrimestreId: Id, rubricaId: Id | null): Promise<void> {
+    await db.transaction('rw', db.criterios_trimestre, db.outbox, async () => {
+      const ponderado = await db.criterios_trimestre.get(criterioTrimestreId)
+      if (!ponderado) throw new Error(`No existe el criterio ${criterioTrimestreId}`)
+
+      const momento = ahora()
+      await db.criterios_trimestre.put({
+        ...ponderado,
+        rubrica_id: rubricaId,
+        updated_at: momento,
+      })
+      await db.outbox.add({
+        tabla: 'criterios_trimestre',
+        registro_id: ponderado.id,
+        op: 'upsert',
+        at: momento,
+      })
     })
   }
 }
