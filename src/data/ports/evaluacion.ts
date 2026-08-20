@@ -27,7 +27,7 @@ export interface CicloEnCurso {
  * el tipo es lo que decide cómo se captura.
  */
 export interface CriterioDelTrimestre {
-  /** La fila del trimestre: peso, orden, rúbrica. Es la que se edita. */
+  /** La fila del trimestre: peso y orden. Es la que se edita. */
   ponderado: CriterioTrimestre
   /** La entrada del catálogo: nombre y tipo. Se comparte entre trimestres. */
   criterio: Criterio
@@ -51,7 +51,7 @@ export interface RubricaConCriterios {
   rubrica: Rubrica
   /** Ordenados por `orden`. */
   criterios: RubricaCriterio[]
-  /** Si algún `CriterioTrimestre` la referencia. Una en uso no se borra. */
+  /** Si alguna actividad la referencia. Una en uso no se borra, se desactiva. */
   enUso: boolean
 }
 
@@ -142,13 +142,12 @@ export interface EvaluacionRepo {
   quitarCriterio(criterioTrimestreId: Id): Promise<void>
 
   /**
-   * Copia el reparto de otro trimestre: criterios, pesos, rúbrica y meta de
-   * participación.
+   * Copia el reparto de otro trimestre: criterios, pesos y meta de participación.
    *
-   * **No** copia actividades, entregas, evaluaciones ni resultados de examen. Son
-   * filas nuevas de `CriterioTrimestre`, así que cambiar un peso en el trimestre
-   * nuevo no puede tocar nada de lo ya calculado en el de origen
-   * (docs/DATA-MODEL.md).
+   * **No** copia actividades, entregas, evaluaciones ni resultados de examen —y
+   * por lo tanto tampoco rúbricas, que ahora cuelgan de la actividad—. Son filas
+   * nuevas de `CriterioTrimestre`, así que cambiar un peso en el trimestre nuevo
+   * no puede tocar nada de lo ya calculado en el de origen (docs/DATA-MODEL.md).
    */
   copiarEsquema(desdeTrimestreId: Id, haciaTrimestreId: Id): Promise<void>
 
@@ -183,10 +182,4 @@ export interface EvaluacionRepo {
    * la usa: la regla vive en el caso de uso.
    */
   borrarRubrica(rubricaId: Id): Promise<void>
-
-  /**
-   * Le pone rúbrica a un criterio del trimestre, o se la quita con `null`. Sin
-   * rúbrica, la captura de ese criterio es binaria: entregada o no entregada.
-   */
-  asignarRubrica(criterioTrimestreId: Id, rubricaId: Id | null): Promise<void>
 }

@@ -3,7 +3,6 @@ import { useMemo, useState } from 'react'
 import {
   agregarCriterio,
   ajustarPeso,
-  asignarRubrica,
   copiarEsquemaDe,
   estadoDelReparto,
   quitarCriterio,
@@ -19,7 +18,6 @@ import { Button } from '@/ui/components/ui/button'
 import { Input } from '@/ui/components/ui/input'
 import { useCicloEnCurso } from '@/ui/hooks/useCicloEnCurso'
 import { useEsquemaTrimestre } from '@/ui/hooks/useEsquemaTrimestre'
-import { useRubricas } from '@/ui/hooks/useRubricas'
 import { cn } from '@/ui/lib/utils'
 
 /**
@@ -257,66 +255,7 @@ function FilaCriterio({
         </button>
       </div>
 
-      {/* Solo los entregables: un examen se califica con aciertos por campo, y
-          una rúbrica ahí no tendría dónde aplicarse. */}
-      {catalogo.tipo === 'entregable' && (
-        <SelectorDeRubrica criterio={criterio} trimestre={trimestre} />
-      )}
     </li>
-  )
-}
-
-/**
- * Con qué se califica este criterio. Sin rúbrica la captura es binaria —entregada
- * o no entregada—, que es un modo legítimo y no un estado incompleto: para las
- * tareas del día, palomear es exactamente lo que ella quiere hacer.
- *
- * Las desactivadas no se ofrecen, pero la que ya está puesta se sigue mostrando
- * aunque se haya desactivado: si no, la fila mentiría sobre cómo se está
- * calificando.
- */
-function SelectorDeRubrica({
-  criterio,
-  trimestre,
-}: {
-  criterio: CriterioDelTrimestre
-  trimestre: Trimestre
-}) {
-  const { rubricas } = useRubricas()
-  const abierto = trimestre.estado === 'abierto'
-  const puesta = criterio.ponderado.rubrica_id
-  const ofrecidas = rubricas.filter((r) => r.rubrica.activa || r.rubrica.id === puesta)
-
-  return (
-    <div className="flex flex-wrap items-center gap-2 pb-2 pl-[3.25rem]">
-      <label
-        htmlFor={`rubrica-${criterio.ponderado.id}`}
-        className="text-[13px] text-tinta-2"
-      >
-        Se califica con
-      </label>
-      <select
-        id={`rubrica-${criterio.ponderado.id}`}
-        value={puesta ?? ''}
-        disabled={!abierto}
-        onChange={(e) =>
-          void asignarRubrica(trimestre, criterio, e.target.value === '' ? null : e.target.value)
-        }
-        className={cn(
-          'h-11 rounded-md border border-linea bg-papel px-2 text-base text-tinta',
-          'outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
-          'disabled:pointer-events-none disabled:opacity-50',
-        )}
-      >
-        <option value="">Entregada / no entregada</option>
-        {ofrecidas.map((r) => (
-          <option key={r.rubrica.id} value={r.rubrica.id}>
-            {r.rubrica.nombre}
-            {!r.rubrica.activa && ' (desactivada)'}
-          </option>
-        ))}
-      </select>
-    </div>
   )
 }
 

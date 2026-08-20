@@ -12,7 +12,7 @@ español también (`asistencia`, `calificaciones`, `alumnos`).
 **`docs/ESTADO.md` es la fuente de verdad del estatus.** Leerlo antes de decidir
 qué construir; el resumen de aquí abajo se queda viejo primero.
 
-Hecho hasta C21. Existen y funcionan:
+Hecho hasta C21, más el fix C21c. Existen y funcionan:
 
 - **`domain/`** completo para asistencia y para la **estructura** de la
   evaluación: `entities.ts` con la jerarquía `Ciclo → … → Actividad`,
@@ -171,9 +171,12 @@ y fórmulas en `docs/DATA-MODEL.md`; lo que no se negocia al escribir código:
   reserva para las que nadie usó.
 - Editar una rúbrica **conserva el `id` de sus renglones**: es la clave de
   `EvaluacionRubrica.niveles`, y recrearlos dejaría huérfano lo ya calificado.
-- Un `CriterioTrimestre` sin `rubrica_id` no está incompleto: significa captura
-  binaria, entregada / no entregada. Solo los criterios `entregable` admiten
-  rúbrica.
+- **La rúbrica cuelga de la `Actividad`, no del `CriterioTrimestre`** (D-016). Un
+  criterio tiene muchas actividades y cada una se evalúa con lo que le toca; y con
+  la rúbrica en el criterio, cambiarla dejaba las `EvaluacionRubrica` ya capturadas
+  apuntando a renglones de la rúbrica vieja. Una actividad sin `rubrica_id` no está
+  incompleta: significa captura binaria, entregada / no entregada. Solo las
+  actividades de un criterio `entregable` admiten rúbrica.
 - La atribución al trimestre es **por fecha y nunca manual**: no existe ni debe
   existir un selector de trimestre. Una fecha fuera de todo rango devuelve `null`,
   que es un resultado normal —vacaciones, puentes— y no un error.

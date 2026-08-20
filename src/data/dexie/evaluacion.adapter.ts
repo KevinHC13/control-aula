@@ -178,7 +178,6 @@ export class DexieEvaluacionRepo implements EvaluacionRepo {
           // Nace en 0: un valor de arranque obligaría a adivinar el reparto.
           peso: 0,
           orden: yaEsta.length,
-          rubrica_id: null,
           meta_participacion: null,
           updated_at: momento,
           deleted_at: null,
@@ -252,15 +251,14 @@ export class DexieEvaluacionRepo implements EvaluacionRepo {
       const momento = ahora()
       // Filas **nuevas**, no las mismas: es lo que hace que cambiar un peso aquí
       // no pueda tocar nada de lo ya calculado en el trimestre de origen.
-      // Se copia el peso, la rúbrica y la meta; nunca actividades ni
-      // calificaciones, que no cuelgan de esta tabla.
+      // Se copia el peso y la meta; nunca actividades ni calificaciones, que no
+      // cuelgan de esta tabla, y por lo tanto tampoco rúbricas.
       const copias: CriterioTrimestre[] = porCopiar.map((c, i) => ({
         id: nuevoId(),
         trimestre_id: haciaTrimestreId,
         criterio_id: c.criterio_id,
         peso: c.peso,
         orden: destino.length + i,
-        rubrica_id: c.rubrica_id,
         meta_participacion: c.meta_participacion,
         updated_at: momento,
         deleted_at: null,
@@ -285,12 +283,13 @@ export class DexieEvaluacionRepo implements EvaluacionRepo {
     const renglones = (await db.rubrica_criterios.toArray()).filter(
       (c) => c.deleted_at === null,
     )
-    // Una sola pasada por los criterios del trimestre para saber cuáles están en
-    // uso: son pocos, y así `enUso` no cuesta una consulta por rúbrica.
+    // Una sola pasada por las actividades para saber qué rúbricas están en uso:
+    // así `enUso` no cuesta una consulta por rúbrica. La rúbrica cuelga de la
+    // actividad, no del criterio (docs/DATA-MODEL.md).
     const usadas = new Set(
-      (await db.criterios_trimestre.toArray())
-        .filter((c) => c.deleted_at === null && c.rubrica_id !== null)
-        .map((c) => c.rubrica_id),
+      (await db.actividades.toArray())
+        .filter((a) => a.deleted_at === null && a.rubrica_id !== null)
+        .map((a) => a.rubrica_id),
     )
 
     return rubricas
@@ -419,26 +418,6 @@ export class DexieEvaluacionRepo implements EvaluacionRepo {
           at: momento,
         })),
       ])
-    })
-  }
-
-  async asignarRubrica(criterioTrimestreId: Id, rubricaId: Id | null): Promise<void> {
-    await db.transaction('rw', db.criterios_trimestre, db.outbox, async () => {
-      const ponderado = await db.criterios_trimestre.get(criterioTrimestreId)
-      if (!ponderado) throw new Error(`No existe el criterio ${criterioTrimestreId}`)
-
-      const momento = ahora()
-      await db.criterios_trimestre.put({
-        ...ponderado,
-        rubrica_id: rubricaId,
-        updated_at: momento,
-      })
-      await db.outbox.add({
-        tabla: 'criterios_trimestre',
-        registro_id: ponderado.id,
-        op: 'upsert',
-        at: momento,
-      })
     })
   }
 }

@@ -437,7 +437,7 @@ corta por caso de uso (docs/ARCHITECTURE.md).
 **Aceptación**
 - [x] El total corriente de pesos es visible mientras se edita
 - [x] Se permite guardar con suma distinta de 100; solo se bloquea el cierre
-- [x] Copiar de un trimestre anterior trae criterios, pesos y rúbricas
+- [x] Copiar de un trimestre anterior trae criterios y pesos
 - [x] Copiar **no** trae actividades ni calificaciones
 - [x] Cambiar un peso en T2 no altera ninguna calificación de T1
 
@@ -462,6 +462,11 @@ Decisiones que salieron de construirlo:
   que copiar el esquema y comparar entre periodos signifiquen algo. Las filas de
   `CriterioTrimestre`, en cambio, son siempre nuevas, y es eso lo que aísla los
   pesos.
+
+El criterio de aceptación original decía «copiar trae criterios, pesos **y
+rúbricas**». Dejó de aplicar: la rúbrica se movió a la actividad (D-016), así que
+no hay rúbrica en este nivel que copiar. Lo que se copia sigue siendo lo mismo,
+menos ese campo.
 - **Quitar un criterio no toca el catálogo**, solo la fila del trimestre.
 - **La pantalla no ofrece `personalizado` ni los `auto_*`.** Un tipo sin forma de
   captura definida la llevaría a crear un criterio que después no tiene pantalla
@@ -476,6 +481,10 @@ Pantalla *Rúbricas* en Ajustes, más el selector de rúbrica en cada criterio
 entregable de *Criterios y pesos*. Lo segundo no estaba en los criterios de
 aceptación pero sí en el commit: una rúbrica que no se le puede asignar a nada es
 dato huérfano, y C23 no tendría de dónde leer con qué calificar.
+
+**Corregido después, en C21c:** el selector estaba en el nivel equivocado. La
+rúbrica cuelga de la **actividad**, no del criterio (D-016), así que ese selector se
+retiró y la asignación llega en C21b.
 
 **Aceptación**
 - [x] `niveles` y `valores` tienen la misma longitud
@@ -505,11 +514,36 @@ Decisiones que salieron de construirlo:
 - **Una rúbrica nueva arranca con un solo renglón**, no con cuatro en blanco:
   cuatro campos vacíos parecen una obligación, uno parece un ejemplo.
 - **Solo los criterios `entregable` ofrecen rúbrica.** Un examen se califica con
-  aciertos por campo formativo y una rúbrica ahí no tendría dónde aplicarse.
+  aciertos por campo formativo y una rúbrica ahí no tendría dónde aplicarse. Sigue
+  valiendo con la rúbrica en la actividad: se pregunta por el tipo del criterio del
+  que la actividad cuelga.
 - **Sin rúbrica no es un estado incompleto**, es un modo: para las tareas del día,
   palomear entregada / no entregada es exactamente lo que ella quiere.
 - **El editor marca al primer cambio, no al abrir.** Una rúbrica recién abierta con
   todo en rojo regaña antes de que ella haya hecho nada.
+
+### ✅ C21c · `fix(evaluacion): mover la rubrica del criterio a la actividad`
+
+Corrección de modelo salida de revisar C21, antes de que existieran actividades.
+Decisión y razones en [DECISIONES.md](./DECISIONES.md) D-016.
+
+`rubrica_id` sale de `CriterioTrimestre` y entra en `Actividad`. Un criterio tiene
+muchas actividades y una actividad tiene una rúbrica; con la rúbrica en el criterio,
+cambiarla a mitad del trimestre dejaba las `EvaluacionRubrica` ya capturadas
+apuntando a renglones de la rúbrica vieja, y una calificación ya dada desaparecía
+sin avisar.
+
+**Aceptación**
+- [x] `Actividad` declara `rubrica_id`; `CriterioTrimestre` ya no
+- [x] `enUso` de una rúbrica se mide por las actividades que la referencian, no por los criterios
+- [x] Una actividad sin rúbrica no marca ninguna en uso: `null` es captura binaria, no un hueco
+- [x] Copiar el esquema de un trimestre no arrastra rúbricas
+- [x] No hizo falta versión nueva del esquema: `rubrica_id` nunca estuvo indexado
+
+Sin migración: la base no tenía una sola actividad. El selector de *Criterios y
+pesos* se retiró y la asignación llega en C21b, así que **por ahora «una rúbrica en
+uso no se puede borrar» solo se verifica en Vitest**: no hay camino en la interfaz
+para dejar una rúbrica en uso.
 
 ### ▶ C21b · `feat(evaluacion): crear actividades por campo formativo`
 
@@ -520,6 +554,9 @@ qué operar.
 - [ ] Toda actividad se crea dentro de un `CriterioTrimestre`, nunca suelta
 - [ ] El campo formativo se elige antes de nombrar la actividad
 - [ ] Los ejes articuladores son opcionales
+- [ ] Con qué se califica se elige en la actividad: una rúbrica activa, o entregada / no entregada
+- [ ] La rúbrica llega precargada con la de la actividad anterior del mismo criterio
+- [ ] Cambiar la rúbrica de una actividad ya calificada avisa de lo que se pierde
 - [ ] No se pueden crear actividades en un trimestre cerrado
 - [ ] La lista distingue visualmente las actividades ya calificadas de las que no
 - [ ] Borrar una actividad con calificaciones pide confirmación explícita

@@ -1,7 +1,6 @@
 import { repos } from '@/data'
 import type {
   CicloEnCurso,
-  CriterioDelTrimestre,
   EsquemaTrimestre,
   PeriodoNuevo,
   RubricaConCriterios,
@@ -448,10 +447,10 @@ export async function activarRubrica(rubricaId: Id): Promise<void> {
 }
 
 /**
- * Borra la rúbrica, y **solo** si nadie la usa.
+ * Borra la rúbrica, y **solo** si ninguna actividad la usa.
  *
- * Una rúbrica que algún criterio referencia no se borra: hacerlo dejaría a ese
- * criterio apuntando a nada y convertiría su captura en binaria de un día para
+ * Una rúbrica que alguna actividad referencia no se borra: hacerlo dejaría a esa
+ * actividad apuntando a nada y convertiría su captura en binaria de un día para
  * otro, cambiando calificaciones ya dadas. Para esas está `desactivarRubrica`.
  */
 export async function borrarRubrica(rubrica: RubricaConCriterios): Promise<void> {
@@ -459,25 +458,4 @@ export async function borrarRubrica(rubrica: RubricaConCriterios): Promise<void>
     throw new Error('Esta rúbrica está en uso: se puede desactivar, no borrar')
   }
   await repos.evaluacion.borrarRubrica(rubrica.rubrica.id)
-}
-
-/**
- * Le pone rúbrica a un criterio del trimestre, o se la quita con `null`.
- *
- * Solo tiene sentido en criterios de tipo `entregable`: un examen se califica con
- * aciertos por campo, y una rúbrica ahí no tendría dónde aplicarse.
- */
-export async function asignarRubrica(
-  trimestre: Trimestre,
-  criterio: CriterioDelTrimestre,
-  rubricaId: Id | null,
-): Promise<void> {
-  if (!aceptaEscrituras(trimestre)) {
-    throw new Error('Un trimestre cerrado no admite cambiar la rúbrica')
-  }
-  if (criterio.criterio.tipo !== 'entregable') {
-    throw new Error('Solo los criterios entregables se califican con rúbrica')
-  }
-
-  await repos.evaluacion.asignarRubrica(criterio.ponderado.id, rubricaId)
 }

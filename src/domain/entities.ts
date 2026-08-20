@@ -105,8 +105,6 @@ export interface CriterioTrimestre extends Sincronizable {
    *  poder guardar: editar siempre pasa por estados intermedios inválidos. */
   peso: number
   orden: number
-  /** `null` ⇒ la captura es binaria, entregada / no entregada. */
-  rubrica_id: Id | null
   /** Solo para `auto_participacion`, que está pospuesto. */
   meta_participacion: number | null
 }
@@ -118,6 +116,22 @@ export interface Actividad extends Sincronizable {
   /** Ejes articuladores. Opcionales. */
   ejes: string[]
   fecha: Fecha
+  /**
+   * Con qué se califica esta actividad. `null` ⇒ captura binaria, entregada / no
+   * entregada.
+   *
+   * Vive aquí y no en el `CriterioTrimestre` porque un criterio tiene muchas
+   * actividades y cada una se evalúa con lo que le corresponde: dentro de
+   * «Entregables» caben un texto escrito y una exposición, que no comparten
+   * rúbrica, y una tarea de palomita junto a un proyecto con rúbrica.
+   *
+   * Y hay una razón más dura: `EvaluacionRubrica.niveles` se indexa por
+   * `rubrica_criterio_id`. Con la rúbrica en el criterio, cambiarla a mitad del
+   * trimestre dejaría las evaluaciones ya capturadas apuntando a renglones de la
+   * rúbrica vieja —la pantalla mostraría los nuevos vacíos y el promedio se
+   * calcularía sobre lo que quedara—. Anclada a la actividad, eso no puede pasar.
+   */
+  rubrica_id: Id | null
 }
 
 export interface Rubrica extends Sincronizable {
@@ -125,7 +139,7 @@ export interface Rubrica extends Sincronizable {
   /**
    * Una rúbrica que ya se usó no se borra: se desactiva.
    *
-   * `activa: false` la saca del selector de criterios nuevos, pero **no** rompe
+   * `activa: false` la saca del selector de actividades nuevas, pero **no** rompe
    * las actividades que ya se calificaron con ella —esas la siguen resolviendo
    * por `id`, sin mirar este campo—. Es distinto de `deleted_at`, que se reserva
    * para una rúbrica que nadie llegó a usar: ahí sí se puede borrar de verdad,

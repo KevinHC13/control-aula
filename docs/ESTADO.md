@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Actualizado el **2026-08-20**, con C18 a C21 terminados. Este es el documento que se lee primero para saber
+Actualizado el **2026-08-20**, con C18 a C21 terminados, más el fix C21c. Este es el documento que se lee primero para saber
 dónde va el proyecto y qué sigue. El plan detallado, con criterios de aceptación
 por commit, está en [COMMITS.md](./COMMITS.md).
 
@@ -15,8 +15,9 @@ Asistencia está terminada y entregada en el iPad. La semana de uso real ya pas�
 la validación con la usuaria tiró el modelo de calificaciones que estaba planeado.
 La Fase 4 va en marcha: **C18 a C21 están hechos** —dominio de evaluación,
 `db.version(2)`, el ciclo escolar con sus trimestres, los criterios con sus pesos y
-las rúbricas—. Lo que sigue es `C21b`: las actividades, que es lo primero que se
-va a tocar todos los días.
+las rúbricas—, y con una corrección de modelo encima: la rúbrica cuelga de la
+actividad, no del criterio (D-016). Lo que sigue es `C21b`: las actividades, que es
+lo primero que se va a tocar todos los días.
 
 ## Fases
 
@@ -26,7 +27,7 @@ va a tocar todos los días.
 | 2 · Asistencia | El vertical completo hasta el iPad | ✅ Terminada |
 | Hito | Entrega, pausa de una semana, validación | ✅ Cumplido |
 | 3 · Resto de la v1 | Notas, resumen, respaldo, cumpleaños, sincronía | ⬜ Sin empezar |
-| 4 · Evaluación | Ciclo, trimestres, criterios, rúbricas, cálculo | ▶ En curso: C18–C21 hechos, sigue C21b |
+| 4 · Evaluación | Ciclo, trimestres, criterios, rúbricas, cálculo | ▶ En curso: C18–C21 y C21c hechos, sigue C21b |
 
 ## Lo que existe y funciona
 
@@ -92,6 +93,13 @@ Toda actividad se crea **dentro de un `CriterioTrimestre`**, nunca suelta, y el
 campo formativo se elige antes de nombrarla: es la agrupación con la que ella
 reporta, así que elegirlo después invita a dejarlo en el que venía por omisión. Los
 ejes articuladores son opcionales.
+
+C21b también trae **con qué se califica cada actividad**, que es donde vive la
+rúbrica desde el fix C21c: una rúbrica activa, o `null` para entregada / no
+entregada. Llega precargada con la de la actividad anterior del mismo criterio —un
+valor derivado, no configuración— y cambiarla en una actividad ya calificada tiene
+que avisar de lo que se pierde, porque `EvaluacionRubrica.niveles` está indexado por
+los renglones de la rúbrica anterior.
 
 Y hay una decisión de UI que tomar ahí y no después: **dónde viven las
 actividades.** No son Ajustes —se tocan varias veces por semana— así que van en la
@@ -160,6 +168,13 @@ campos formativos. Los tres se resolvieron en la validación.
 - No hay forma de reordenar los renglones de una rúbrica desde la pantalla. El
   `orden` se guarda y se respeta, y el adaptador ya sabe reordenar si le llegan en
   otro orden; falta el gesto en la interfaz.
+- **No hay forma de asignarle una rúbrica a nada** hasta C21b: el selector de
+  *Criterios y pesos* se retiró con el fix C21c y el de la actividad todavía no
+  existe. Mientras tanto, «una rúbrica en uso no se puede borrar» solo se verifica
+  en Vitest, porque no hay camino en la interfaz para dejar una en uso.
+- Las filas de `criterios_trimestre` creadas antes del fix conservan un
+  `rubrica_id` que ya nadie lee. Solo existe en bases de desarrollo —`version(2)`
+  no se ha desplegado— y es una propiedad de sobra, no un dato que mienta.
 - No hay forma de reordenar los criterios de un trimestre. El campo `orden`
   existe y se respeta al leer, pero solo lo fija el orden de alta.
 - Cerrar un trimestre no tiene interfaz (es C27). La regla de que un trimestre

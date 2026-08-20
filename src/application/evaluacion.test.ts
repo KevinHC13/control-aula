@@ -12,7 +12,6 @@ import {
   agregarCriterio,
   ajustarFechasTrimestre,
   ajustarPeso,
-  asignarRubrica,
   borrarRubrica,
   cicloEnCurso,
   copiarEsquemaDe,
@@ -64,6 +63,7 @@ beforeEach(async () => {
   await db.criterios_trimestre.clear()
   await db.rubricas.clear()
   await db.rubrica_criterios.clear()
+  await db.actividades.clear()
   await db.outbox.clear()
 })
 
@@ -729,10 +729,22 @@ describe('desactivar y borrar', () => {
     })
     await agregarCriterio(t1, 'Tareas', 'entregable')
     const criterio = (await esquemaDelTrimestre(t1.id))!.criterios[0]!
-    await asignarRubrica(t1, criterio, rubricaId)
+    // La rúbrica cuelga de la actividad. Las actividades no tienen caso de uso
+    // hasta C21b, así que la prueba la escribe directo.
+    await db.actividades.add({
+      id: 'actividad-1',
+      updated_at: '2026-09-01T00:00:00.000Z',
+      deleted_at: null,
+      criterio_trimestre_id: criterio.ponderado.id,
+      nombre: 'Cuento de terror',
+      campo: 'lenguajes',
+      ejes: [],
+      fecha: '2026-09-01',
+      rubrica_id: rubricaId,
+    })
 
     const enUso = (await rubricas())[0]!
-    // Borrarla dejaría a ese criterio apuntando a nada y su captura pasaría a
+    // Borrarla dejaría a esa actividad apuntando a nada y su captura pasaría a
     // binaria de un día para otro, cambiando calificaciones ya dadas.
     await expect(borrarRubrica(enUso)).rejects.toThrow(/en uso/)
     expect(await rubricas()).toHaveLength(1)
@@ -767,57 +779,5 @@ describe('desactivar y borrar', () => {
     expect((await rubricas())[0]?.rubrica.activa).toBe(false)
     await activarRubrica(id)
     expect((await rubricas())[0]?.rubrica.activa).toBe(true)
-  })
-})
-
-describe('asignarRubrica', () => {
-  it('solo los criterios entregables se califican con rúbrica', async () => {
-    const ciclo = await unCiclo()
-    const t1 = ciclo.trimestres[0]!
-    const rubricaId = await guardarRubrica({
-      nombre: 'Trabajo escrito',
-      renglones: [{ nombre: 'Ortografía', descriptores: DESCRIPTORES }],
-    })
-    await agregarCriterio(t1, 'Examen final', 'examen')
-    const criterio = (await esquemaDelTrimestre(t1.id))!.criterios[0]!
-
-    // Un examen se califica con aciertos por campo: una rúbrica ahí no tendría
-    // dónde aplicarse.
-    await expect(asignarRubrica(t1, criterio, rubricaId)).rejects.toThrow(/entregables/)
-  })
-
-  it('un trimestre cerrado no admite cambiar la rúbrica', async () => {
-    const ciclo = await unCiclo()
-    const t1 = ciclo.trimestres[0]!
-    const rubricaId = await guardarRubrica({
-      nombre: 'Trabajo escrito',
-      renglones: [{ nombre: 'Ortografía', descriptores: DESCRIPTORES }],
-    })
-    await agregarCriterio(t1, 'Tareas', 'entregable')
-    const criterio = (await esquemaDelTrimestre(t1.id))!.criterios[0]!
-
-    await expect(
-      asignarRubrica({ ...t1, estado: 'cerrado' }, criterio, rubricaId),
-    ).rejects.toThrow(/cerrado/)
-  })
-
-  it('quitarla devuelve el criterio a la captura binaria', async () => {
-    const ciclo = await unCiclo()
-    const t1 = ciclo.trimestres[0]!
-    const rubricaId = await guardarRubrica({
-      nombre: 'Trabajo escrito',
-      renglones: [{ nombre: 'Ortografía', descriptores: DESCRIPTORES }],
-    })
-    await agregarCriterio(t1, 'Tareas', 'entregable')
-    const criterio = (await esquemaDelTrimestre(t1.id))!.criterios[0]!
-
-    await asignarRubrica(t1, criterio, rubricaId)
-    const conRubrica = (await esquemaDelTrimestre(t1.id))!.criterios[0]!
-    expect(conRubrica.ponderado.rubrica_id).toBe(rubricaId)
-
-    await asignarRubrica(t1, conRubrica, null)
-    expect(
-      (await esquemaDelTrimestre(t1.id))!.criterios[0]!.ponderado.rubrica_id,
-    ).toBeNull()
   })
 })

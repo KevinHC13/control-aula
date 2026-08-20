@@ -212,7 +212,6 @@ export interface CriterioTrimestre extends Sincronizable {
   criterio_id: Id
   peso: number                       // 0–100
   orden: number
-  rubrica_id: Id | null              // null ⇒ captura entregada/no entregada
   meta_participacion: number | null  // solo auto_participacion
 }
 ```
@@ -227,9 +226,10 @@ pantalla.
 Al abrir un trimestre nuevo se ofrece copiar del anterior. Se copia:
 
 - Filas de `CriterioTrimestre` con sus pesos
-- La referencia a la rúbrica y la meta de participación
+- La meta de participación
 
-**No** se copia: actividades, entregas, evaluaciones ni resultados de examen.
+**No** se copia: actividades, entregas, evaluaciones ni resultados de examen. Y por
+lo tanto tampoco rúbricas: cuelgan de la actividad, no del criterio.
 
 Son filas nuevas, así que cambiar un peso en T2 no toca lo ya calculado en T1.
 
@@ -242,6 +242,7 @@ export interface Actividad extends Sincronizable {
   campo: CampoFormativo
   ejes: string[]                     // ejes articuladores
   fecha: Fecha
+  rubrica_id: Id | null              // null ⇒ captura entregada/no entregada
 }
 
 export interface Rubrica extends Sincronizable {
@@ -269,6 +270,24 @@ export const NIVEL_MAXIMO = 3
 
 Todos los criterios de una rúbrica pesan lo mismo. No hay ponderación interna.
 
+### La rúbrica cuelga de la actividad
+
+`rubrica_id` vive en `Actividad` y **no** en `CriterioTrimestre`. Un criterio tiene
+muchas actividades y cada una se evalúa con lo que le corresponde: dentro de
+«Entregables» caben un texto escrito y una exposición, que no comparten rúbrica, y
+una tarea de palomita junto a un proyecto con rúbrica.
+
+La razón dura es otra. `EvaluacionRubrica.niveles` se indexa por
+`rubrica_criterio_id`. Con la rúbrica en el criterio, cambiarla a mitad del
+trimestre dejaría las evaluaciones ya capturadas apuntando a renglones de la
+rúbrica vieja: la pantalla de captura mostraría los renglones nuevos vacíos y
+`valorConRubrica` promediaría sobre lo que quedara. Una calificación ya dada
+desaparecería sin avisar. Anclada a la actividad, eso no puede pasar.
+
+Al crear una actividad, la rúbrica llega precargada con la de la **actividad
+anterior del mismo criterio**. Es un valor derivado, no configuración: cero toques
+extra en el caso normal, y nada que ajustar en Ajustes.
+
 ### Desactivar no es borrar
 
 `activa` existe aparte de `deleted_at` porque son dos cosas distintas:
@@ -279,8 +298,8 @@ Todos los criterios de una rúbrica pesan lo mismo. No hay ponderación interna.
 - **Borrar** (`deleted_at`) se reserva para una rúbrica que **nadie** usa. Ahí no
   hay historia que respetar.
 
-Una rúbrica que algún `CriterioTrimestre` referencia no se borra. Hacerlo dejaría a
-ese criterio apuntando a nada y su captura pasaría a binaria de un día para otro,
+Una rúbrica que alguna `Actividad` referencia no se borra. Hacerlo dejaría a esa
+actividad apuntando a nada y su captura pasaría a binaria de un día para otro,
 cambiando calificaciones ya dadas.
 
 El `id` de cada `RubricaCriterio` es la clave de `EvaluacionRubrica.niveles`, así

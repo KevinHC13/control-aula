@@ -451,3 +451,44 @@ seis, y una migración a `db.version(2)` sobre un iPad con datos reales del sal�
 Se acepta porque la alternativa es una pantalla de calificaciones que ella no
 usaría, y en ese caso el resto de la app tampoco sobrevive: si sigue evaluando en
 el cuaderno, la asistencia acaba de vuelta ahí también.
+
+---
+
+## D-016 · La rúbrica cuelga de la actividad, no del criterio
+
+**Estado:** aceptada — 2026-08-20. Corrige a [D-015](#d-015--la-evaluación-se-modela-con-rúbricas-trimestres-y-pesos)
+
+El modelo validado puso `rubrica_id` en `CriterioTrimestre`. Está mal, y lo señaló
+la usuaria del repositorio revisando C21: **un criterio tiene muchas actividades y
+una actividad tiene una rúbrica.** La cardinalidad correcta es la de la actividad.
+
+**El argumento de dominio.** Dentro de un mismo criterio «Entregables» caben un
+texto escrito y una exposición, que no se evalúan con la misma rúbrica. Con la
+rúbrica en el criterio, además, el criterio fuerza uniformidad: no podría tener una
+tarea de palomita junto a un proyecto con rúbrica, que es un caso perfectamente
+normal.
+
+**El argumento que lo vuelve un defecto y no una preferencia.**
+`EvaluacionRubrica.niveles` se indexa por `rubrica_criterio_id`. Con la rúbrica en
+el criterio, cambiarla a mitad del trimestre deja las evaluaciones ya capturadas
+apuntando a renglones de la rúbrica vieja: la pantalla de captura mostraría los
+renglones nuevos vacíos y `valorConRubrica` promediaría sobre lo que quedara. Una
+calificación ya dada desaparece **sin avisar**, que es exactamente la clase de
+falla que este proyecto trata como inaceptable —una UI que miente en silencio—.
+
+**Qué se descarta.** Se consideró dejar `rubrica_id` en el criterio como *valor por
+omisión* y añadir el autoritativo en la actividad. Se rechazó: son dos lugares
+donde vive la misma idea, y cambiar el default sin que las actividades existentes se
+muevan se lee como que la app ignoró el cambio. El default sale de la **actividad
+anterior del mismo criterio**, que es un valor derivado y no configuración, y
+además suele ser mejor: lo último que usó es más probable que lo que configuró en
+agosto.
+
+**Momento.** Se corrigió antes de C21b, con cero actividades en la base, así que no
+hubo datos que migrar. `rubrica_id` nunca estuvo indexado en ninguna de las dos
+tablas, así que tampoco hizo falta una versión nueva del esquema.
+
+**Costo asumido.** El selector de rúbrica de *Criterios y pesos* —construido en
+C21— se retiró, y la asignación no existe hasta C21b. Mientras tanto el criterio de
+aceptación «una rúbrica en uso no se puede borrar» solo se verifica en Vitest: no
+hay camino en la interfaz para dejar una rúbrica en uso.

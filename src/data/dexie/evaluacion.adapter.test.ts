@@ -26,6 +26,25 @@ beforeEach(async () => {
   await db.outbox.clear()
 })
 
+/**
+ * Una actividad mínima. Las actividades no tienen caso de uso todavía —eso es
+ * C21b— pero la rúbrica ya cuelga de ellas, así que las pruebas de `enUso` las
+ * escriben directo.
+ */
+function unaActividad(criterioTrimestreId: string, rubricaId: string | null) {
+  return {
+    id: `actividad-${rubricaId ?? 'sin-rubrica'}`,
+    updated_at: '2026-09-01T00:00:00.000Z',
+    deleted_at: null,
+    criterio_trimestre_id: criterioTrimestreId,
+    nombre: 'Cuento de terror',
+    campo: 'lenguajes' as const,
+    ejes: [],
+    fecha: '2026-09-01',
+    rubrica_id: rubricaId,
+  }
+}
+
 /** Abre un ciclo y devuelve sus tres trimestres. */
 async function conCiclo() {
   await repo.abrirCiclo('2026–2027', PERIODOS)
@@ -363,19 +382,15 @@ describe('copiarEsquema', () => {
     expect(copia.map((c) => c.ponderado.peso)).toEqual([60, 40])
   })
 
-  it('trae la rúbrica y la meta de participación', async () => {
+  it('trae la meta de participación', async () => {
     const [t1, t2] = await conCiclo()
     await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
     const origen = (await repo.esquemaDeTrimestre(t1!.id))!.criterios[0]!.ponderado
-    await db.criterios_trimestre.update(origen.id, {
-      rubrica_id: 'rubrica-1',
-      meta_participacion: 10,
-    })
+    await db.criterios_trimestre.update(origen.id, { meta_participacion: 10 })
 
     await repo.copiarEsquema(t1!.id, t2!.id)
 
     const copia = (await repo.esquemaDeTrimestre(t2!.id))!.criterios[0]!.ponderado
-    expect(copia.rubrica_id).toBe('rubrica-1')
     expect(copia.meta_participacion).toBe(10)
   })
 
@@ -422,6 +437,7 @@ describe('copiarEsquema', () => {
       campo: 'saberes_pensamiento_cientifico',
       ejes: [],
       fecha: '2026-09-01',
+      rubrica_id: null,
     })
     await db.entregas.add({
       id: 'entrega-1',
@@ -505,7 +521,7 @@ describe('rubricas', () => {
     ])
   })
 
-  it('marca enUso cuando un criterio del trimestre la referencia', async () => {
+  it('marca enUso cuando una actividad la referencia, no un criterio', async () => {
     const [t1] = await conCiclo()
     const rubricaId = await repo.guardarRubrica({ nombre: 'Trabajo escrito' }, [
       RENGLON('Ortografía'),
@@ -514,20 +530,35 @@ describe('rubricas', () => {
     const ponderado = (await repo.esquemaDeTrimestre(t1!.id))!.criterios[0]!.ponderado
 
     expect((await repo.rubricas())[0]?.enUso).toBe(false)
-    await repo.asignarRubrica(ponderado.id, rubricaId)
+
+    await db.actividades.add(unaActividad(ponderado.id, rubricaId))
+
     expect((await repo.rubricas())[0]?.enUso).toBe(true)
   })
 
-  it('un criterio quitado deja de contar como uso', async () => {
+  it('una actividad borrada deja de contar como uso', async () => {
     const [t1] = await conCiclo()
     const rubricaId = await repo.guardarRubrica({ nombre: 'Trabajo escrito' }, [
       RENGLON('Ortografía'),
     ])
     await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
     const ponderado = (await repo.esquemaDeTrimestre(t1!.id))!.criterios[0]!.ponderado
-    await repo.asignarRubrica(ponderado.id, rubricaId)
+    const actividad = unaActividad(ponderado.id, rubricaId)
+    await db.actividades.add(actividad)
 
-    await repo.quitarCriterio(ponderado.id)
+    await db.actividades.update(actividad.id, { deleted_at: '2026-09-02T00:00:00.000Z' })
+
+    expect((await repo.rubricas())[0]?.enUso).toBe(false)
+  })
+
+  it('una actividad sin rúbrica no marca nada en uso', async () => {
+    const [t1] = await conCiclo()
+    await repo.guardarRubrica({ nombre: 'Trabajo escrito' }, [RENGLON('Ortografía')])
+    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
+    const ponderado = (await repo.esquemaDeTrimestre(t1!.id))!.criterios[0]!.ponderado
+
+    // Sin rúbrica no es un estado incompleto: es captura binaria.
+    await db.actividades.add(unaActividad(ponderado.id, null))
 
     expect((await repo.rubricas())[0]?.enUso).toBe(false)
   })
@@ -669,65 +700,5 @@ describe('borrarRubrica', () => {
 
   it('borrar algo que no existe no falla', async () => {
     await expect(repo.borrarRubrica('no-existe')).resolves.toBeUndefined()
-  })
-})
-
-describe('asignarRubrica', () => {
-  it('la pone y la quita', async () => {
-    const [t1] = await conCiclo()
-    const rubricaId = await repo.guardarRubrica({ nombre: 'Trabajo escrito' }, [
-      RENGLON('Ortografía'),
-    ])
-    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
-    const ponderado = (await repo.esquemaDeTrimestre(t1!.id))!.criterios[0]!.ponderado
-
-    // Nace sin rúbrica: la captura es binaria hasta que ella diga otra cosa.
-    expect(ponderado.rubrica_id).toBeNull()
-
-    await repo.asignarRubrica(ponderado.id, rubricaId)
-    expect(
-      (await repo.esquemaDeTrimestre(t1!.id))!.criterios[0]!.ponderado.rubrica_id,
-    ).toBe(rubricaId)
-
-    await repo.asignarRubrica(ponderado.id, null)
-    expect(
-      (await repo.esquemaDeTrimestre(t1!.id))!.criterios[0]!.ponderado.rubrica_id,
-    ).toBeNull()
-  })
-
-  it('encola el cambio del criterio, no de la rúbrica', async () => {
-    const [t1] = await conCiclo()
-    const rubricaId = await repo.guardarRubrica({ nombre: 'Trabajo escrito' }, [
-      RENGLON('Ortografía'),
-    ])
-    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
-    const ponderado = (await repo.esquemaDeTrimestre(t1!.id))!.criterios[0]!.ponderado
-    await db.outbox.clear()
-
-    await repo.asignarRubrica(ponderado.id, rubricaId)
-
-    const pendientes = await db.outbox.toArray()
-    expect(pendientes).toHaveLength(1)
-    expect(pendientes[0]?.tabla).toBe('criterios_trimestre')
-  })
-
-  it('la copia de esquema arrastra la rúbrica asignada', async () => {
-    const [t1, t2] = await conCiclo()
-    const rubricaId = await repo.guardarRubrica({ nombre: 'Trabajo escrito' }, [
-      RENGLON('Ortografía'),
-    ])
-    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
-    const ponderado = (await repo.esquemaDeTrimestre(t1!.id))!.criterios[0]!.ponderado
-    await repo.asignarRubrica(ponderado.id, rubricaId)
-
-    await repo.copiarEsquema(t1!.id, t2!.id)
-
-    expect(
-      (await repo.esquemaDeTrimestre(t2!.id))!.criterios[0]!.ponderado.rubrica_id,
-    ).toBe(rubricaId)
-  })
-
-  it('falla si el criterio no existe', async () => {
-    await expect(repo.asignarRubrica('no-existe', null)).rejects.toThrow()
   })
 })
