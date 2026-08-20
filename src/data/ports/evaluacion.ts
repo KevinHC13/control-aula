@@ -1,4 +1,5 @@
 import type {
+  Actividad,
   Ciclo,
   Criterio,
   CriterioTrimestre,
@@ -7,7 +8,7 @@ import type {
   TipoCriterio,
   Trimestre,
 } from '@/domain/entities'
-import type { Fecha, Id, Suscribible } from '@/domain/values'
+import type { CampoFormativo, Fecha, Id, Suscribible } from '@/domain/values'
 
 /**
  * El ciclo escolar con sus trimestres, que es como se lee siempre: un ciclo sin
@@ -64,6 +65,38 @@ export interface RenglonDeRubrica {
   id?: Id
   nombre: string
   descriptores: [string, string, string, string]
+}
+
+/**
+ * Una actividad con lo que hace falta para pintarla en la lista: si ya se
+ * calificó.
+ *
+ * `registros` cuenta los alumnos con captura en esta actividad. Cero significa
+ * **sin calificar**, y no es lo mismo que calificada con ceros: una actividad sin
+ * ningún registro se excluye del promedio (docs/DATA-MODEL.md). De ahí que la
+ * lista tenga que distinguirlas a la vista.
+ */
+export interface ActividadConEstado {
+  actividad: Actividad
+  registros: number
+}
+
+/** Las actividades de un criterio del trimestre, con el criterio que las agrupa. */
+export interface ActividadesDelCriterio {
+  ponderado: CriterioTrimestre
+  criterio: Criterio
+  /** Las más recientes primero: es lo que ella acaba de dejar y va a calificar. */
+  actividades: ActividadConEstado[]
+}
+
+/** Una actividad por crear o guardar. Sin los campos que genera el dispositivo. */
+export interface DatosActividad {
+  criterio_trimestre_id: Id
+  nombre: string
+  campo: CampoFormativo
+  ejes: string[]
+  fecha: Fecha
+  rubrica_id: Id | null
 }
 
 /** Un trimestre por crear: todavía no tiene `id` ni `ciclo_id`. */
@@ -182,4 +215,35 @@ export interface EvaluacionRepo {
    * la usa: la regla vive en el caso de uso.
    */
   borrarRubrica(rubricaId: Id): Promise<void>
+
+  /**
+   * Las actividades del trimestre, agrupadas por criterio.
+   *
+   * Solo los criterios que las admiten: un examen se captura por aciertos sobre el
+   * `CriterioTrimestre`, no por actividades, así que no aparece aquí.
+   */
+  actividadesDeTrimestre(trimestreId: Id): Promise<ActividadesDelCriterio[]>
+
+  /** Lo mismo, reactivo: crear una actividad la deja en la lista sin recargar. */
+  observarActividadesDeTrimestre(trimestreId: Id): Suscribible<ActividadesDelCriterio[]>
+
+  crearActividad(datos: DatosActividad): Promise<Id>
+
+  /**
+   * Guarda los cambios de una actividad.
+   *
+   * `descartarCaptura` borra en suave sus entregas y evaluaciones. Hace falta
+   * cuando cambia con qué se califica: `EvaluacionRubrica.niveles` está indexado
+   * por los renglones de la rúbrica anterior, así que conservarlos dejaría una
+   * calificación que ya no significa nada. Quien llama ya se lo advirtió a la
+   * maestra.
+   */
+  editarActividad(
+    actividadId: Id,
+    datos: DatosActividad,
+    descartarCaptura: boolean,
+  ): Promise<void>
+
+  /** Borra en suave la actividad y todo lo capturado en ella. */
+  borrarActividad(actividadId: Id): Promise<void>
 }

@@ -3,20 +3,30 @@ import 'fake-indexeddb/auto'
 
 import { afterAll, beforeEach, describe, expect, it } from 'vitest'
 
+import { repos } from '@/data'
 import { db } from '@/data/dexie/db'
-import type { Trimestre } from '@/domain/entities'
+import type { Actividad, Criterio, CriterioTrimestre, TipoCriterio, Trimestre } from '@/domain/entities'
+import { CAMPOS_FORMATIVOS } from '@/domain/values'
 
 import {
   abrirCicloEscolar,
   activarRubrica,
+  actividadesDelTrimestre,
   agregarCriterio,
   ajustarFechasTrimestre,
   ajustarPeso,
+  borrarActividad,
   borrarRubrica,
+  cambiaLaCaptura,
+  CAMPOS_CON_NOMBRE,
   cicloEnCurso,
   copiarEsquemaDe,
+  crearActividad,
   desactivarRubrica,
+  editarActividad,
+  EJES_ARTICULADORES,
   esquemaDelTrimestre,
+  estaCalificada,
   estadoDelReparto,
   guardarFechas,
   guardarRubrica,
@@ -30,6 +40,7 @@ import {
   revisarRubrica,
   rubricaEnEdicion,
   rubricaLista,
+  rubricaSugerida,
   rubricas,
   rubricaVacia,
   TIPOS_OFRECIDOS,
@@ -64,6 +75,8 @@ beforeEach(async () => {
   await db.rubricas.clear()
   await db.rubrica_criterios.clear()
   await db.actividades.clear()
+  await db.entregas.clear()
+  await db.eval_rubrica.clear()
   await db.outbox.clear()
 })
 
@@ -80,6 +93,64 @@ async function primerTrimestre(): Promise<Trimestre> {
 afterAll(() => {
   db.close()
 })
+
+const unaActividad = (): Actividad => ({
+  id: 'actividad-1',
+  updated_at: '2026-09-01T00:00:00.000Z',
+  deleted_at: null,
+  criterio_trimestre_id: 'ct-1',
+  nombre: 'Cuento de terror',
+  campo: 'lenguajes',
+  ejes: [],
+  fecha: '2026-09-01',
+  rubrica_id: null,
+})
+
+const unPonderado = (): CriterioTrimestre => ({
+  id: 'ct-1',
+  updated_at: '2026-08-24T00:00:00.000Z',
+  deleted_at: null,
+  trimestre_id: 'trimestre-1',
+  criterio_id: 'criterio-1',
+  peso: 40,
+  orden: 0,
+  meta_participacion: null,
+})
+
+const unCriterio = (tipo: TipoCriterio): Criterio => ({
+  id: 'criterio-1',
+  updated_at: '2026-08-24T00:00:00.000Z',
+  deleted_at: null,
+  nombre: 'Tareas',
+  tipo,
+})
+
+/**
+ * Un ciclo con un criterio entregable en T1, y opcionalmente una rúbrica lista
+ * para asignársela a una actividad.
+ */
+async function unCriterioEnT1(conRubrica = false) {
+  const ciclo = await unCiclo()
+  const trimestre = ciclo.trimestres[0]!
+  await agregarCriterio(trimestre, 'Tareas', 'entregable')
+  const criterio = (await esquemaDelTrimestre(trimestre.id))!.criterios[0]!
+
+  const rubricaId = conRubrica
+    ? await guardarRubrica({
+        nombre: 'Trabajo escrito',
+        renglones: [
+          { nombre: 'Ortografía', descriptores: ['a', 'b', 'c', 'd'] },
+        ],
+      })
+    : null
+
+  return {
+    trimestre,
+    criterio: criterio.criterio,
+    ponderadoId: criterio.ponderado.id,
+    rubricaId,
+  }
+}
 
 describe('periodosVacios', () => {
   it('arranca con los tres trimestres en blanco', () => {
@@ -779,5 +850,409 @@ describe('desactivar y borrar', () => {
     expect((await rubricas())[0]?.rubrica.activa).toBe(false)
     await activarRubrica(id)
     expect((await rubricas())[0]?.rubrica.activa).toBe(true)
+  })
+})
+
+describe('CAMPOS_CON_NOMBRE', () => {
+  it('son los cuatro campos formativos, con nombre para pantalla', () => {
+    expect(CAMPOS_CON_NOMBRE).toHaveLength(4)
+    expect(CAMPOS_CON_NOMBRE.map((c) => c.campo)).toEqual([...CAMPOS_FORMATIVOS])
+    expect(CAMPOS_CON_NOMBRE.every((c) => c.nombre.trim() !== '')).toBe(true)
+  })
+})
+
+describe('EJES_ARTICULADORES', () => {
+  it('son siete y no se repiten', () => {
+    expect(EJES_ARTICULADORES).toHaveLength(7)
+    expect(new Set(EJES_ARTICULADORES).size).toBe(7)
+  })
+})
+
+describe('estaCalificada', () => {
+  it('cero registros es sin calificar', () => {
+    // No es lo mismo que calificada con ceros: sin registros, la actividad se
+    // excluye del promedio.
+    expect(estaCalificada({ actividad: unaActividad(), registros: 0 })).toBe(false)
+  })
+
+  it('con un registro ya cuenta como calificada', () => {
+    expect(estaCalificada({ actividad: unaActividad(), registros: 1 })).toBe(true)
+  })
+})
+
+describe('rubricaSugerida', () => {
+  it('sin grupo no sugiere nada', () => {
+    expect(rubricaSugerida(undefined)).toBeNull()
+  })
+
+  it('hereda la rúbrica de la actividad más reciente del criterio', () => {
+    const grupo = {
+      ponderado: unPonderado(),
+      criterio: unCriterio('entregable'),
+      actividades: [
+        { actividad: { ...unaActividad(), rubrica_id: 'rubrica-2' }, registros: 0 },
+        { actividad: { ...unaActividad(), rubrica_id: 'rubrica-1' }, registros: 3 },
+      ],
+    }
+    expect(rubricaSugerida(grupo)).toBe('rubrica-2')
+  })
+
+  it('hereda también el null: entregada / no entregada es una respuesta', () => {
+    const grupo = {
+      ponderado: unPonderado(),
+      criterio: unCriterio('entregable'),
+      actividades: [{ actividad: { ...unaActividad(), rubrica_id: null }, registros: 0 }],
+    }
+    expect(rubricaSugerida(grupo)).toBeNull()
+  })
+})
+
+describe('crearActividad', () => {
+  it('crea la actividad dentro del criterio', async () => {
+    const { trimestre, criterio, ponderadoId } = await unCriterioEnT1()
+
+    await crearActividad(trimestre, criterio, {
+      criterio_trimestre_id: ponderadoId,
+      nombre: 'Cuento de terror',
+      campo: 'lenguajes',
+      ejes: [],
+      fecha: '2026-09-15',
+      rubrica_id: null,
+    })
+
+    const grupos = await actividadesDelTrimestre(trimestre.id)
+    expect(grupos[0]?.actividades[0]?.actividad.nombre).toBe('Cuento de terror')
+    // Nunca suelta: cuelga del CriterioTrimestre.
+    expect(grupos[0]?.actividades[0]?.actividad.criterio_trimestre_id).toBe(ponderadoId)
+  })
+
+  it('recorta el nombre y colapsa los espacios', async () => {
+    const { trimestre, criterio, ponderadoId } = await unCriterioEnT1()
+
+    await crearActividad(trimestre, criterio, {
+      criterio_trimestre_id: ponderadoId,
+      nombre: '  Cuento   de terror  ',
+      campo: 'lenguajes',
+      ejes: [],
+      fecha: '2026-09-15',
+      rubrica_id: null,
+    })
+
+    const grupos = await actividadesDelTrimestre(trimestre.id)
+    expect(grupos[0]?.actividades[0]?.actividad.nombre).toBe('Cuento de terror')
+  })
+
+  it('rechaza el nombre vacío', async () => {
+    const { trimestre, criterio, ponderadoId } = await unCriterioEnT1()
+    await expect(
+      crearActividad(trimestre, criterio, {
+        criterio_trimestre_id: ponderadoId,
+        nombre: '   ',
+        campo: 'lenguajes',
+        ejes: [],
+        fecha: '2026-09-15',
+        rubrica_id: null,
+      }),
+    ).rejects.toThrow(/nombre/)
+  })
+
+  it('rechaza una fecha que no existe', async () => {
+    const { trimestre, criterio, ponderadoId } = await unCriterioEnT1()
+    await expect(
+      crearActividad(trimestre, criterio, {
+        criterio_trimestre_id: ponderadoId,
+        nombre: 'Cuento',
+        campo: 'lenguajes',
+        ejes: [],
+        fecha: '2026-02-31',
+        rubrica_id: null,
+      }),
+    ).rejects.toThrow(/AAAA-MM-DD/)
+  })
+
+  it('no se crean actividades en un trimestre cerrado', async () => {
+    const { trimestre, criterio, ponderadoId } = await unCriterioEnT1()
+
+    await expect(
+      crearActividad({ ...trimestre, estado: 'cerrado' }, criterio, {
+        criterio_trimestre_id: ponderadoId,
+        nombre: 'Cuento',
+        campo: 'lenguajes',
+        ejes: [],
+        fecha: '2026-09-15',
+        rubrica_id: null,
+      }),
+    ).rejects.toThrow(/cerrado/)
+
+    expect((await actividadesDelTrimestre(trimestre.id))[0]?.actividades).toEqual([])
+  })
+
+  it('un criterio de examen no admite actividades', async () => {
+    const ciclo = await unCiclo()
+    const t1 = ciclo.trimestres[0]!
+    await agregarCriterio(t1, 'Examen final', 'examen')
+    const criterio = (await esquemaDelTrimestre(t1.id))!.criterios[0]!
+
+    await expect(
+      crearActividad(t1, criterio.criterio, {
+        criterio_trimestre_id: criterio.ponderado.id,
+        nombre: 'Examen de septiembre',
+        campo: 'lenguajes',
+        ejes: [],
+        fecha: '2026-09-15',
+        rubrica_id: null,
+      }),
+    ).rejects.toThrow(/no se llena con actividades/)
+  })
+
+  it('rechaza una rúbrica que ya no existe', async () => {
+    const { trimestre, criterio, ponderadoId } = await unCriterioEnT1()
+    await expect(
+      crearActividad(trimestre, criterio, {
+        criterio_trimestre_id: ponderadoId,
+        nombre: 'Cuento',
+        campo: 'lenguajes',
+        ejes: [],
+        fecha: '2026-09-15',
+        rubrica_id: 'rubrica-fantasma',
+      }),
+    ).rejects.toThrow(/ya no existe/)
+  })
+
+  it('los ejes son opcionales', async () => {
+    const { trimestre, criterio, ponderadoId } = await unCriterioEnT1()
+
+    await crearActividad(trimestre, criterio, {
+      criterio_trimestre_id: ponderadoId,
+      nombre: 'Cuento',
+      campo: 'lenguajes',
+      ejes: [],
+      fecha: '2026-09-15',
+      rubrica_id: null,
+    })
+
+    const grupos = await actividadesDelTrimestre(trimestre.id)
+    expect(grupos[0]?.actividades[0]?.actividad.ejes).toEqual([])
+  })
+})
+
+describe('cambiaLaCaptura', () => {
+  const item = (rubricaId: string | null, registros: number) => ({
+    actividad: { ...unaActividad(), rubrica_id: rubricaId },
+    registros,
+  })
+  const datos = (rubricaId: string | null) => ({
+    criterio_trimestre_id: 'ct-1',
+    nombre: 'Cuento',
+    campo: 'lenguajes' as const,
+    ejes: [],
+    fecha: '2026-09-01',
+    rubrica_id: rubricaId,
+  })
+
+  it('sin nada capturado no hay nada que perder', () => {
+    expect(cambiaLaCaptura(item('rubrica-1', 0), datos('rubrica-2'))).toBe(false)
+  })
+
+  it('cambiar de rúbrica con calificaciones sí las tira', () => {
+    // `EvaluacionRubrica.niveles` está indexado por los renglones de la rúbrica
+    // anterior: conservarlos dejaría una calificación que ya no significa nada.
+    expect(cambiaLaCaptura(item('rubrica-1', 5), datos('rubrica-2'))).toBe(true)
+  })
+
+  it('pasar de rúbrica a binario, y al revés, también', () => {
+    expect(cambiaLaCaptura(item('rubrica-1', 5), datos(null))).toBe(true)
+    expect(cambiaLaCaptura(item(null, 5), datos('rubrica-1'))).toBe(true)
+  })
+
+  it('renombrar o mover la fecha no tira nada', () => {
+    const actual = item('rubrica-1', 5)
+    expect(
+      cambiaLaCaptura(actual, { ...datos('rubrica-1'), nombre: 'Otro', fecha: '2026-10-01' }),
+    ).toBe(false)
+  })
+})
+
+describe('editarActividad', () => {
+  it('renombrar conserva lo calificado', async () => {
+    const { trimestre, criterio, ponderadoId } = await unCriterioEnT1()
+    const id = await repos.evaluacion.crearActividad({
+      criterio_trimestre_id: ponderadoId,
+      nombre: 'Cuento',
+      campo: 'lenguajes',
+      ejes: [],
+      fecha: '2026-09-01',
+      rubrica_id: null,
+    })
+    await db.entregas.add({
+      id: 'e1',
+      updated_at: '2026-09-01T00:00:00.000Z',
+      deleted_at: null,
+      actividad_id: id,
+      alumno_id: 'alumno-1',
+      entregada: true,
+    })
+    const actual = (await actividadesDelTrimestre(trimestre.id))[0]!.actividades[0]!
+
+    await editarActividad(trimestre, criterio, actual, {
+      ...actual.actividad,
+      nombre: 'Cuento de terror',
+    })
+
+    const despues = (await actividadesDelTrimestre(trimestre.id))[0]!.actividades[0]!
+    expect(despues.actividad.nombre).toBe('Cuento de terror')
+    expect(despues.registros).toBe(1)
+  })
+
+  it('cambiar la rúbrica de una actividad calificada se niega sin confirmar', async () => {
+    const { trimestre, criterio, ponderadoId, rubricaId } = await unCriterioEnT1(true)
+    const id = await repos.evaluacion.crearActividad({
+      criterio_trimestre_id: ponderadoId,
+      nombre: 'Cuento',
+      campo: 'lenguajes',
+      ejes: [],
+      fecha: '2026-09-01',
+      rubrica_id: null,
+    })
+    await db.entregas.add({
+      id: 'e1',
+      updated_at: '2026-09-01T00:00:00.000Z',
+      deleted_at: null,
+      actividad_id: id,
+      alumno_id: 'alumno-1',
+      entregada: true,
+    })
+    const actual = (await actividadesDelTrimestre(trimestre.id))[0]!.actividades[0]!
+
+    await expect(
+      editarActividad(trimestre, criterio, actual, {
+        ...actual.actividad,
+        rubrica_id: rubricaId!,
+      }),
+    ).rejects.toThrow(/borra lo ya calificado/)
+
+    // Y no tocó nada.
+    const despues = (await actividadesDelTrimestre(trimestre.id))[0]!.actividades[0]!
+    expect(despues.actividad.rubrica_id).toBeNull()
+    expect(despues.registros).toBe(1)
+  })
+
+  it('confirmando, cambia la rúbrica y descarta lo calificado', async () => {
+    const { trimestre, criterio, ponderadoId, rubricaId } = await unCriterioEnT1(true)
+    const id = await repos.evaluacion.crearActividad({
+      criterio_trimestre_id: ponderadoId,
+      nombre: 'Cuento',
+      campo: 'lenguajes',
+      ejes: [],
+      fecha: '2026-09-01',
+      rubrica_id: null,
+    })
+    await db.entregas.add({
+      id: 'e1',
+      updated_at: '2026-09-01T00:00:00.000Z',
+      deleted_at: null,
+      actividad_id: id,
+      alumno_id: 'alumno-1',
+      entregada: true,
+    })
+    const actual = (await actividadesDelTrimestre(trimestre.id))[0]!.actividades[0]!
+
+    await editarActividad(
+      trimestre,
+      criterio,
+      actual,
+      { ...actual.actividad, rubrica_id: rubricaId! },
+      true,
+    )
+
+    const despues = (await actividadesDelTrimestre(trimestre.id))[0]!.actividades[0]!
+    expect(despues.actividad.rubrica_id).toBe(rubricaId)
+    expect(despues.registros).toBe(0)
+  })
+
+  it('un trimestre cerrado no admite editar actividades', async () => {
+    const { trimestre, criterio, ponderadoId } = await unCriterioEnT1()
+    const id = await repos.evaluacion.crearActividad({
+      criterio_trimestre_id: ponderadoId,
+      nombre: 'Cuento',
+      campo: 'lenguajes',
+      ejes: [],
+      fecha: '2026-09-01',
+      rubrica_id: null,
+    })
+    const actual = (await actividadesDelTrimestre(trimestre.id))[0]!.actividades[0]!
+    expect(actual.actividad.id).toBe(id)
+
+    await expect(
+      editarActividad({ ...trimestre, estado: 'cerrado' }, criterio, actual, {
+        ...actual.actividad,
+        nombre: 'Otro',
+      }),
+    ).rejects.toThrow(/cerrado/)
+  })
+})
+
+describe('borrarActividad', () => {
+  it('una actividad sin calificar se borra sin confirmar', async () => {
+    const { trimestre, ponderadoId } = await unCriterioEnT1()
+    await repos.evaluacion.crearActividad({
+      criterio_trimestre_id: ponderadoId,
+      nombre: 'Cuento',
+      campo: 'lenguajes',
+      ejes: [],
+      fecha: '2026-09-01',
+      rubrica_id: null,
+    })
+    const actual = (await actividadesDelTrimestre(trimestre.id))[0]!.actividades[0]!
+
+    await borrarActividad(trimestre, actual)
+
+    expect((await actividadesDelTrimestre(trimestre.id))[0]?.actividades).toEqual([])
+  })
+
+  it('una actividad calificada pide confirmación explícita', async () => {
+    const { trimestre, ponderadoId } = await unCriterioEnT1()
+    const id = await repos.evaluacion.crearActividad({
+      criterio_trimestre_id: ponderadoId,
+      nombre: 'Cuento',
+      campo: 'lenguajes',
+      ejes: [],
+      fecha: '2026-09-01',
+      rubrica_id: null,
+    })
+    await db.entregas.add({
+      id: 'e1',
+      updated_at: '2026-09-01T00:00:00.000Z',
+      deleted_at: null,
+      actividad_id: id,
+      alumno_id: 'alumno-1',
+      entregada: true,
+    })
+    const actual = (await actividadesDelTrimestre(trimestre.id))[0]!.actividades[0]!
+
+    // Se va con las calificaciones de los 30 alumnos: eso no puede pasar por un
+    // toque de más.
+    await expect(borrarActividad(trimestre, actual)).rejects.toThrow(/ya está calificada/)
+    expect((await actividadesDelTrimestre(trimestre.id))[0]?.actividades).toHaveLength(1)
+
+    await borrarActividad(trimestre, actual, true)
+    expect((await actividadesDelTrimestre(trimestre.id))[0]?.actividades).toEqual([])
+  })
+
+  it('un trimestre cerrado no admite borrar actividades', async () => {
+    const { trimestre, ponderadoId } = await unCriterioEnT1()
+    await repos.evaluacion.crearActividad({
+      criterio_trimestre_id: ponderadoId,
+      nombre: 'Cuento',
+      campo: 'lenguajes',
+      ejes: [],
+      fecha: '2026-09-01',
+      rubrica_id: null,
+    })
+    const actual = (await actividadesDelTrimestre(trimestre.id))[0]!.actividades[0]!
+
+    await expect(
+      borrarActividad({ ...trimestre, estado: 'cerrado' }, actual, true),
+    ).rejects.toThrow(/cerrado/)
   })
 })

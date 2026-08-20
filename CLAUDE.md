@@ -12,7 +12,7 @@ español también (`asistencia`, `calificaciones`, `alumnos`).
 **`docs/ESTADO.md` es la fuente de verdad del estatus.** Leerlo antes de decidir
 qué construir; el resumen de aquí abajo se queda viejo primero.
 
-Hecho hasta C21, más el fix C21c. Existen y funcionan:
+Hecho hasta C21b, más el fix C21c. Existen y funcionan:
 
 - **`domain/`** completo para asistencia y para la **estructura** de la
   evaluación: `entities.ts` con la jerarquía `Ciclo → … → Actividad`,
@@ -22,25 +22,27 @@ Hecho hasta C21, más el fix C21c. Existen y funcionan:
   sincronizables, adaptadores de alumnos y asistencia, los dos puertos, la
   `outbox` y la semilla (`grupo.ts` ignorado, `grupo.example.ts` versionado).
   De las once tablas de evaluación tienen puerto y adaptador `ciclos`,
-  `trimestres`, `criterios`, `criterios_trimestre`, `rubricas` y
-  `rubrica_criterios`; las otras cinco existen en el esquema y nadie las lee
-  todavía.
+  `trimestres`, `criterios`, `criterios_trimestre`, `rubricas`,
+  `rubrica_criterios` y `actividades`; `entregas` y `eval_rubrica` solo se leen
+  —para saber si una actividad está calificada—, y `examen_config`,
+  `resultados_examen` y `cierres` no se tocan todavía.
 - **`application/`**: `asistencia.ts`, `grupo.ts`, `importacion.ts`,
   `evaluacion.ts`.
 - **`services/`**: `extraccion.ts`, la única salida a red del cliente.
 - **`ui/`**: las cuatro pestañas, la de asistencia terminada (tira de días,
   calendario del mes, contador, filas, etiqueta del trimestre), Ajustes, la carga
-  de lista con IA, la configuración del ciclo escolar, los criterios con sus pesos
-  y las rúbricas.
-  `Calificaciones`, `Notas` y el resumen de `Grupo` siguen siendo placeholders.
+  de lista con IA, la configuración del ciclo escolar, los criterios con sus pesos,
+  las rúbricas, y `Calificaciones` con las actividades del trimestre.
+  `Notas` y el resumen de `Grupo` siguen siendo placeholders.
 - PWA con `vite-plugin-pwa`, Zustand y el aviso de actualización.
 - Una Edge Function desplegada en Supabase, `extraer-lista`, en
   `supabase/functions/`.
 
-**Lo que sigue es C21b**: crear actividades por campo formativo. Es el primero de
-la fase que entra al camino cotidiano, así que va en la pestaña Calificaciones y no
-en Ajustes. La migración a `version(2)` ya ocurrió y está probada en
-`src/data/dexie/migracion.test.ts`; no hay otra migración pendiente en la Fase 4.
+**Lo que sigue es C22**: capturar entregas por actividad. Se mide con cronómetro
+—30 alumnos con 4 no entregadas en menos de 15 segundos— y al abrir la actividad se
+escriben los 30 registros de golpe en `entregada: true`. La migración a
+`version(2)` ya ocurrió y está probada en `src/data/dexie/migracion.test.ts`; no hay
+otra migración pendiente en la Fase 4.
 
 Falta además de la Fase 3: notas, resumen del grupo, respaldo JSON, cumpleaños y
 el motor de sincronía. `C25` y `C26` —criterios automáticos de puntualidad,
@@ -176,7 +178,12 @@ y fórmulas en `docs/DATA-MODEL.md`; lo que no se negocia al escribir código:
   la rúbrica en el criterio, cambiarla dejaba las `EvaluacionRubrica` ya capturadas
   apuntando a renglones de la rúbrica vieja. Una actividad sin `rubrica_id` no está
   incompleta: significa captura binaria, entregada / no entregada. Solo las
-  actividades de un criterio `entregable` admiten rúbrica.
+  criterios `entregable` se llenan con actividades (`admiteActividades`); el examen
+  se captura por aciertos sobre el `CriterioTrimestre`.
+- **Cambiar con qué se califica una actividad descarta su captura**, y el caso de
+  uso exige confirmación explícita: `EvaluacionRubrica.niveles` está indexado por
+  los renglones de la rúbrica anterior. Renombrarla o moverle la fecha no tira
+  nada.
 - La atribución al trimestre es **por fecha y nunca manual**: no existe ni debe
   existir un selector de trimestre. Una fecha fuera de todo rango devuelve `null`,
   que es un resultado normal —vacaciones, puentes— y no un error.

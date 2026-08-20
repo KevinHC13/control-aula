@@ -1,8 +1,10 @@
 import { liveQuery } from 'dexie'
 
 import type {
+  ActividadesDelCriterio,
   CicloEnCurso,
   CriterioDelTrimestre,
+  DatosActividad,
   EsquemaTrimestre,
   EvaluacionRepo,
   PeriodoNuevo,
@@ -10,6 +12,7 @@ import type {
   RubricaConCriterios,
 } from '@/data/ports/evaluacion'
 import type {
+  Actividad,
   Ciclo,
   Criterio,
   CriterioTrimestre,
@@ -18,9 +21,13 @@ import type {
   TipoCriterio,
   Trimestre,
 } from '@/domain/entities'
-import type { Fecha, Id, Suscribible } from '@/domain/values'
+import { admiteActividades } from '@/domain/evaluacion'
+import type { Fecha, Id, Instante, Sincronizable, Suscribible } from '@/domain/values'
 
 import { ahora, db, nuevoId } from './db'
+
+/** Lo que `Entrega` y `EvaluacionRubrica` tienen en común para borrarlas juntas. */
+type CapturaDeActividad = Sincronizable & { actividad_id: Id }
 
 export class DexieEvaluacionRepo implements EvaluacionRepo {
   async cicloEnCurso(): Promise<CicloEnCurso | null> {
@@ -419,5 +426,153 @@ export class DexieEvaluacionRepo implements EvaluacionRepo {
         })),
       ])
     })
+  }
+
+  async actividadesDeTrimestre(trimestreId: Id): Promise<ActividadesDelCriterio[]> {
+    const esquema = await this.esquemaDeTrimestre(trimestreId)
+    if (!esquema) return []
+
+    // Solo los criterios que admiten actividades: el examen se captura por
+    // aciertos sobre el CriterioTrimestre, no por actividades.
+    const conActividades = esquema.criterios.filter((c) => admiteActividades(c.criterio.tipo))
+    if (conActividades.length === 0) return []
+
+    const deEsteTrimestre = new Set(conActividades.map((c) => c.ponderado.id))
+    const actividades = (await db.actividades.toArray()).filter(
+      (a) => a.deleted_at === null && deEsteTrimestre.has(a.criterio_trimestre_id),
+    )
+
+    // Los registros de captura en una sola pasada por actividad, no una consulta
+    // por fila. Con rúbrica o sin ella, cualquiera de los dos cuenta como
+    // calificada.
+    const cuenta = new Map<Id, number>()
+    for (const tabla of [db.entregas, db.eval_rubrica]) {
+      for (const registro of await tabla.toArray()) {
+        if (registro.deleted_at !== null) continue
+        cuenta.set(registro.actividad_id, (cuenta.get(registro.actividad_id) ?? 0) + 1)
+      }
+    }
+
+    return conActividades.map(({ ponderado, criterio }) => ({
+      ponderado,
+      criterio,
+      actividades: actividades
+        .filter((a) => a.criterio_trimestre_id === ponderado.id)
+        // Las más recientes primero. A igual fecha, la última capturada arriba:
+        // es la que ella acaba de crear.
+        .sort((a, b) => b.fecha.localeCompare(a.fecha) || b.updated_at.localeCompare(a.updated_at))
+        .map((actividad) => ({ actividad, registros: cuenta.get(actividad.id) ?? 0 })),
+    }))
+  }
+
+  observarActividadesDeTrimestre(trimestreId: Id): Suscribible<ActividadesDelCriterio[]> {
+    return liveQuery(() => this.actividadesDeTrimestre(trimestreId))
+  }
+
+  async crearActividad(datos: DatosActividad): Promise<Id> {
+    return db.transaction('rw', db.actividades, db.outbox, async () => {
+      const momento = ahora()
+      const actividad: Actividad = {
+        id: nuevoId(),
+        ...datos,
+        updated_at: momento,
+        deleted_at: null,
+      }
+
+      await db.actividades.add(actividad)
+      await db.outbox.add({
+        tabla: 'actividades',
+        registro_id: actividad.id,
+        op: 'upsert',
+        at: momento,
+      })
+
+      return actividad.id
+    })
+  }
+
+  async editarActividad(
+    actividadId: Id,
+    datos: DatosActividad,
+    descartarCaptura: boolean,
+  ): Promise<void> {
+    await db.transaction(
+      'rw',
+      db.actividades,
+      db.entregas,
+      db.eval_rubrica,
+      db.outbox,
+      async () => {
+        const actividad = await db.actividades.get(actividadId)
+        if (!actividad) throw new Error(`No existe la actividad ${actividadId}`)
+
+        const momento = ahora()
+        await db.actividades.put({ ...actividad, ...datos, updated_at: momento })
+        await db.outbox.add({
+          tabla: 'actividades',
+          registro_id: actividad.id,
+          op: 'upsert',
+          at: momento,
+        })
+
+        if (descartarCaptura) await this.descartarCapturaDe(actividadId, momento)
+      },
+    )
+  }
+
+  async borrarActividad(actividadId: Id): Promise<void> {
+    await db.transaction(
+      'rw',
+      db.actividades,
+      db.entregas,
+      db.eval_rubrica,
+      db.outbox,
+      async () => {
+        const actividad = await db.actividades.get(actividadId)
+        if (!actividad) return
+
+        const momento = ahora()
+        await db.actividades.put({ ...actividad, deleted_at: momento, updated_at: momento })
+        await db.outbox.add({
+          tabla: 'actividades',
+          registro_id: actividad.id,
+          op: 'delete',
+          at: momento,
+        })
+
+        await this.descartarCapturaDe(actividadId, momento)
+      },
+    )
+  }
+
+  /**
+   * Borra en suave las entregas y evaluaciones de una actividad. Privado y sin
+   * transacción propia: siempre se llama dentro de una, porque descartar la
+   * captura y el cambio que la motivó tienen que caer juntos o no caer.
+   */
+  private async descartarCapturaDe(actividadId: Id, momento: Instante): Promise<void> {
+    for (const nombre of ['entregas', 'eval_rubrica'] as const) {
+      // `db.table()` en vez de `db.entregas` / `db.eval_rubrica`: son dos tablas
+      // de tipos distintos y el bucle solo usa lo que ambas comparten —`id`,
+      // `actividad_id`, `deleted_at`—. Escribirlo dos veces por separado sería
+      // duplicar el mismo borrado.
+      const tabla = db.table<CapturaDeActividad>(nombre)
+      const registros = (
+        await tabla.where('actividad_id').equals(actividadId).toArray()
+      ).filter((r) => r.deleted_at === null)
+      if (registros.length === 0) continue
+
+      await tabla.bulkPut(
+        registros.map((r) => ({ ...r, deleted_at: momento, updated_at: momento })),
+      )
+      await db.outbox.bulkAdd(
+        registros.map((r) => ({
+          tabla: nombre,
+          registro_id: r.id,
+          op: 'delete' as const,
+          at: momento,
+        })),
+      )
+    }
   }
 }

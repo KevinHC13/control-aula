@@ -1,4 +1,4 @@
-import type { CriterioTrimestre, Trimestre } from './entities'
+import type { CriterioTrimestre, TipoCriterio, Trimestre } from './entities'
 import { NIVELES } from './values'
 import type { Fecha } from './values'
 
@@ -122,6 +122,19 @@ export function puedeCerrarse(
   if (!aceptaEscrituras(t)) return false
   if (criterios.length === 0) return false
   return pesosSuman100(criterios)
+}
+
+/**
+ * Si el criterio se llena con actividades.
+ *
+ * Solo el entregable. El examen se captura por aciertos sobre el
+ * `CriterioTrimestre` —hay uno por trimestre, no una actividad por examen— y los
+ * `auto_*` se derivan, no se capturan. `personalizado` existe en el tipo pero no
+ * tiene forma de captura definida, así que tampoco admite actividades hasta que la
+ * tenga.
+ */
+export function admiteActividades(tipo: TipoCriterio): boolean {
+  return tipo === 'entregable'
 }
 
 /*

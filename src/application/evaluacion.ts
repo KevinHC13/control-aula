@@ -1,13 +1,17 @@
 import { repos } from '@/data'
 import type {
+  ActividadConEstado,
+  ActividadesDelCriterio,
   CicloEnCurso,
+  DatosActividad,
   EsquemaTrimestre,
   PeriodoNuevo,
   RubricaConCriterios,
 } from '@/data/ports/evaluacion'
-import type { TipoCriterio, Trimestre } from '@/domain/entities'
+import type { Criterio, TipoCriterio, Trimestre } from '@/domain/entities'
 import {
   aceptaEscrituras,
+  admiteActividades,
   descriptoresCompletos,
   pesosSuman100,
   rangoValido,
@@ -18,7 +22,7 @@ import {
 } from '@/domain/evaluacion'
 import { fechaValida } from '@/domain/fechas'
 import { NIVELES } from '@/domain/values'
-import type { Fecha, Id } from '@/domain/values'
+import type { CampoFormativo, Fecha, Id } from '@/domain/values'
 
 const NUMEROS = [1, 2, 3] as const
 
@@ -458,4 +462,166 @@ export async function borrarRubrica(rubrica: RubricaConCriterios): Promise<void>
     throw new Error('Esta rúbrica está en uso: se puede desactivar, no borrar')
   }
   await repos.evaluacion.borrarRubrica(rubrica.rubrica.id)
+}
+
+/*
+ * Actividades (C21b)
+ * ==================
+ */
+
+/**
+ * Los campos formativos, con nombre para pantalla. El orden es el de la NEM.
+ *
+ * Es la agrupación con la que ella reporta —quedó validado— así que se elige
+ * **antes** de nombrar la actividad: puesto después, se queda en el que venía por
+ * omisión y el reporte por campo deja de significar algo.
+ */
+export const CAMPOS_CON_NOMBRE = [
+  { campo: 'lenguajes', nombre: 'Lenguajes' },
+  { campo: 'saberes_pensamiento_cientifico', nombre: 'Saberes y pensamiento científico' },
+  { campo: 'etica_naturaleza_sociedades', nombre: 'Ética, naturaleza y sociedades' },
+  { campo: 'humano_comunitario', nombre: 'De lo humano y lo comunitario' },
+] as const satisfies readonly { campo: CampoFormativo; nombre: string }[]
+
+/**
+ * Los siete ejes articuladores de la NEM. Son **opcionales**: la actividad se
+ * guarda sin ninguno.
+ *
+ * Se ofrecen como lista y no como texto libre para no teclear en el iPad, pero se
+ * guardan como `string[]`, así que corregir la lista no obliga a migrar nada.
+ */
+export const EJES_ARTICULADORES = [
+  'Inclusión',
+  'Pensamiento crítico',
+  'Interculturalidad crítica',
+  'Igualdad de género',
+  'Vida saludable',
+  'Apropiación de las culturas a través de la lectura y la escritura',
+  'Artes y experiencias estéticas',
+] as const
+
+export async function actividadesDelTrimestre(
+  trimestreId: Id,
+): Promise<ActividadesDelCriterio[]> {
+  return repos.evaluacion.actividadesDeTrimestre(trimestreId)
+}
+
+/** Si la actividad ya tiene captura. Cero registros ⇒ sin calificar. */
+export function estaCalificada(actividad: ActividadConEstado): boolean {
+  return actividad.registros > 0
+}
+
+/**
+ * La rúbrica con la que conviene precargar una actividad nueva: la de la última
+ * actividad de ese mismo criterio.
+ *
+ * Es un valor **derivado**, no configuración: lo último que usó es más probable que
+ * lo que hubiera configurado en agosto, y así crear la actividad de hoy no cuesta
+ * una decisión más. `null` es una respuesta legítima —significa entregada / no
+ * entregada— y también se hereda.
+ */
+export function rubricaSugerida(grupo: ActividadesDelCriterio | undefined): Id | null {
+  return grupo?.actividades[0]?.actividad.rubrica_id ?? null
+}
+
+function limpiarNombre(nombre: string): string {
+  return nombre.trim().replace(/\s+/g, ' ')
+}
+
+async function revisarDatos(
+  trimestre: Trimestre,
+  criterio: Criterio,
+  datos: DatosActividad,
+): Promise<DatosActividad> {
+  if (!aceptaEscrituras(trimestre)) {
+    throw new Error('Un trimestre cerrado no admite cambios en sus actividades')
+  }
+  if (!admiteActividades(criterio.tipo)) {
+    throw new Error('Este criterio no se llena con actividades')
+  }
+
+  const nombre = limpiarNombre(datos.nombre)
+  if (nombre === '') throw new Error('La actividad necesita un nombre')
+  if (!fechaValida(datos.fecha)) throw new Error('La fecha debe ser AAAA-MM-DD')
+
+  if (datos.rubrica_id !== null) {
+    const rubrica = (await repos.evaluacion.rubricas()).find(
+      (r) => r.rubrica.id === datos.rubrica_id,
+    )
+    if (!rubrica) throw new Error('Esa rúbrica ya no existe')
+  }
+
+  return { ...datos, nombre }
+}
+
+export async function crearActividad(
+  trimestre: Trimestre,
+  criterio: Criterio,
+  datos: DatosActividad,
+): Promise<Id> {
+  return repos.evaluacion.crearActividad(await revisarDatos(trimestre, criterio, datos))
+}
+
+/**
+ * Si guardar estos cambios tira la captura de la actividad.
+ *
+ * Cambiar con qué se califica lo hace: `EvaluacionRubrica.niveles` está indexado
+ * por los renglones de la rúbrica anterior, así que conservarlos dejaría una
+ * calificación que ya no significa nada —la pantalla de captura mostraría los
+ * renglones nuevos vacíos y el promedio saldría de lo que quedara—. Lo mismo al
+ * pasar de rúbrica a binario o al revés.
+ *
+ * Renombrarla, moverle la fecha o cambiarle el campo no tira nada.
+ */
+export function cambiaLaCaptura(
+  actual: ActividadConEstado,
+  datos: DatosActividad,
+): boolean {
+  if (actual.registros === 0) return false
+  return actual.actividad.rubrica_id !== datos.rubrica_id
+}
+
+/**
+ * Guarda los cambios de una actividad.
+ *
+ * Se niega a tirar calificaciones sin permiso: si `cambiaLaCaptura`, hay que pasar
+ * `confirmado`. La pantalla pregunta antes, diciendo cuántas se pierden.
+ */
+export async function editarActividad(
+  trimestre: Trimestre,
+  criterio: Criterio,
+  actual: ActividadConEstado,
+  datos: DatosActividad,
+  confirmado = false,
+): Promise<void> {
+  const revisados = await revisarDatos(trimestre, criterio, datos)
+  const descartar = cambiaLaCaptura(actual, revisados)
+  if (descartar && !confirmado) {
+    throw new Error(
+      'Cambiar con qué se califica borra lo ya calificado en esta actividad',
+    )
+  }
+
+  await repos.evaluacion.editarActividad(actual.actividad.id, revisados, descartar)
+}
+
+/**
+ * Borra la actividad y lo capturado en ella.
+ *
+ * Una actividad ya calificada pide confirmación explícita: se va con las
+ * calificaciones de los 30 alumnos, y eso no puede pasar por un toque de más.
+ */
+export async function borrarActividad(
+  trimestre: Trimestre,
+  actividad: ActividadConEstado,
+  confirmado = false,
+): Promise<void> {
+  if (!aceptaEscrituras(trimestre)) {
+    throw new Error('Un trimestre cerrado no admite borrar actividades')
+  }
+  if (estaCalificada(actividad) && !confirmado) {
+    throw new Error('Esta actividad ya está calificada: borrarla pierde lo capturado')
+  }
+
+  await repos.evaluacion.borrarActividad(actividad.actividad.id)
 }

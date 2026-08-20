@@ -545,23 +545,54 @@ pesos* se retiró y la asignación llega en C21b, así que **por ahora «una rú
 uso no se puede borrar» solo se verifica en Vitest**: no hay camino en la interfaz
 para dejar una rúbrica en uso.
 
-### ▶ C21b · `feat(evaluacion): crear actividades por campo formativo`
+### ✅ C21b · `feat(evaluacion): crear actividades por campo formativo`
 
 Nombre, campo formativo y ejes articuladores. Sin esto, C22 y C23 no tienen sobre
 qué operar.
 
-**Aceptación**
-- [ ] Toda actividad se crea dentro de un `CriterioTrimestre`, nunca suelta
-- [ ] El campo formativo se elige antes de nombrar la actividad
-- [ ] Los ejes articuladores son opcionales
-- [ ] Con qué se califica se elige en la actividad: una rúbrica activa, o entregada / no entregada
-- [ ] La rúbrica llega precargada con la de la actividad anterior del mismo criterio
-- [ ] Cambiar la rúbrica de una actividad ya calificada avisa de lo que se pierde
-- [ ] No se pueden crear actividades en un trimestre cerrado
-- [ ] La lista distingue visualmente las actividades ya calificadas de las que no
-- [ ] Borrar una actividad con calificaciones pide confirmación explícita
+Es la primera pantalla de evaluación que vive **fuera de Ajustes**: la pestaña
+Calificaciones deja de ser un placeholder. Crear una actividad pasa varias veces por
+semana, no tres veces al año.
 
-### ⬜ C22 · `feat(evaluacion): capturar entregas por actividad`
+**Aceptación**
+- [x] Toda actividad se crea dentro de un `CriterioTrimestre`, nunca suelta
+- [x] El campo formativo se elige antes de nombrar la actividad
+- [x] Los ejes articuladores son opcionales
+- [x] Con qué se califica se elige en la actividad: una rúbrica activa, o entregada / no entregada
+- [x] La rúbrica llega precargada con la de la actividad anterior del mismo criterio
+- [x] Cambiar la rúbrica de una actividad ya calificada avisa de lo que se pierde
+- [x] No se pueden crear actividades en un trimestre cerrado
+- [x] La lista distingue visualmente las actividades ya calificadas de las que no
+- [x] Borrar una actividad con calificaciones pide confirmación explícita
+
+Verificado en el navegador: el nombre está deshabilitado con el texto «Elige antes
+el campo formativo» hasta tocar un campo; la segunda actividad del criterio llega
+con la rúbrica de la primera y lo dice; cambiar la rúbrica de una actividad con 4
+registros avisa **con la cifra** antes de guardar y pide confirmación aparte;
+borrarla nombra la actividad y sus registros; y con el trimestre cerrado el botón de
+nueva actividad desaparece.
+
+Decisiones que salieron de construirlo:
+
+- **El campo formativo bloquea el nombre.** Es la agrupación con la que ella
+  reporta; puesto al final se queda en el que venía por omisión y el reporte por
+  campo deja de significar algo. Es el único orden que la pantalla impone.
+- **Cero registros es «sin calificar», y se ve.** Barra azul si está calificada,
+  hueca si no —la misma distinción que el calendario de asistencia hace entre un día
+  capturado y uno sin pasar—. Pintarlas igual sería mentir, y además una actividad
+  sin registros se excluye del promedio.
+- **Cambiar con qué se califica descarta la captura de esa actividad**, y hay que
+  confirmarlo. No es una precaución: `EvaluacionRubrica.niveles` está indexado por
+  los renglones de la rúbrica anterior, así que conservarlos dejaría una
+  calificación que ya no significa nada. Renombrar o mover la fecha no tira nada.
+- **El examen no aparece en esta pantalla.** Se captura por aciertos sobre el
+  `CriterioTrimestre` (C24), no por actividades, y mostrarlo vacío invitaría a
+  crearle actividades que no van a ningún lado.
+- **Los siete ejes se ofrecen como lista**, no como texto libre: teclear en el iPad
+  es lo que se evita. Se guardan como `string[]`, así que corregir la lista no
+  migra nada.
+
+### ▶ C22 · `feat(evaluacion): capturar entregas por actividad`
 
 **Aceptación**
 - [ ] Al abrir la actividad se escriben los 30 registros de golpe, todos en entregada

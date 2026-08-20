@@ -259,6 +259,21 @@ export interface RubricaCriterio extends Sincronizable {
 }
 ```
 
+### Qué criterios se llenan con actividades
+
+Solo los de tipo `entregable`. El examen se captura por aciertos sobre el
+`CriterioTrimestre` —hay uno por trimestre, no una actividad por examen— y los
+`auto_*` se derivan en vez de capturarse. `personalizado` existe en el tipo pero no
+tiene forma de captura definida, así que tampoco admite actividades hasta que la
+tenga. La regla es `admiteActividades(tipo)` en `domain/evaluacion.ts`.
+
+### Los ejes articuladores
+
+`Actividad.ejes` es `string[]` y son **opcionales**: la actividad se guarda sin
+ninguno. La pantalla ofrece los siete de la NEM como lista —para no teclear en el
+iPad— pero se guardan como texto, así que corregir la lista no obliga a migrar
+nada.
+
 Los niveles son fijos y los mismos para toda rúbrica:
 
 ```ts

@@ -2,6 +2,8 @@ import 'fake-indexeddb/auto'
 
 import { afterAll, beforeEach, describe, expect, it } from 'vitest'
 
+import type { CampoFormativo } from '@/domain/values'
+
 import { db } from './db'
 import { DexieEvaluacionRepo } from './evaluacion.adapter'
 
@@ -21,6 +23,7 @@ beforeEach(async () => {
   await db.criterios_trimestre.clear()
   await db.actividades.clear()
   await db.entregas.clear()
+  await db.eval_rubrica.clear()
   await db.rubricas.clear()
   await db.rubrica_criterios.clear()
   await db.outbox.clear()
@@ -42,6 +45,40 @@ function unaActividad(criterioTrimestreId: string, rubricaId: string | null) {
     ejes: [],
     fecha: '2026-09-01',
     rubrica_id: rubricaId,
+  }
+}
+
+/** Un criterio entregable en T1, listo para colgarle actividades. */
+async function unGrupo() {
+  const [t1] = await conCiclo()
+  await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
+  const grupos = await repo.actividadesDeTrimestre(t1!.id)
+  return { trimestreId: t1!.id, criterioTrimestreId: grupos[0]!.ponderado.id }
+}
+
+function datosDe(
+  grupo: { criterioTrimestreId: string },
+  cambios: Partial<{ nombre: string; campo: CampoFormativo; ejes: string[]; fecha: string; rubrica_id: string | null }>,
+) {
+  return {
+    criterio_trimestre_id: grupo.criterioTrimestreId,
+    nombre: 'Actividad',
+    campo: 'lenguajes' as CampoFormativo,
+    ejes: [] as string[],
+    fecha: '2026-09-01',
+    rubrica_id: null as string | null,
+    ...cambios,
+  }
+}
+
+function entrega(id: string, actividadId: string, alumnoId: string) {
+  return {
+    id,
+    updated_at: '2026-09-01T00:00:00.000Z',
+    deleted_at: null,
+    actividad_id: actividadId,
+    alumno_id: alumnoId,
+    entregada: true,
   }
 }
 
@@ -700,5 +737,261 @@ describe('borrarRubrica', () => {
 
   it('borrar algo que no existe no falla', async () => {
     await expect(repo.borrarRubrica('no-existe')).resolves.toBeUndefined()
+  })
+})
+
+describe('actividadesDeTrimestre', () => {
+  it('un trimestre sin criterios no devuelve grupos', async () => {
+    const [t1] = await conCiclo()
+    expect(await repo.actividadesDeTrimestre(t1!.id)).toEqual([])
+  })
+
+  it('un trimestre que no existe devuelve la lista vacía', async () => {
+    expect(await repo.actividadesDeTrimestre('no-existe')).toEqual([])
+  })
+
+  it('agrupa por criterio y deja el examen fuera', async () => {
+    const [t1] = await conCiclo()
+    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
+    await repo.agregarCriterio(t1!.id, 'Examen final', 'examen')
+
+    // El examen se captura por aciertos sobre el CriterioTrimestre, no por
+    // actividades, así que no tiene por qué aparecer aquí.
+    const grupos = await repo.actividadesDeTrimestre(t1!.id)
+    expect(grupos.map((g) => g.criterio.nombre)).toEqual(['Tareas'])
+    expect(grupos[0]?.actividades).toEqual([])
+  })
+
+  it('las devuelve de la más reciente a la más vieja', async () => {
+    const grupo = await unGrupo()
+    await repo.crearActividad(datosDe(grupo, { nombre: 'Vieja', fecha: '2026-09-01' }))
+    await repo.crearActividad(datosDe(grupo, { nombre: 'Nueva', fecha: '2026-09-20' }))
+    await repo.crearActividad(datosDe(grupo, { nombre: 'Media', fecha: '2026-09-10' }))
+
+    const [primero] = await repo.actividadesDeTrimestre(grupo.trimestreId)
+    expect(primero?.actividades.map((a) => a.actividad.nombre)).toEqual([
+      'Nueva',
+      'Media',
+      'Vieja',
+    ])
+  })
+
+  it('no devuelve las actividades de otro criterio', async () => {
+    const [t1] = await conCiclo()
+    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
+    await repo.agregarCriterio(t1!.id, 'Portafolio', 'entregable')
+    const grupos = await repo.actividadesDeTrimestre(t1!.id)
+    const tareas = grupos[0]!.ponderado.id
+    const portafolio = grupos[1]!.ponderado.id
+
+    await repo.crearActividad({
+      criterio_trimestre_id: tareas,
+      nombre: 'De tareas',
+      campo: 'lenguajes',
+      ejes: [],
+      fecha: '2026-09-01',
+      rubrica_id: null,
+    })
+
+    const despues = await repo.actividadesDeTrimestre(t1!.id)
+    expect(despues.find((g) => g.ponderado.id === tareas)?.actividades).toHaveLength(1)
+    expect(despues.find((g) => g.ponderado.id === portafolio)?.actividades).toEqual([])
+  })
+
+  it('registros cuenta 0 mientras nadie la califique', async () => {
+    const grupo = await unGrupo()
+    await repo.crearActividad(datosDe(grupo, { nombre: 'Cuento' }))
+
+    const [primero] = await repo.actividadesDeTrimestre(grupo.trimestreId)
+    // Cero registros es «sin calificar», que no es lo mismo que calificada con
+    // ceros: una actividad sin registros se excluye del promedio.
+    expect(primero?.actividades[0]?.registros).toBe(0)
+  })
+
+  it('cuenta las entregas y las evaluaciones de rúbrica', async () => {
+    const grupo = await unGrupo()
+    const conEntregas = await repo.crearActividad(datosDe(grupo, { nombre: 'Con entregas' }))
+    const conRubrica = await repo.crearActividad(datosDe(grupo, { nombre: 'Con rúbrica' }))
+
+    await db.entregas.bulkAdd([
+      entrega('e1', conEntregas, 'alumno-1'),
+      entrega('e2', conEntregas, 'alumno-2'),
+    ])
+    await db.eval_rubrica.add({
+      id: 'ev1',
+      updated_at: '2026-09-01T00:00:00.000Z',
+      deleted_at: null,
+      actividad_id: conRubrica,
+      alumno_id: 'alumno-1',
+      niveles: {},
+    })
+
+    const [primero] = await repo.actividadesDeTrimestre(grupo.trimestreId)
+    const porNombre = new Map(
+      primero!.actividades.map((a) => [a.actividad.nombre, a.registros]),
+    )
+    expect(porNombre.get('Con entregas')).toBe(2)
+    expect(porNombre.get('Con rúbrica')).toBe(1)
+  })
+
+  it('no cuenta los registros borrados', async () => {
+    const grupo = await unGrupo()
+    const actividadId = await repo.crearActividad(datosDe(grupo, { nombre: 'Cuento' }))
+    await db.entregas.add(entrega('e1', actividadId, 'alumno-1'))
+    await db.entregas.update('e1', { deleted_at: '2026-09-02T00:00:00.000Z' })
+
+    const [primero] = await repo.actividadesDeTrimestre(grupo.trimestreId)
+    expect(primero?.actividades[0]?.registros).toBe(0)
+  })
+
+  it('no devuelve las actividades borradas', async () => {
+    const grupo = await unGrupo()
+    const actividadId = await repo.crearActividad(datosDe(grupo, { nombre: 'Cuento' }))
+
+    await repo.borrarActividad(actividadId)
+
+    const [primero] = await repo.actividadesDeTrimestre(grupo.trimestreId)
+    expect(primero?.actividades).toEqual([])
+  })
+})
+
+describe('crearActividad', () => {
+  it('guarda lo que se le da, con UUID y updated_at', async () => {
+    const grupo = await unGrupo()
+    const id = await repo.crearActividad(
+      datosDe(grupo, {
+        nombre: 'Cuento de terror',
+        campo: 'lenguajes',
+        ejes: ['Pensamiento crítico'],
+        fecha: '2026-09-15',
+      }),
+    )
+
+    const guardada = await db.actividades.get(id)
+    expect(guardada?.nombre).toBe('Cuento de terror')
+    expect(guardada?.campo).toBe('lenguajes')
+    expect(guardada?.ejes).toEqual(['Pensamiento crítico'])
+    expect(guardada?.fecha).toBe('2026-09-15')
+    expect(guardada?.id).toMatch(/^[0-9a-f-]{36}$/)
+    expect(guardada?.updated_at).toMatch(/Z$/)
+    expect(guardada?.deleted_at).toBeNull()
+  })
+
+  it('sin rúbrica queda en null, que es captura binaria', async () => {
+    const grupo = await unGrupo()
+    const id = await repo.crearActividad(datosDe(grupo, { nombre: 'Tarea del día' }))
+    expect((await db.actividades.get(id))?.rubrica_id).toBeNull()
+  })
+
+  it('encola el alta', async () => {
+    const grupo = await unGrupo()
+    await db.outbox.clear()
+    await repo.crearActividad(datosDe(grupo, { nombre: 'Cuento' }))
+
+    const pendientes = await db.outbox.toArray()
+    expect(pendientes).toHaveLength(1)
+    expect(pendientes[0]?.tabla).toBe('actividades')
+    expect(pendientes[0]?.op).toBe('upsert')
+  })
+})
+
+describe('editarActividad', () => {
+  it('cambia los datos y conserva el id', async () => {
+    const grupo = await unGrupo()
+    const id = await repo.crearActividad(datosDe(grupo, { nombre: 'Cuento' }))
+
+    await repo.editarActividad(
+      id,
+      datosDe(grupo, { nombre: 'Cuento de terror', fecha: '2026-09-20' }),
+      false,
+    )
+
+    const guardada = await db.actividades.get(id)
+    expect(guardada?.nombre).toBe('Cuento de terror')
+    expect(guardada?.fecha).toBe('2026-09-20')
+  })
+
+  it('sin descartar, conserva lo capturado', async () => {
+    const grupo = await unGrupo()
+    const id = await repo.crearActividad(datosDe(grupo, { nombre: 'Cuento' }))
+    await db.entregas.add(entrega('e1', id, 'alumno-1'))
+
+    // Renombrar o mover la fecha no tira nada.
+    await repo.editarActividad(id, datosDe(grupo, { nombre: 'Cuento corto' }), false)
+
+    const [primero] = await repo.actividadesDeTrimestre(grupo.trimestreId)
+    expect(primero?.actividades[0]?.registros).toBe(1)
+  })
+
+  it('descartando, borra en suave las entregas y las evaluaciones', async () => {
+    const grupo = await unGrupo()
+    const id = await repo.crearActividad(datosDe(grupo, { nombre: 'Cuento' }))
+    await db.entregas.add(entrega('e1', id, 'alumno-1'))
+    await db.eval_rubrica.add({
+      id: 'ev1',
+      updated_at: '2026-09-01T00:00:00.000Z',
+      deleted_at: null,
+      actividad_id: id,
+      alumno_id: 'alumno-2',
+      niveles: {},
+    })
+
+    await repo.editarActividad(id, datosDe(grupo, { nombre: 'Cuento' }), true)
+
+    expect((await db.entregas.get('e1'))?.deleted_at).not.toBeNull()
+    expect((await db.eval_rubrica.get('ev1'))?.deleted_at).not.toBeNull()
+    const [primero] = await repo.actividadesDeTrimestre(grupo.trimestreId)
+    expect(primero?.actividades[0]?.registros).toBe(0)
+  })
+
+  it('descartar encola un delete por registro', async () => {
+    const grupo = await unGrupo()
+    const id = await repo.crearActividad(datosDe(grupo, { nombre: 'Cuento' }))
+    await db.entregas.bulkAdd([entrega('e1', id, 'alumno-1'), entrega('e2', id, 'alumno-2')])
+    await db.outbox.clear()
+
+    await repo.editarActividad(id, datosDe(grupo, { nombre: 'Cuento' }), true)
+
+    const pendientes = await db.outbox.toArray()
+    expect(pendientes.filter((c) => c.tabla === 'entregas' && c.op === 'delete')).toHaveLength(2)
+    expect(pendientes.filter((c) => c.tabla === 'actividades')).toHaveLength(1)
+  })
+
+  it('falla si la actividad no existe, en vez de crearla', async () => {
+    const grupo = await unGrupo()
+    await expect(
+      repo.editarActividad('no-existe', datosDe(grupo, { nombre: 'Cuento' }), false),
+    ).rejects.toThrow()
+    expect(await db.actividades.count()).toBe(0)
+  })
+})
+
+describe('borrarActividad', () => {
+  it('borra en suave la actividad y su captura', async () => {
+    const grupo = await unGrupo()
+    const id = await repo.crearActividad(datosDe(grupo, { nombre: 'Cuento' }))
+    await db.entregas.add(entrega('e1', id, 'alumno-1'))
+
+    await repo.borrarActividad(id)
+
+    expect((await db.actividades.get(id))?.deleted_at).not.toBeNull()
+    expect((await db.entregas.get('e1'))?.deleted_at).not.toBeNull()
+  })
+
+  it('encola deletes de la actividad y de lo capturado', async () => {
+    const grupo = await unGrupo()
+    const id = await repo.crearActividad(datosDe(grupo, { nombre: 'Cuento' }))
+    await db.entregas.add(entrega('e1', id, 'alumno-1'))
+    await db.outbox.clear()
+
+    await repo.borrarActividad(id)
+
+    const pendientes = await db.outbox.toArray()
+    expect(pendientes.every((c) => c.op === 'delete')).toBe(true)
+    expect(pendientes.map((c) => c.tabla).sort()).toEqual(['actividades', 'entregas'])
+  })
+
+  it('borrar algo que no existe no falla', async () => {
+    await expect(repo.borrarActividad('no-existe')).resolves.toBeUndefined()
   })
 })
