@@ -10,6 +10,7 @@ import { CAMPOS_FORMATIVOS } from '@/domain/values'
 
 import {
   abrirCicloEscolar,
+  abrirTrimestreSiguiente,
   activarRubrica,
   actividadesDelTrimestre,
   agregarCriterio,
@@ -30,11 +31,14 @@ import {
   estadoDelReparto,
   guardarFechas,
   guardarRubrica,
+  faltaAbrirTrimestre,
   nombreDeCicloEn,
   type Periodo,
+  periodoVacio,
   periodosCompletos,
   periodosDe,
-  periodosVacios,
+  revisarNuevoTrimestre,
+  siguienteNumero,
   quitarCriterio,
   revisarPeriodos,
   revisarRubrica,
@@ -80,9 +84,14 @@ beforeEach(async () => {
   await db.outbox.clear()
 })
 
-/** Un ciclo recién abierto, con sus tres trimestres. */
+/**
+ * Un ciclo con sus tres trimestres. El ciclo se abre con el primero y los otros dos
+ * entran después, que es como lo hace la pantalla.
+ */
 async function unCiclo() {
-  await abrirCicloEscolar('2026–2027', BUENOS)
+  await abrirCicloEscolar('2026–2027', BUENOS[0]!)
+  await abrirTrimestreSiguiente((await cicloEnCurso())!, BUENOS[1]!)
+  await abrirTrimestreSiguiente((await cicloEnCurso())!, BUENOS[2]!)
   return (await cicloEnCurso())!
 }
 
@@ -152,31 +161,143 @@ async function unCriterioEnT1(conRubrica = false) {
   }
 }
 
-describe('periodosVacios', () => {
-  it('arranca con los tres trimestres en blanco', () => {
-    expect(periodosVacios().map((p) => p.numero)).toEqual([1, 2, 3])
-    expect(periodosVacios().every((p) => p.inicio === '' && p.fin === '')).toBe(true)
+describe('periodoVacio', () => {
+  it('arranca en blanco', () => {
+    expect(periodoVacio(1)).toEqual({ numero: 1, inicio: '', fin: '' })
   })
 
-  it('en blanco no está completo: no se puede guardar un ciclo sin fechas', () => {
-    expect(periodosCompletos(revisarPeriodos(periodosVacios()))).toBe(false)
+  it('en blanco no está completo: no se abre un ciclo sin fechas', () => {
+    expect(periodosCompletos(revisarPeriodos([periodoVacio(1)]))).toBe(false)
   })
 })
 
 describe('periodosDe', () => {
-  it('trae las fechas ya configuradas, en orden', () => {
+  it('trae los trimestres que existen, ordenados por número', () => {
     const periodos = periodosDe([
       trimestre(3, '2027-03-22', '2027-07-16'),
       trimestre(1, '2026-08-24', '2026-11-27'),
     ])
-    expect(periodos.map((p) => p.numero)).toEqual([1, 2, 3])
+    expect(periodos.map((p) => p.numero)).toEqual([1, 3])
     expect(periodos[0]?.inicio).toBe('2026-08-24')
   })
 
-  it('un trimestre que falta sale en blanco, no desaparece de la pantalla', () => {
-    const periodos = periodosDe([trimestre(1, '2026-08-24', '2026-11-27')])
-    expect(periodos).toHaveLength(3)
-    expect(periodos[1]).toEqual({ numero: 2, inicio: '', fin: '' })
+  it('un ciclo recién abierto trae un solo periodo', () => {
+    // Los que faltan por abrir no son filas en blanco: no existen todavía.
+    expect(periodosDe([trimestre(1, '2026-08-24', '2026-11-27')])).toHaveLength(1)
+  })
+})
+
+describe('siguienteNumero', () => {
+  it('con solo el primero abierto, sigue el 2', async () => {
+    await abrirCicloEscolar('2026–2027', BUENOS[0]!)
+    expect(siguienteNumero((await cicloEnCurso())!)).toBe(2)
+  })
+
+  it('con los tres abiertos, no falta ninguno', async () => {
+    const ciclo = await unCiclo()
+    expect(siguienteNumero(ciclo)).toBeNull()
+  })
+})
+
+describe('abrirTrimestreSiguiente', () => {
+  it('abre el 2 después del 1 y conserva lo que ya había', async () => {
+    await abrirCicloEscolar('2026–2027', BUENOS[0]!)
+    const ciclo = (await cicloEnCurso())!
+
+    await abrirTrimestreSiguiente(ciclo, BUENOS[1]!)
+
+    const despues = (await cicloEnCurso())!
+    expect(despues.trimestres.map((t) => t.numero)).toEqual([1, 2])
+    expect(despues.trimestres[0]?.inicio).toBe(BUENOS[0]!.inicio)
+    expect(despues.trimestres[1]?.estado).toBe('abierto')
+  })
+
+  it('no acepta un trimestre que se traslapa con el anterior', async () => {
+    await abrirCicloEscolar('2026–2027', BUENOS[0]!)
+    const ciclo = (await cicloEnCurso())!
+
+    await expect(
+      abrirTrimestreSiguiente(ciclo, { numero: 2, inicio: '2026-11-01', fin: '2027-03-19' }),
+    ).rejects.toThrow(/traslapa/)
+    expect((await cicloEnCurso())?.trimestres).toHaveLength(1)
+  })
+
+  it('no acepta uno que empiece antes de que acabe el anterior', async () => {
+    await abrirCicloEscolar('2026–2027', BUENOS[0]!)
+    const ciclo = (await cicloEnCurso())!
+
+    await expect(
+      abrirTrimestreSiguiente(ciclo, { numero: 2, inicio: '2026-06-01', fin: '2026-07-15' }),
+    ).rejects.toThrow(/después del trimestre anterior/)
+  })
+
+  it('no se salta el orden: el 3 no se abre antes del 2', async () => {
+    await abrirCicloEscolar('2026–2027', BUENOS[0]!)
+    const ciclo = (await cicloEnCurso())!
+
+    await expect(abrirTrimestreSiguiente(ciclo, BUENOS[2]!)).rejects.toThrow(/es el 2/)
+  })
+
+  it('con los tres abiertos ya no hay nada que abrir', async () => {
+    const ciclo = await unCiclo()
+    await expect(
+      abrirTrimestreSiguiente(ciclo, { numero: 1, inicio: '2027-08-01', fin: '2027-11-01' }),
+    ).rejects.toThrow(/ya tiene sus tres/)
+  })
+})
+
+describe('revisarNuevoTrimestre', () => {
+  it('acepta uno que empieza después del último', async () => {
+    await abrirCicloEscolar('2026–2027', BUENOS[0]!)
+    const ciclo = (await cicloEnCurso())!
+    expect(revisarNuevoTrimestre(ciclo, BUENOS[1]!)).toBeUndefined()
+  })
+
+  it('un hueco entre trimestres sigue siendo válido', async () => {
+    await abrirCicloEscolar('2026–2027', BUENOS[0]!)
+    const ciclo = (await cicloEnCurso())!
+    expect(
+      revisarNuevoTrimestre(ciclo, { numero: 2, inicio: '2026-12-07', fin: '2027-03-19' }),
+    ).toBeUndefined()
+  })
+
+  it('marca la fecha que no existe', async () => {
+    await abrirCicloEscolar('2026–2027', BUENOS[0]!)
+    const ciclo = (await cicloEnCurso())!
+    expect(
+      revisarNuevoTrimestre(ciclo, { numero: 2, inicio: '2026-02-31', fin: '2027-03-19' }),
+    ).toBe('La fecha debe ser AAAA-MM-DD')
+  })
+})
+
+describe('faltaAbrirTrimestre', () => {
+  it('una fecha posterior al último trimestre abierto, con trimestres por abrir', async () => {
+    await abrirCicloEscolar('2026–2027', BUENOS[0]!)
+    const ciclo = (await cicloEnCurso())!
+    // No se pierde nada: la atribución se calcula de la fecha al leer, así que
+    // abrir el trimestre después acomoda lo ya capturado.
+    expect(faltaAbrirTrimestre('2026-12-10', ciclo)).toBe(true)
+  })
+
+  it('una fecha dentro de un trimestre abierto no falta abrir nada', async () => {
+    await abrirCicloEscolar('2026–2027', BUENOS[0]!)
+    const ciclo = (await cicloEnCurso())!
+    expect(faltaAbrirTrimestre('2026-09-15', ciclo)).toBe(false)
+  })
+
+  it('una fecha anterior al ciclo son vacaciones, no un trimestre sin abrir', async () => {
+    await abrirCicloEscolar('2026–2027', BUENOS[0]!)
+    const ciclo = (await cicloEnCurso())!
+    expect(faltaAbrirTrimestre('2026-07-01', ciclo)).toBe(false)
+  })
+
+  it('con los tres abiertos, lo de después es fuera de los trimestres', async () => {
+    const ciclo = await unCiclo()
+    expect(faltaAbrirTrimestre('2027-08-01', ciclo)).toBe(false)
+  })
+
+  it('sin ciclo no falta abrir nada: falta el ciclo', async () => {
+    expect(faltaAbrirTrimestre('2026-09-15', null)).toBe(false)
   })
 })
 
@@ -292,48 +413,52 @@ describe('trimestreDe', () => {
 })
 
 describe('abrirCicloEscolar', () => {
-  it('deja el ciclo en curso con sus tres trimestres', async () => {
-    await abrirCicloEscolar('2026–2027', BUENOS)
+  it('abre el ciclo con un solo trimestre, el primero', async () => {
+    // En agosto nadie sabe las fechas de los otros dos: pedirlas para poder
+    // empezar sería hacerla inventarlas.
+    await abrirCicloEscolar('2026–2027', BUENOS[0]!)
 
     const enCurso = await cicloEnCurso()
     expect(enCurso?.ciclo.nombre).toBe('2026–2027')
-    expect(enCurso?.trimestres.map((t) => t.inicio)).toEqual([
-      '2026-08-24',
-      '2026-11-30',
-      '2027-03-22',
-    ])
+    expect(enCurso?.trimestres).toHaveLength(1)
+    expect(enCurso?.trimestres[0]?.numero).toBe(1)
+    expect(enCurso?.trimestres[0]?.inicio).toBe('2026-08-24')
+  })
+
+  it('numera el primero como 1 aunque le llegue otro número', async () => {
+    await abrirCicloEscolar('2026–2027', { ...BUENOS[1]!, numero: 2 })
+    expect((await cicloEnCurso())?.trimestres[0]?.numero).toBe(1)
   })
 
   it('recorta el nombre y rechaza el vacío', async () => {
-    await expect(abrirCicloEscolar('   ', BUENOS)).rejects.toThrow(/nombre/)
-    await abrirCicloEscolar('  2026–2027  ', BUENOS)
+    await expect(abrirCicloEscolar('   ', BUENOS[0]!)).rejects.toThrow(/nombre/)
+    await abrirCicloEscolar('  2026–2027  ', BUENOS[0]!)
     expect((await cicloEnCurso())?.ciclo.nombre).toBe('2026–2027')
   })
 
-  it('no abre un ciclo con fechas traslapadas', async () => {
+  it('no abre un ciclo sin fechas', async () => {
+    await expect(abrirCicloEscolar('2026–2027', periodoVacio(1))).rejects.toThrow()
+    expect(await cicloEnCurso()).toBeNull()
+  })
+
+  it('no abre un ciclo con un rango invertido', async () => {
     await expect(
-      abrirCicloEscolar('2026–2027', [
-        { numero: 1, inicio: '2026-08-24', fin: '2026-12-15' },
-        { numero: 2, inicio: '2026-11-30', fin: '2027-03-19' },
-        BUENOS[2]!,
-      ]),
-    ).rejects.toThrow()
+      abrirCicloEscolar('2026–2027', { numero: 1, inicio: '2026-11-27', fin: '2026-08-24' }),
+    ).rejects.toThrow(/antes de empezar/)
     expect(await cicloEnCurso()).toBeNull()
   })
 
   it('no abre un segundo ciclo mientras haya uno en curso', async () => {
-    await abrirCicloEscolar('2026–2027', BUENOS)
-    // Dos ciclos abiertos harían ambigua la atribución de una fecha, que es
-    // justo lo que este commit vuelve inequívoco.
-    await expect(abrirCicloEscolar('2027–2028', BUENOS)).rejects.toThrow(/abierto/)
+    await abrirCicloEscolar('2026–2027', BUENOS[0]!)
+    // Dos ciclos abiertos harían ambigua la atribución de una fecha.
+    await expect(abrirCicloEscolar('2027–2028', BUENOS[0]!)).rejects.toThrow(/abierto/)
     expect(await db.ciclos.count()).toBe(1)
   })
 })
 
 describe('ajustarFechasTrimestre', () => {
   it('un trimestre cerrado no admite cambios de fecha', async () => {
-    await abrirCicloEscolar('2026–2027', BUENOS)
-    const enCurso = (await cicloEnCurso())!
+    const enCurso = await unCiclo()
     const primero = enCurso.trimestres[0]!
     await db.trimestres.update(primero.id, { estado: 'cerrado' })
 
@@ -347,7 +472,7 @@ describe('ajustarFechasTrimestre', () => {
   })
 
   it('rechaza una fecha que no existe', async () => {
-    await abrirCicloEscolar('2026–2027', BUENOS)
+    await unCiclo()
     const primero = (await cicloEnCurso())!.trimestres[0]!
     await expect(
       ajustarFechasTrimestre(primero, '2026-02-31', '2026-12-04'),
@@ -355,7 +480,7 @@ describe('ajustarFechasTrimestre', () => {
   })
 
   it('rechaza el rango invertido', async () => {
-    await abrirCicloEscolar('2026–2027', BUENOS)
+    await unCiclo()
     const primero = (await cicloEnCurso())!.trimestres[0]!
     await expect(
       ajustarFechasTrimestre(primero, '2026-12-04', '2026-08-25'),
@@ -365,8 +490,7 @@ describe('ajustarFechasTrimestre', () => {
 
 describe('guardarFechas', () => {
   it('escribe solo lo que cambió', async () => {
-    await abrirCicloEscolar('2026–2027', BUENOS)
-    const enCurso = (await cicloEnCurso())!
+    const enCurso = await unCiclo()
     await db.outbox.clear()
 
     await guardarFechas(enCurso, [
@@ -381,8 +505,7 @@ describe('guardarFechas', () => {
   })
 
   it('no escribe nada si nada cambió', async () => {
-    await abrirCicloEscolar('2026–2027', BUENOS)
-    const enCurso = (await cicloEnCurso())!
+    const enCurso = await unCiclo()
     await db.outbox.clear()
 
     await guardarFechas(enCurso, periodosDe(enCurso.trimestres))
@@ -391,8 +514,7 @@ describe('guardarFechas', () => {
   })
 
   it('salta los cerrados sin fallar, y guarda los abiertos', async () => {
-    await abrirCicloEscolar('2026–2027', BUENOS)
-    let enCurso = (await cicloEnCurso())!
+    let enCurso = await unCiclo()
     await db.trimestres.update(enCurso.trimestres[0]!.id, { estado: 'cerrado' })
     enCurso = (await cicloEnCurso())!
 
@@ -408,9 +530,17 @@ describe('guardarFechas', () => {
     expect(despues[1]?.inicio).toBe('2026-12-01')
   })
 
-  it('rechaza el guardado completo si algún periodo está mal', async () => {
-    await abrirCicloEscolar('2026–2027', BUENOS)
+  it('deja corregir el primero aunque falten los otros dos por abrir', async () => {
+    await abrirCicloEscolar('2026–2027', BUENOS[0]!)
     const enCurso = (await cicloEnCurso())!
+
+    await guardarFechas(enCurso, [{ numero: 1, inicio: '2026-08-25', fin: '2026-11-27' }])
+
+    expect((await cicloEnCurso())?.trimestres[0]?.inicio).toBe('2026-08-25')
+  })
+
+  it('rechaza el guardado completo si algún periodo está mal', async () => {
+    const enCurso = await unCiclo()
 
     await expect(
       guardarFechas(enCurso, [

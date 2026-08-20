@@ -1,6 +1,7 @@
 # Estado del proyecto
 
-Actualizado el **2026-08-20**, con C18 a C21b terminados, más el fix C21c. Este es el documento que se lee primero para saber
+Actualizado el **2026-08-20**, con C18 a C21b terminados, más los fixes C19b y
+C21c. Este es el documento que se lee primero para saber
 dónde va el proyecto y qué sigue. El plan detallado, con criterios de aceptación
 por commit, está en [COMMITS.md](./COMMITS.md).
 
@@ -170,6 +171,9 @@ campos formativos. Los tres se resolvieron en la validación.
   otro orden; falta el gesto en la interfaz.
 - No hay forma de **reordenar** las actividades de un criterio ni de moverlas a
   otro. Se ordenan por fecha, que es como ella las busca.
+- Un ciclo puede quedarse con uno o dos trimestres indefinidamente si ella no abre
+  los que faltan. Es un estado válido —y la asistencia lo dice en la etiqueta— pero
+  nada le recuerda que los abra.
 - Las filas de `criterios_trimestre` creadas antes del fix conservan un
   `rubrica_id` que ya nadie lee. Solo existe en bases de desarrollo —`version(2)`
   no se ha desplegado— y es una propiedad de sobra, no un dato que mienta.

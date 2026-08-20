@@ -410,6 +410,9 @@ Los cuatro se verificaron en el navegador, además de en Vitest: la etiqueta dic
 vacaciones, y con el trimestre 1 cerrado a mano en IndexedDB sus dos campos de
 fecha salen deshabilitados mientras los del 2 y el 3 siguen editables.
 
+**Corregido después, en C19b:** abrir el ciclo pedía las fechas de los tres
+trimestres. Ahora pide solo la del primero (D-017).
+
 Decisiones que salieron de construirlo:
 
 - **La etiqueta sigue al día seleccionado, no a hoy.** Hojear un día de noviembre
@@ -426,6 +429,31 @@ Decisiones que salieron de construirlo:
 - **No se abre un segundo ciclo mientras haya uno en curso**: dos ciclos abiertos
   harían ambigua la atribución de una fecha, que es lo que este commit existe para
   volver inequívoco.
+
+### ✅ C19b · `fix(evaluacion): abrir el ciclo con solo el primer trimestre`
+
+Corrección de alcance salida de usar la pantalla: C19 pedía las fechas de los tres
+trimestres para abrir el ciclo, y en agosto solo se sabe la del primero. Decisión y
+razones en [DECISIONES.md](./DECISIONES.md) D-017.
+
+**Aceptación**
+- [x] El ciclo se abre con las fechas del primer trimestre nada más
+- [x] Un ciclo con uno o dos trimestres es un estado válido, no uno a medias
+- [x] Los siguientes se abren en orden, después del anterior y sin traslaparse
+- [x] Corregir las fechas de los trimestres que ya existen no exige que estén los tres
+- [x] Un día capturado antes de abrir su trimestre queda atribuido al abrirlo, sin migrar nada
+- [x] La asistencia distingue «fuera de los trimestres» de «el trimestre de este día no se ha abierto»
+
+Se pudo hacer sin migración ni recálculo porque **la atribución no se guarda**: sale
+de la fecha al leer. Verificado en el navegador de punta a punta: se abrió un ciclo
+con solo el T1, se marcó una falta en un día posterior a su fin —la etiqueta decía
+«El trimestre de este día no se ha abierto»—, se abrió el T2 cubriendo ese día, y la
+etiqueta pasó a «Trimestre 2» con la falta intacta (29/30).
+
+Salió un defecto de la verificación, ya corregido: al abrir el T2, su fila no
+aparecía en la lista de fechas hasta volver a entrar a la pantalla. El formulario se
+inicializa una vez y no se resincronizaba; ahora su `key` lleva cuántos trimestres
+hay.
 
 ### ✅ C20 · `feat(evaluacion): configurar criterios y pesos por trimestre`
 

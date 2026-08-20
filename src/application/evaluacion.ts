@@ -5,7 +5,6 @@ import type {
   CicloEnCurso,
   DatosActividad,
   EsquemaTrimestre,
-  PeriodoNuevo,
   RubricaConCriterios,
 } from '@/data/ports/evaluacion'
 import type { Criterio, TipoCriterio, Trimestre } from '@/domain/entities'
@@ -42,21 +41,53 @@ export interface Periodo {
   problema?: string
 }
 
-/** Los tres trimestres en blanco, que es como arranca la pantalla. */
-export function periodosVacios(): Periodo[] {
-  return NUMEROS.map((numero) => ({ numero, inicio: '', fin: '' }))
+/**
+ * El periodo en blanco con el que arranca un trimestre por abrir.
+ *
+ * Abrir el ciclo pide **solo las fechas del primero**. Las de los otros dos no se
+ * saben todavía —la escuela publica el calendario por partes— y exigirlas sería
+ * hacerla inventar dos rangos para poder empezar a pasar lista.
+ */
+export function periodoVacio(numero: 1 | 2 | 3): Periodo {
+  return { numero, inicio: '', fin: '' }
 }
 
-/** Los trimestres ya configurados, en la forma que la pantalla edita. */
+/** Los trimestres que ya existen, en la forma que la pantalla edita. */
 export function periodosDe(trimestres: Trimestre[]): Periodo[] {
-  return NUMEROS.map((numero) => {
-    const trimestre = trimestres.find((t) => t.numero === numero)
-    return {
-      numero,
-      inicio: trimestre?.inicio ?? '',
-      fin: trimestre?.fin ?? '',
-    }
-  })
+  return [...trimestres]
+    .sort((a, b) => a.numero - b.numero)
+    .map((t) => ({ numero: t.numero, inicio: t.inicio, fin: t.fin }))
+}
+
+/**
+ * El número del siguiente trimestre por abrir, o `null` si ya están los tres.
+ *
+ * Se abren en orden: el 2 después del 1. Numerarlos al revés no rompería el
+ * cálculo —el número es una etiqueta— pero volvería incomprensible la pantalla.
+ */
+export function siguienteNumero(ciclo: CicloEnCurso): 1 | 2 | 3 | null {
+  const usados = new Set(ciclo.trimestres.map((t) => t.numero))
+  return NUMEROS.find((n) => !usados.has(n)) ?? null
+}
+
+/**
+ * Si la fecha cae después del último trimestre abierto y todavía falta abrir
+ * alguno.
+ *
+ * Es la diferencia entre «este día no cuenta para ningún trimestre» —vacaciones— y
+ * «el trimestre de este día no se ha abierto todavía». Los dos dan `null` al
+ * atribuir, pero el segundo se arregla abriendo el trimestre, y decirlo evita que
+ * ella busque el error en otra parte.
+ *
+ * No se pierde nada mientras tanto: la atribución se calcula de la fecha al leer,
+ * no se guarda, así que abrir el trimestre después atribuye lo ya capturado.
+ */
+export function faltaAbrirTrimestre(fecha: Fecha, ciclo: CicloEnCurso | null): boolean {
+  if (!ciclo || siguienteNumero(ciclo) === null) return false
+  if (trimestreDeFecha(fecha, ciclo.trimestres) !== null) return false
+
+  const ultimoFin = ciclo.trimestres.reduce((max, t) => (t.fin > max ? t.fin : max), '')
+  return fecha > ultimoFin
 }
 
 /**
@@ -93,9 +124,9 @@ function revisar(periodo: Periodo, completos: Periodo[]): string | undefined {
   return undefined
 }
 
-/** Si los tres periodos están listos para guardarse. */
+/** Si los periodos recibidos están listos para guardarse. */
 export function periodosCompletos(periodos: Periodo[]): boolean {
-  return periodos.length === NUMEROS.length && periodos.every((p) => p.problema === undefined)
+  return periodos.length > 0 && periodos.every((p) => p.problema === undefined)
 }
 
 /**
@@ -130,17 +161,20 @@ export async function cicloEnCurso(): Promise<CicloEnCurso | null> {
 }
 
 /**
- * Abre el ciclo escolar con sus tres trimestres.
+ * Abre el ciclo escolar con su **primer** trimestre.
  *
- * Se niega si ya hay uno abierto: dos ciclos abiertos harían ambigua la
- * atribución de una fecha, que es justo lo que este commit existe para volver
- * inequívoco. Cambiar de ciclo es cerrar el anterior, y eso llega con el cierre
- * de trimestre (C27).
+ * Solo el primero: las fechas de los otros dos no se saben en agosto, y pedirlas
+ * para poder empezar sería hacerla inventarlas. Los siguientes entran con
+ * `abrirTrimestreSiguiente` cuando la escuela publica su calendario.
+ *
+ * Se niega si ya hay un ciclo abierto: dos ciclos abiertos harían ambigua la
+ * atribución de una fecha. Cambiar de ciclo es cerrar el anterior, y eso llega con
+ * el cierre de trimestre (C27).
  */
-export async function abrirCicloEscolar(nombre: string, periodos: Periodo[]): Promise<void> {
-  const revisados = revisarPeriodos(periodos)
-  if (!periodosCompletos(revisados)) {
-    throw new Error('Los trimestres tienen fechas inválidas o traslapadas')
+export async function abrirCicloEscolar(nombre: string, primero: Periodo): Promise<void> {
+  const [revisado] = revisarPeriodos([{ ...primero, numero: 1 }])
+  if (!revisado || revisado.problema !== undefined) {
+    throw new Error(revisado?.problema ?? 'El primer trimestre necesita sus fechas')
   }
   if (nombre.trim() === '') throw new Error('El ciclo necesita un nombre')
 
@@ -148,12 +182,53 @@ export async function abrirCicloEscolar(nombre: string, periodos: Periodo[]): Pr
     throw new Error('Ya hay un ciclo escolar abierto')
   }
 
-  await repos.evaluacion.abrirCiclo(
-    nombre.trim(),
-    revisados.map(
-      (p): PeriodoNuevo => ({ numero: p.numero, inicio: p.inicio, fin: p.fin }),
-    ),
-  )
+  await repos.evaluacion.abrirCiclo(nombre.trim(), [
+    { numero: 1, inicio: revisado.inicio, fin: revisado.fin },
+  ])
+}
+
+/**
+ * Revisa un trimestre por abrir contra los que ya existen: fechas válidas, rango
+ * en orden, sin traslape y **después** del último.
+ *
+ * Devuelve el mensaje del problema, o `undefined` si se puede abrir. Se reutiliza
+ * `revisarPeriodos` para el traslape: es la misma regla, y tenerla en dos lugares
+ * es tenerla mal en uno de los dos.
+ */
+export function revisarNuevoTrimestre(
+  ciclo: CicloEnCurso,
+  periodo: Periodo,
+): string | undefined {
+  const existentes = periodosDe(ciclo.trimestres)
+  const revisados = revisarPeriodos([...existentes, periodo])
+  const nuevo = revisados.find((p) => p.numero === periodo.numero)
+  if (nuevo?.problema !== undefined) return nuevo.problema
+
+  const ultimoFin = ciclo.trimestres.reduce((max, t) => (t.fin > max ? t.fin : max), '')
+  if (periodo.inicio <= ultimoFin) return 'Tiene que empezar después del trimestre anterior'
+
+  return undefined
+}
+
+/** Abre el siguiente trimestre del ciclo, con sus fechas. */
+export async function abrirTrimestreSiguiente(
+  ciclo: CicloEnCurso,
+  periodo: Periodo,
+): Promise<void> {
+  const numero = siguienteNumero(ciclo)
+  if (numero === null) throw new Error('El ciclo ya tiene sus tres trimestres')
+  if (periodo.numero !== numero) {
+    throw new Error(`El siguiente trimestre por abrir es el ${numero}`)
+  }
+
+  const problema = revisarNuevoTrimestre(ciclo, periodo)
+  if (problema) throw new Error(problema)
+
+  await repos.evaluacion.abrirTrimestre(ciclo.ciclo.id, {
+    numero,
+    inicio: periodo.inicio,
+    fin: periodo.fin,
+  })
 }
 
 /**
@@ -192,7 +267,11 @@ export async function guardarFechas(
   ciclo: CicloEnCurso,
   periodos: Periodo[],
 ): Promise<void> {
-  const revisados = revisarPeriodos(periodos)
+  // Solo los trimestres que existen: los que faltan por abrir no son un error de
+  // captura, y marcarlos como incompletos impediría guardar una corrección al
+  // primero mientras los otros dos no tengan fechas.
+  const abiertos = new Set(ciclo.trimestres.map((t) => t.numero))
+  const revisados = revisarPeriodos(periodos.filter((p) => abiertos.has(p.numero)))
   if (!periodosCompletos(revisados)) {
     throw new Error('Los trimestres tienen fechas inválidas o traslapadas')
   }

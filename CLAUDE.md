@@ -185,8 +185,14 @@ y fórmulas en `docs/DATA-MODEL.md`; lo que no se negocia al escribir código:
   los renglones de la rúbrica anterior. Renombrarla o moverle la fecha no tira
   nada.
 - La atribución al trimestre es **por fecha y nunca manual**: no existe ni debe
-  existir un selector de trimestre. Una fecha fuera de todo rango devuelve `null`,
-  que es un resultado normal —vacaciones, puentes— y no un error.
+  existir un selector de trimestre en el camino diario. Una fecha fuera de todo
+  rango devuelve `null`, que es un resultado normal —vacaciones, puentes— y no un
+  error.
+- **La atribución no se guarda, se deriva al leer.** Es lo que permite abrir el
+  ciclo con un solo trimestre (D-017): los días capturados antes de abrir el
+  trimestre que los contiene quedan atribuidos en cuanto se abre, sin migración.
+  No convertir esto en un campo almacenado.
+- Un ciclo con **uno o dos** trimestres es válido. Nada debe asumir tres.
 
 ## Restricciones de UI que son requisitos, no sugerencias
 

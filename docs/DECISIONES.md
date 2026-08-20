@@ -492,3 +492,37 @@ tablas, así que tampoco hizo falta una versión nueva del esquema.
 C21— se retiró, y la asignación no existe hasta C21b. Mientras tanto el criterio de
 aceptación «una rúbrica en uso no se puede borrar» solo se verifica en Vitest: no
 hay camino en la interfaz para dejar una rúbrica en uso.
+
+---
+
+## D-017 · El ciclo se abre con un solo trimestre
+
+**Estado:** aceptada — 2026-08-20. Ajusta a [D-015](#d-015--la-evaluación-se-modela-con-rúbricas-trimestres-y-pesos)
+
+C19 pedía las fechas de los tres trimestres para poder abrir el ciclo. Es un
+requisito que la realidad no cumple: en agosto la escuela ha publicado el
+calendario del primer trimestre y nada más.
+
+**Lo que costaba.** Para empezar a pasar lista —lo único que la app tiene que
+permitir el primer día— había que inventar dos rangos. Y una fecha inventada es
+peor que una ausente: atribuye registros a un trimestre equivocado sin decir nada,
+y el error solo aparece meses después, al no cuadrar el reporte.
+
+**Por qué se puede sin romper nada.** Porque la atribución **no se almacena**. Un
+`RegistroAsistencia` guarda `fecha`; el trimestre sale de `trimestreDeFecha` cada
+vez que se lee. Los días capturados antes de abrir el trimestre que los contiene se
+atribuyen solos en el momento en que se abre, sin migración ni recálculo. Si la
+atribución fuera un campo, este cambio habría exigido una pasada de reparación
+sobre datos reales.
+
+**Lo que sí hubo que resolver.** Que «fuera de los trimestres» dejara de ser una
+sola cosa. Un día de vacaciones y un día cuyo trimestre no se ha abierto los dos
+atribuyen a `null`, pero el segundo se arregla y el primero no. La etiqueta de
+asistencia ahora los distingue: «Fuera de los trimestres» contra «El trimestre de
+este día no se ha abierto». Sin esa distinción, ella iría a buscar el error donde
+no está.
+
+**Orden.** Los trimestres se abren en secuencia, cada uno después del anterior y
+sin traslape. El número es una etiqueta y desordenarlos no rompería el cálculo,
+pero una pantalla que ofrece «abrir el trimestre 3» con el 2 sin abrir no se
+entiende.

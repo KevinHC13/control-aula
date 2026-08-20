@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 
 import { type FilaAsistencia, marcarEstado, pasarLista } from '@/application/asistencia'
-import { trimestreDe } from '@/application/evaluacion'
+import { faltaAbrirTrimestre, trimestreDe } from '@/application/evaluacion'
 import { fechaLocal, mesDe } from '@/domain/fechas'
 import type { Fecha } from '@/domain/values'
 import { CalendarioMes } from '@/ui/components/CalendarioMes'
@@ -101,6 +101,7 @@ export function Asistencia() {
         <EtiquetaTrimestre
           trimestre={trimestreDe(diaSeleccionado, ciclo)}
           hayCiclo={ciclo !== null}
+          sinAbrir={faltaAbrirTrimestre(diaSeleccionado, ciclo)}
           cargando={cargandoCiclo}
         />
       </div>

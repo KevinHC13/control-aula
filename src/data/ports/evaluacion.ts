@@ -18,7 +18,10 @@ import type { CampoFormativo, Fecha, Id, Suscribible } from '@/domain/values'
  */
 export interface CicloEnCurso {
   ciclo: Ciclo
-  /** Ordenados por número, del 1 al 3. */
+  /**
+   * Ordenados por número. **Pueden ser menos de tres**: el ciclo se abre con el
+   * primero y los demás se agregan cuando la escuela publica sus fechas.
+   */
   trimestres: Trimestre[]
 }
 
@@ -132,11 +135,20 @@ export interface EvaluacionRepo {
   observarCicloEnCurso(): Suscribible<CicloEnCurso | null>
 
   /**
-   * Abre el ciclo con sus tres trimestres, todo en una transacción. Un ciclo con
-   * dos de sus tres periodos escritos dejaría fechas sin trimestre y registros
-   * sin atribuir.
+   * Abre el ciclo con los trimestres que se le den, todo en una transacción.
+   *
+   * Normalmente es **uno**: el primero. Los siguientes se abren cuando la escuela
+   * publica sus fechas, con `abrirTrimestre`.
    */
   abrirCiclo(nombre: string, periodos: PeriodoNuevo[]): Promise<void>
+
+  /**
+   * Abre un trimestre más en un ciclo que ya existe.
+   *
+   * Quien llama ya verificó que el número no está tomado y que el rango no se
+   * traslapa con los que ya hay: las reglas viven en el caso de uso.
+   */
+  abrirTrimestre(cicloId: Id, periodo: PeriodoNuevo): Promise<void>
 
   /**
    * Cambia el rango de un trimestre. Quien llama ya verificó que el trimestre

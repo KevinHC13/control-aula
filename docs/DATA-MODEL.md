@@ -149,6 +149,31 @@ export interface Trimestre extends Sincronizable {
 }
 ```
 
+### El ciclo se abre con el primer trimestre nada más
+
+En agosto nadie sabe las fechas de los otros dos: la escuela publica su calendario
+por partes. Exigir los tres rangos para poder abrir el ciclo obligaría a inventar
+dos, y una fecha inventada es peor que una ausente —atribuye registros a un
+trimestre equivocado en silencio—.
+
+Así que `Ciclo` nace con un solo `Trimestre`, y los demás se agregan cuando se
+sepan. **Un ciclo con uno o dos trimestres es un estado válido**, no uno a medias.
+
+Lo que lo vuelve seguro es que **la atribución no se guarda: se deriva de la fecha
+al leer**. Un `RegistroAsistencia` solo tiene `fecha`; el trimestre se calcula con
+`trimestreDeFecha` cada vez que se lee. Los días capturados antes de abrir el
+trimestre que los contiene quedan sin atribuir a la vista —y la pantalla lo dice,
+«El trimestre de este día no se ha abierto»— y **quedan atribuidos en el momento en
+que se abre**, sin migrar ni recalcular nada.
+
+Reglas de la apertura:
+
+- Se abren en orden: el 2 después del 1. El número es una etiqueta y desordenarlos
+  no rompería el cálculo, pero volvería incomprensible la pantalla.
+- El nuevo empieza después de que termina el anterior, y no se traslapa con
+  ninguno.
+- Corregir las fechas de los que ya existen no requiere que estén los tres.
+
 ### Para qué sirven las fechas
 
 No son decorativas. Son lo que **atribuye automáticamente** los registros
@@ -159,7 +184,8 @@ Reglas:
 
 - Los rangos de trimestres del mismo ciclo no se traslapan.
 - Un registro con fecha fuera de todo rango (vacaciones, puentes) existe pero no
-  cuenta para ningún trimestre.
+  cuenta para ningún trimestre. Ojo: eso no es lo mismo que una fecha posterior al
+  último trimestre **abierto**, que se resuelve abriendo el siguiente.
 - Cambiar las fechas de un trimestre **abierto** recalcula los criterios
   automáticos. Cambiarlas en uno **cerrado** está prohibido.
 

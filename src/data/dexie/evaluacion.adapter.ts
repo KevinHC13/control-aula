@@ -91,6 +91,31 @@ export class DexieEvaluacionRepo implements EvaluacionRepo {
     })
   }
 
+  async abrirTrimestre(cicloId: Id, periodo: PeriodoNuevo): Promise<void> {
+    await db.transaction('rw', db.trimestres, db.outbox, async () => {
+      const momento = ahora()
+      const trimestre: Trimestre = {
+        id: nuevoId(),
+        ciclo_id: cicloId,
+        numero: periodo.numero,
+        inicio: periodo.inicio,
+        fin: periodo.fin,
+        estado: 'abierto',
+        cerrado_en: null,
+        updated_at: momento,
+        deleted_at: null,
+      }
+
+      await db.trimestres.add(trimestre)
+      await db.outbox.add({
+        tabla: 'trimestres',
+        registro_id: trimestre.id,
+        op: 'upsert',
+        at: momento,
+      })
+    })
+  }
+
   async ajustarFechas(trimestreId: Id, inicio: Fecha, fin: Fecha): Promise<void> {
     await db.transaction('rw', db.trimestres, db.outbox, async () => {
       const trimestre = await db.trimestres.get(trimestreId)
