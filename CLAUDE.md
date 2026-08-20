@@ -9,13 +9,20 @@ español también (`asistencia`, `calificaciones`, `alumnos`).
 
 ## Estado actual del repo
 
-Hecho hasta C10c. Existen y funcionan:
+**`docs/ESTADO.md` es la fuente de verdad del estatus.** Leerlo antes de decidir
+qué construir; el resumen de aquí abajo se queda viejo primero.
 
-- **`domain/`** completo para asistencia: entidades, `values.ts`, `fechas.ts`,
-  `rules.ts`, con pruebas.
-- **`data/`** con Dexie: `db.ts`, adaptadores de alumnos y asistencia, los dos
-  puertos, la `outbox` y la semilla (`grupo.ts` ignorado, `grupo.example.ts`
-  versionado).
+Hecho hasta C18. Existen y funcionan:
+
+- **`domain/`** completo para asistencia y para la **estructura** de la
+  evaluación: `entities.ts` con la jerarquía `Ciclo → … → Actividad`,
+  `values.ts`, `fechas.ts`, `rules.ts` y `evaluacion.ts`, con pruebas. Falta la
+  cadena de cálculo de calificaciones (C28).
+- **`data/`** con Dexie en `version(2)`: `db.ts` con las quince tablas
+  sincronizables, adaptadores de alumnos y asistencia, los dos puertos, la
+  `outbox` y la semilla (`grupo.ts` ignorado, `grupo.example.ts` versionado).
+  Las once tablas de evaluación existen pero **todavía no tienen puerto ni
+  adaptador**.
 - **`application/`**: `asistencia.ts`, `grupo.ts`, `importacion.ts`.
 - **`services/`**: `extraccion.ts`, la única salida a red del cliente.
 - **`ui/`**: las cuatro pestañas, la de asistencia terminada (tira de días,
@@ -25,13 +32,21 @@ Hecho hasta C10c. Existen y funcionan:
 - Una Edge Function desplegada en Supabase, `extraer-lista`, en
   `supabase/functions/`.
 
-Falta de C11 en adelante: calificaciones, notas, resumen del grupo, respaldo
-JSON, cumpleaños y el motor de sincronía.
+**Lo que sigue es C19**: puerto, adaptador y pantalla para administrar el ciclo y
+sus trimestres. Las reglas puras que necesita ya están en `domain/evaluacion.ts`.
+La migración a `version(2)` ya ocurrió y está probada en
+`src/data/dexie/migracion.test.ts`; no hay otra migración pendiente en la Fase 4.
+
+Falta además de la Fase 3: notas, resumen del grupo, respaldo JSON, cumpleaños y
+el motor de sincronía. `C25` y `C26` —criterios automáticos de puntualidad,
+conducta y participación— están **pospuestos por decisión de la usuaria**, no
+pendientes.
 
 Antes de afirmar que algo existe, verificarlo en `src/`.
 
 El plan de construcción con criterios de aceptación por commit está en
-`docs/COMMITS.md` (C1 … C16). Seguir ese orden.
+`docs/COMMITS.md` (C1 … C29), con el estatus marcado commit por commit. Seguir
+ese orden.
 
 ## Comandos
 
@@ -119,7 +134,33 @@ No se pueden agregar retroactivamente sin migrar datos reales del salón
    **misma transacción de Dexie** que la escritura.
 
 El índice `[fecha+alumno_id]` en `asistencia` sostiene la pantalla principal:
-garantiza un registro por alumno por día y permite upsert directo.
+garantiza un registro por alumno por día y permite upsert directo. En evaluación
+lo hacen `[actividad_id+alumno_id]` y `[criterio_trimestre_id+alumno_id]`.
+
+## Reglas de la evaluación (Fase 4)
+
+Salieron de la validación con la usuaria, no de planeación previa (D-015). Detalle
+y fórmulas en `docs/DATA-MODEL.md`; lo que no se negocia al escribir código:
+
+- Jerarquía `Ciclo → Trimestre → CriterioTrimestre → Actividad → Entrega |
+  EvaluacionRubrica`. La actividad cuelga de `CriterioTrimestre`, **nunca** de
+  `Criterio`: es lo que hace que un trimestre nuevo nazca con cero actividades sin
+  borrar ni filtrar nada.
+- Todo el cálculo en **base 1**; la conversión a base 10 ocurre una sola vez, al
+  presentar. **Sin redondeo intermedio y sin piso de escala** — una calificación
+  menor a 5 se muestra tal cual. El porcentaje no aparece nunca en la interfaz.
+- Niveles fijos `['Excelente','Bien','Regular','Mal']` con
+  `VALOR_NIVEL = [3, 2.5, 2, 0]`. Se almacena el **índice** del nivel, no su
+  valor, para que cambiar la tabla no migre datos.
+- El general de un criterio es el promedio de **todas** sus actividades, no el
+  promedio de los promedios por campo formativo.
+- Una actividad sin ningún registro se excluye del promedio. Por eso abrir la
+  pantalla de captura escribe los 30 registros de golpe — lo contrario de
+  asistencia (D-013), y a propósito.
+- Un trimestre cerrado rechaza toda escritura y su calificación viene del snapshot
+  `CierreTrimestre`, no de recalcular.
+- Los pesos pueden sumar cualquier cosa mientras se editan; solo el **cierre**
+  exige 100.
 
 ## Restricciones de UI que son requisitos, no sugerencias
 
@@ -157,7 +198,7 @@ Lista de verificación antes de entregar el iPad: `docs/PWA-IOS.md`.
 Conventional Commits, en español, imperativo, sin punto final.
 Tipos: `feat`, `fix`, `refactor`, `chore`, `docs`, `test`, `style`, `perf`.
 Alcances: `domain`, `data`, `app`, `ui`, `asistencia`, `calificaciones`, `notas`,
-`grupo`, `pwa`, `sync`.
+`grupo`, `pwa`, `sync`, `evaluacion`.
 
 ```
 feat(asistencia): ciclar estado con un toque en la fila
@@ -180,8 +221,14 @@ Gemini no va en el front: es secret de la Edge Function.
 
 ## Supuestos sin validar
 
-`docs/` marca con `[POR VALIDAR]` los supuestos sobre evaluación en primaria
-(escala 5–10 entera, campos formativos de la NEM, umbrales de riesgo). No están
-confirmados con la usuaria. La escala bloquea la pantalla de calificaciones: si
-usa decimales o evaluación descriptiva, la captura por botones se cae. No
-construir C11 en adelante asumiendo que están resueltos.
+Los gruesos ya se validaron y el resultado tiró el modelo anterior: no existe la
+escala 5–10 con seis botones, y los campos formativos sí sirven como agrupación de
+reporte. Lo que queda abierto, con lo que bloquea cada uno, está listado en
+`docs/ESTADO.md`:
+
+- El redondeo al presentar (¿entero o un decimal?) — no es estructural.
+- ¿Un examen por trimestre o varios? Bloquea C24.
+- El umbral real de riesgo por asistencia. Bloquea solo el color de alerta de C13.
+
+Ninguno bloquea C18. Si aparece uno nuevo, se marca `[POR VALIDAR]` y se anota en
+`docs/ESTADO.md` qué commit detiene.

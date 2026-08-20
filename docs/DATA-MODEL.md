@@ -60,6 +60,12 @@ export const CICLO_ESTADOS: EstadoAsistencia[] = [
   'justificada',
 ]
 
+export type CampoFormativo =
+  | 'lenguajes'
+  | 'saberes_pensamiento_cientifico'
+  | 'etica_naturaleza_sociedades'
+  | 'humano_comunitario'
+
 /** Campos base de todo registro sincronizable */
 export interface Sincronizable {
   id: Id
@@ -68,7 +74,14 @@ export interface Sincronizable {
 }
 ```
 
-## Entidades
+Los cuatro campos formativos **quedaron validados** con la usuaria: son la
+agrupación con la que ella reporta. Dejaron de ser `[POR VALIDAR]`.
+
+---
+
+# Alumnos y registro diario
+
+Esta parte está construida y en uso.
 
 ```ts
 // domain/entities.ts
@@ -85,18 +98,6 @@ export interface RegistroAsistencia extends Sincronizable {
   estado: EstadoAsistencia
 }
 
-export interface Actividad extends Sincronizable {
-  nombre: string
-  campo: CampoFormativo    // [POR VALIDAR]
-  fecha: Fecha
-}
-
-export interface Calificacion extends Sincronizable {
-  alumno_id: Id
-  actividad_id: Id
-  valor: number            // entero 5–10 [POR VALIDAR]
-}
-
 export interface Nota extends Sincronizable {
   alumno_id: Id
   fecha: Fecha
@@ -104,45 +105,432 @@ export interface Nota extends Sincronizable {
 }
 ```
 
-### `[POR VALIDAR]` — campos formativos
+`Nota` **no lleva campo `signo`**. Se agrega solo si se retoma el criterio de
+conducta, que está pospuesto (ver más abajo).
 
-```ts
-export type CampoFormativo =
-  | 'lenguajes'
-  | 'saberes_pensamiento_cientifico'
-  | 'etica_naturaleza_sociedades'
-  | 'humano_comunitario'
+---
+
+# Jerarquía de evaluación
+
+Reemplaza por completo las entidades `Actividad` y `Calificacion` del prototipo,
+y con ellas la escala 5–10 de botones. La validación con la usuaria está en
+[DECISIONES.md](./DECISIONES.md) D-015.
+
+La estructura resuelve el problema del cambio de trimestre **por construcción**,
+no con limpieza de datos:
+
+```
+Ciclo
+└─ Trimestre                 fechas · abierto/cerrado
+   └─ CriterioTrimestre      peso %  ──→ Criterio (catálogo)
+      └─ Actividad
+         └─ Entrega / EvaluacionRubrica
 ```
 
-Estos son los cuatro campos formativos de la Nueva Escuela Mexicana según mi
-entendimiento, pero **no está confirmado** que sea así como su escuela organiza
-la evaluación, ni que la agrupación por campo le sirva de algo en la práctica.
-Confirmar antes de construir la pantalla de calificaciones.
+Las actividades cuelgan de `CriterioTrimestre`, no del criterio global. Un
+trimestre nuevo nace con filas nuevas de `CriterioTrimestre` y, por lo tanto,
+**cero actividades**. No se borra ni se filtra nada por fecha.
 
-### `[POR VALIDAR]` — escala de calificación
+## Ciclo y trimestre
 
-El prototipo asume enteros de 5 a 10, capturados con seis botones. Es la
-decisión de UX más consecuente del proyecto (ver [UX.md](./UX.md)). Si ella usa
-decimales — 8.5 — la captura por botones deja de funcionar y hay que rediseñar.
+```ts
+export interface Ciclo extends Sincronizable {
+  nombre: string                          // "2026–2027"
+  estado: 'abierto' | 'cerrado'
+}
 
-Confirmar también si en su grado la evaluación es numérica o descriptiva por
-niveles de desempeño. Si es descriptiva, el modelo de `Calificacion` cambia por
-completo.
+export interface Trimestre extends Sincronizable {
+  ciclo_id: Id
+  numero: 1 | 2 | 3
+  inicio: Fecha
+  fin: Fecha
+  estado: 'abierto' | 'cerrado'
+  cerrado_en: Instante | null
+}
+```
 
-## Esquema de Dexie
+### Para qué sirven las fechas
+
+No son decorativas. Son lo que **atribuye automáticamente** los registros
+diarios a un trimestre: la asistencia y las participaciones se capturan por
+fecha, sin que ella elija trimestre, y el rango decide a cuál pertenecen.
+
+Reglas:
+
+- Los rangos de trimestres del mismo ciclo no se traslapan.
+- Un registro con fecha fuera de todo rango (vacaciones, puentes) existe pero no
+  cuenta para ningún trimestre.
+- Cambiar las fechas de un trimestre **abierto** recalcula los criterios
+  automáticos. Cambiarlas en uno **cerrado** está prohibido.
+
+### Cerrar un trimestre lo congela
+
+Al cerrar:
+
+1. Los pesos de sus `CriterioTrimestre` quedan inmutables.
+2. No se aceptan calificaciones nuevas ni cambios a las existentes.
+3. Se escribe un snapshot de calificaciones finales.
+
+Sin esto, editar un porcentaje después de entregar la boleta cambiaría
+retroactivamente una calificación ya reportada, y la app dejaría de coincidir
+con el papel.
+
+```ts
+export interface CierreTrimestre extends Sincronizable {
+  trimestre_id: Id
+  alumno_id: Id
+  final: number
+  desglose: {
+    criterio: string      // nombre al momento del cierre
+    peso: number
+    calificacion: number
+  }[]
+}
+```
+
+El snapshot guarda nombres y pesos como texto, no referencias. Es la verdad
+histórica aunque después se renombre o se borre un criterio.
+
+## Criterios
+
+```ts
+export type TipoCriterio =
+  | 'entregable'           // tareas, trabajos en clase, portafolio
+  | 'examen'
+  | 'auto_puntualidad'
+  | 'auto_conducta'
+  | 'auto_participacion'
+  | 'personalizado'
+
+export interface Criterio extends Sincronizable {
+  nombre: string
+  tipo: TipoCriterio
+}
+
+export interface CriterioTrimestre extends Sincronizable {
+  trimestre_id: Id
+  criterio_id: Id
+  peso: number                       // 0–100
+  orden: number
+  rubrica_id: Id | null              // null ⇒ captura entregada/no entregada
+  meta_participacion: number | null  // solo auto_participacion
+}
+```
+
+**Invariante:** la suma de `peso` de un trimestre debe ser 100 **para poder
+cerrarlo**. Durante la edición se permite cualquier suma —editar siempre pasa
+por estados intermedios inválidos— pero el total corriente se muestra en
+pantalla.
+
+### Copiar el esquema de un trimestre a otro
+
+Al abrir un trimestre nuevo se ofrece copiar del anterior. Se copia:
+
+- Filas de `CriterioTrimestre` con sus pesos
+- La referencia a la rúbrica y la meta de participación
+
+**No** se copia: actividades, entregas, evaluaciones ni resultados de examen.
+
+Son filas nuevas, así que cambiar un peso en T2 no toca lo ya calculado en T1.
+
+## Actividades y rúbricas
+
+```ts
+export interface Actividad extends Sincronizable {
+  criterio_trimestre_id: Id
+  nombre: string
+  campo: CampoFormativo
+  ejes: string[]                     // ejes articuladores
+  fecha: Fecha
+}
+
+export interface Rubrica extends Sincronizable {
+  nombre: string
+}
+
+export interface RubricaCriterio extends Sincronizable {
+  rubrica_id: Id
+  nombre: string
+  descriptores: [string, string, string, string]   // uno por nivel
+  orden: number
+}
+```
+
+Los niveles son fijos y los mismos para toda rúbrica:
+
+```ts
+// domain/values.ts
+export const NIVELES = ['Excelente', 'Bien', 'Regular', 'Mal'] as const
+export const VALOR_NIVEL = [3, 2.5, 2, 0] as const  // paralelo a NIVELES
+export const NIVEL_MAXIMO = 3
+```
+
+Todos los criterios de una rúbrica pesan lo mismo. No hay ponderación interna.
+
+---
+
+# Cálculo de calificaciones
+
+Toda calificación intermedia se maneja en **base 1**. La conversión a base 10
+ocurre **una sola vez, al presentar**. Nunca se redondea en pasos intermedios.
+
+## Actividad
+
+```ts
+/** Con rúbrica: promedio de niveles ÷ 3. Mínimo posible 0. */
+export function valorConRubrica(niveles: number[]): number {
+  const suma = niveles.reduce((a, b) => a + b, 0)
+  return suma / niveles.length / NIVEL_MAXIMO
+}
+
+/** Sin rúbrica: binario. */
+export function valorSinRubrica(entregada: boolean): number {
+  return entregada ? 1 : 0
+}
+```
+
+**Consecuencia:** la escala no solo abre el piso en 0, también se endurece en los
+niveles intermedios.
+
+| Nivel | Valor base 1 | Base 10 |
+|---|---|---|
+| Excelente | 1.000 | 10.0 |
+| Bien | 0.833 | 8.3 |
+| Regular | 0.667 | 6.7 |
+| Mal | 0.000 | 0.0 |
+
+Los tres niveles superiores están separados por menos de dos puntos, pero de
+Regular a Mal se caen 6.7. **«Mal» es un acantilado deliberado:** codifica que el
+trabajo no vale nada, no que valga poco.
+
+Consecuencia a tener presente: en una rúbrica de cuatro criterios, tres en
+Excelente y uno en Mal da 7.5 — por debajo de todo en Bien (8.3). Si ese
+comportamiento no es el deseado, la palanca es `VALOR_NIVEL`, nunca la fórmula.
+
+Los valores no son enteros, pero eso no afecta el almacenamiento:
+`EvaluacionRubrica.niveles` guarda el **índice** del nivel elegido (0–3), no su
+valor. Cambiar la tabla no requiere migrar datos.
+
+## Criterio
+
+Todas las actividades de un criterio valen lo mismo. El valor del criterio es el
+promedio simple de sus actividades:
+
+```ts
+export function valorCriterio(valores: number[]): number | null {
+  if (valores.length === 0) return null
+  return valores.reduce((a, b) => a + b, 0) / valores.length
+}
+```
+
+Se calcula dos veces: **por campo formativo** (filtrando las actividades de ese
+campo) y **en general** (con todas).
+
+**El general no es el promedio de los promedios por campo.** Es el promedio de
+todas las actividades. Si todas las actividades valen lo mismo, un campo con seis
+actividades pesa el triple que uno con dos — y así debe ser.
+
+Con tres actividades: dos de Lenguajes sin rúbrica (una entregada, otra no) y una
+de SPC con rúbrica de cuatro criterios calificados Bien, Excelente, Regular, Bien
+→ (2.5 + 3 + 2 + 2.5) ÷ 4 = 2.5 → 2.5 ÷ 3 = 0.833.
+
+| | Cálculo | Valor | Base 10 |
+|---|---|---|---|
+| Lenguajes | (1.00 + 0.00) ÷ 2 | 0.500 | 5.0 |
+| SPC | 0.833 ÷ 1 | 0.833 | 8.3 |
+| **General** | (1.00 + 0.00 + 0.833) ÷ 3 | **0.611** | **6.1** |
+
+El promedio de los promedios daría 0.667 (6.7). Es incorrecto para este modelo.
+
+## Examen
+
+Mismo principio:
+
+```ts
+/** Por campo: aciertos del campo ÷ preguntas del campo */
+export function valorExamenPorCampo(aciertos: number, preguntas: number): number
+
+/** General: aciertos totales ÷ preguntas totales */
+export function valorExamenGeneral(res: ResultadoExamen, cfg: ExamenConfig): number
+```
+
+El general se calcula sobre los totales, no promediando los cuatro campos. Un
+campo con 30 preguntas pesa más que uno con 20, que es el comportamiento
+correcto.
+
+## Trimestre
+
+```ts
+export function valorTrimestre(
+  parciales: { peso: number; valor: number }[]
+): number | null {
+  const conValor = parciales.filter(p => p.valor !== null)
+  if (conValor.length === 0) return null
+  return conValor.reduce((acc, p) => acc + p.valor * (p.peso / 100), 0)
+}
+```
+
+## Presentación en base 10
+
+```ts
+export function aBase10(valor: number): number {
+  return valor * 10
+}
+```
+
+**Sin piso.** El rango completo es 0 a 10. Una calificación menor a 5 es un
+resultado válido y se muestra tal cual: el modelo es de puntos, y 3 de 10 tareas
+equivale a 3.0.
+
+El porcentaje **no aparece nunca** en la interfaz. Ella ve base 10 en todas las
+pantallas.
+
+`[POR VALIDAR]` — Redondeo: ¿entero o un decimal? Sea cual sea, se aplica solo al
+presentar, nunca en pasos intermedios.
+
+## Actividades sin calificar
+
+Una actividad **sin ningún registro** se excluye del promedio. De lo contrario el
+promedio de medio trimestre siempre se vería hundido por lo que aún no se
+califica.
+
+Para que no exista ambigüedad, **al abrir la pantalla de captura de una actividad
+se escriben los registros de los 30 alumnos de golpe** (todos `entregada: true`),
+igual que `pasarLista()` crea el día completo de asistencia.
+
+Así:
+
+- Cero registros ⇒ actividad no calificada ⇒ se excluye
+- Con registros ⇒ actividad calificada ⇒ no hay huecos posibles
+
+Nótese que esto es lo **contrario** de la regla de asistencia (D-013): ahí abrir
+un día no escribe nada, aquí abrir una actividad escribe 30 filas. La diferencia
+es que en asistencia se hojean días para consultar, y en una actividad no se
+entra si no es a calificarla.
+
+---
+
+## Registros de evaluación
+
+Tres formas, según el tipo de criterio:
+
+```ts
+/** Criterio entregable sin rúbrica */
+export interface Entrega extends Sincronizable {
+  actividad_id: Id
+  alumno_id: Id
+  entregada: boolean
+}
+
+/** Criterio entregable con rúbrica */
+export interface EvaluacionRubrica extends Sincronizable {
+  actividad_id: Id
+  alumno_id: Id
+  niveles: Record<Id, number>        // rubrica_criterio_id → índice de nivel
+}
+
+/** Criterio de tipo examen */
+export interface ResultadoExamen extends Sincronizable {
+  criterio_trimestre_id: Id
+  alumno_id: Id
+  aciertos: Partial<Record<CampoFormativo, number>>
+}
+
+export interface ExamenConfig extends Sincronizable {
+  criterio_trimestre_id: Id
+  preguntas: Partial<Record<CampoFormativo, number>>
+}
+```
+
+`[POR VALIDAR]` — ¿Hay un examen por trimestre o varios? El modelo actual asume
+uno: `ResultadoExamen` apunta a `CriterioTrimestre`, no a una actividad. Si son
+varios, el examen se vuelve una actividad más y cambia la referencia.
+
+## Criterios automáticos — POSPUESTOS
+
+**No se desarrollan por ahora.** Puntualidad y asistencia, conducta y
+participación quedan fuera del alcance actual por decisión de la usuaria.
+
+El tipo `TipoCriterio` conserva sus valores (`auto_puntualidad`,
+`auto_conducta`, `auto_participacion`) para no migrar el esquema después, pero no
+hay pantallas ni cálculo. Los pesos del trimestre se reparten entre los criterios
+que sí existen y la validación de suma 100 sigue aplicando.
+
+Las notas mantienen su forma actual, **sin campo `signo`**. Se agrega solo si
+conducta se retoma.
+
+Lo que sigue es diseño de referencia para ese momento, no trabajo pendiente.
+
+### Puntualidad y asistencia
+
+El retardo debe penalizar. Si contara como asistencia plena, el criterio sería
+idéntico al de asistencia:
+
+```ts
+const VALOR_PUNTUALIDAD: Record<EstadoAsistencia, number> = {
+  presente: 1,
+  justificada: 1,
+  retardo: 0.5,      // [POR VALIDAR]
+  ausente: 0,
+}
+```
+
+Se convierte a base 10 con la misma regla que el resto: `proporcion × 10`, sin
+piso. Un alumno con 0 % de asistencia obtiene 0.
+
+### Conducta
+
+Requiere agregar un signo a las notas:
+
+```ts
+export interface Nota extends Sincronizable {
+  alumno_id: Id
+  fecha: Fecha
+  texto: string
+  signo: 'positiva' | 'neutral' | 'negativa'   // por defecto neutral
+}
+```
+
+**El signo es opcional y por defecto neutral.** Solo cuenta lo que ella marque
+explícitamente.
+
+La razón no es técnica: si toda nota afectara una calificación, ella escribiría
+menos notas o las escribiría estratégicamente. El anecdotario vale justamente
+porque es un espacio sin consecuencias para recordar cosas. Evaluar conducta
+tiene que ser un acto deliberado, no un efecto secundario de escribir.
+
+`[POR VALIDAR]` — la fórmula. Punto de partida: arrancar en 10 y descontar por
+nota negativa.
+
+### Participación
+
+```ts
+export interface Participacion extends Sincronizable {
+  alumno_id: Id
+  fecha: Fecha
+}
+```
+
+Se captura desde la **pantalla de asistencia**, no en una pantalla propia: ella
+ya está ahí todos los días con la lista enfrente.
+
+La normalización usa `meta_participacion` del trimestre —por ejemplo, 10
+participaciones equivalen a 10— y no el máximo del grupo. Contra el máximo, un
+alumno muy participativo hunde la calificación de todos los demás.
+
+`[POR VALIDAR]` — Y una pregunta previa para ella: ¿quiere premiar volumen de
+participación, o su criterio es otro?
+
+---
+
+# Esquema de Dexie
+
+`version(1)` es lo que está desplegado hoy: cinco tablas de dominio más la
+`outbox`. Las tablas de evaluación entran en `version(2)`, y es una migración
+sobre datos reales del salón, así que se hace una sola vez, completa (C18).
 
 ```ts
 // data/dexie/db.ts
-import Dexie, { type EntityTable } from 'dexie'
-
-export const db = new Dexie('palomita') as Dexie & {
-  alumnos: EntityTable<Alumno, 'id'>
-  asistencia: EntityTable<RegistroAsistencia, 'id'>
-  actividades: EntityTable<Actividad, 'id'>
-  calificaciones: EntityTable<Calificacion, 'id'>
-  notas: EntityTable<Nota, 'id'>
-  outbox: EntityTable<CambioPendiente, 'seq'>
-}
 
 db.version(1).stores({
   alumnos:        'id, numero_lista, deleted_at',
@@ -152,12 +540,57 @@ db.version(1).stores({
   notas:          'id, alumno_id, fecha, deleted_at',
   outbox:         '++seq, tabla, registro_id',
 })
+
+db.version(2).stores({
+  alumnos:              'id, numero_lista, deleted_at',
+  asistencia:           'id, fecha, alumno_id, [fecha+alumno_id], deleted_at',
+  notas:                'id, alumno_id, fecha, deleted_at',
+
+  ciclos:               'id, estado, deleted_at',
+  trimestres:           'id, ciclo_id, numero, inicio, fin, estado, deleted_at',
+  criterios:            'id, tipo, deleted_at',
+  criterios_trimestre:  'id, trimestre_id, criterio_id, [trimestre_id+orden], deleted_at',
+
+  rubricas:             'id, deleted_at',
+  rubrica_criterios:    'id, rubrica_id, [rubrica_id+orden], deleted_at',
+
+  actividades:          'id, criterio_trimestre_id, campo, fecha, deleted_at',
+  entregas:             'id, actividad_id, alumno_id, [actividad_id+alumno_id], deleted_at',
+  eval_rubrica:         'id, actividad_id, alumno_id, [actividad_id+alumno_id], deleted_at',
+  examen_config:        'id, criterio_trimestre_id, deleted_at',
+  resultados_examen:    'id, criterio_trimestre_id, alumno_id, [criterio_trimestre_id+alumno_id], deleted_at',
+  cierres:              'id, trimestre_id, alumno_id, [trimestre_id+alumno_id], deleted_at',
+
+  outbox:               '++seq, tabla, registro_id',
+})
 ```
+
+`version(2)` **elimina** `calificaciones` y redefine `actividades`: la
+`Actividad` del prototipo no tenía `criterio_trimestre_id`, así que ninguna fila
+vieja es válida en el modelo nuevo. No hay conversión que escribir porque no hay
+nada que convertir: la pantalla de calificaciones nunca se construyó y **ninguna
+ruta de código escribió jamás en esas dos tablas** —no existió adaptador, puerto
+ni caso de uso que las tocara—, así que están vacías por construcción y no por
+suposición. El `upgrade()` limpia `actividades` de todos modos y avisa por consola
+si encontró algo, que es el cinturón sobre los tirantes.
+
+La migración está probada en `src/data/dexie/migracion.test.ts`: levanta una base
+con el esquema viejo y un mes de asistencia capturada, la abre con el esquema
+nuevo y verifica que no se pierda un solo registro. Es la única forma de ensayar
+esto sin arriesgar el ciclo escolar en el dispositivo real.
+
+Las tablas de participación (`participaciones`) **no entran** en `version(2)`:
+el criterio está pospuesto y una tabla vacía no se agrega por adelantado. Cuando
+se retome, será `version(3)` — agregar una tabla nueva sí es una migración
+barata.
 
 Notas sobre los índices:
 
 - `[fecha+alumno_id]` es el índice que sostiene la pantalla de asistencia:
   garantiza un solo registro por alumno por día y permite el upsert directo.
+- `[actividad_id+alumno_id]` y `[criterio_trimestre_id+alumno_id]` hacen lo mismo
+  para la captura de evaluación: un registro por alumno por actividad, upsert
+  directo, sin duplicados posibles.
 - `outbox` es la única tabla con clave autoincremental, y es correcto: es local,
   efímera y nunca se sincroniza como contenido.
 - Los índices sobre `deleted_at` **no** sirven para encontrar los registros
@@ -170,9 +603,12 @@ Notas sobre los índices:
 ## Outbox
 
 ```ts
+export const TABLAS_SINCRONIZABLES = ['alumnos', 'asistencia', /* … */] as const
+export type TablaSincronizable = (typeof TABLAS_SINCRONIZABLES)[number]
+
 export interface CambioPendiente {
   seq?: number
-  tabla: 'alumnos' | 'asistencia' | 'actividades' | 'calificaciones' | 'notas'
+  tabla: TablaSincronizable
   registro_id: Id
   op: 'upsert' | 'delete'
   at: Instante
@@ -194,10 +630,24 @@ await db.transaction('rw', db.asistencia, db.outbox, async () => {
 })
 ```
 
-## Reglas de dominio
+Con quince tablas, la unión escrita a mano se cambió por un arreglo `as const`
+junto al esquema: agregar una tabla se hace en un solo lugar y el tipo sigue
+cerrado, así que un `tabla: 'califcaciones'` mal escrito sigue siendo un error de
+compilación. `outbox` no está en la lista: es local y nunca se sincroniza como
+contenido.
 
-Funciones puras en `domain/rules.ts`. Sin acceso a base de datos, testeables
-sin montar nada.
+# Reglas de dominio
+
+Funciones puras, sin acceso a base de datos, testeables sin montar nada. Todas
+devuelven `null` cuando no hay datos suficientes, nunca `0`.
+
+Están repartidas en tres archivos por cohesión, igual que `fechas.ts` se separó
+de `rules.ts`: `rules.ts` para asistencia, `evaluacion.ts` para la estructura de
+la evaluación —qué trimestre le toca a una fecha, si los pesos cierran, si un
+periodo acepta escrituras— y la cadena de cálculo de calificaciones, que llega en
+C28.
+
+Construidas hoy, en `rules.ts`:
 
 ```ts
 /** Retardo y justificada cuentan como asistencia. */
@@ -209,15 +659,56 @@ export function porcentajeAsistencia(registros: RegistroAsistencia[]): number
 
 /** null cuando no hay calificaciones. Nunca 0. */
 export function promedioDe(valores: number[]): number | null
-
-/** [POR VALIDAR] umbrales */
-export function enRiesgo(pct: number, promedio: number | null): boolean
 ```
 
-El umbral de riesgo del prototipo (asistencia < 90 %, promedio < 6) es una
-suposición. Ella sabe cuál es el criterio que su escuela usa.
+Construidas hoy, en `evaluacion.ts` (C18):
 
-## Semilla
+```ts
+export function sumaDePesos(cts: CriterioTrimestre[]): number
+export function pesosSuman100(cts: CriterioTrimestre[]): boolean
+export function rangoValido(t: Trimestre): boolean
+export function contieneFecha(t: Trimestre, f: Fecha): boolean
+export function trimestreDeFecha(f: Fecha, ts: Trimestre[]): Trimestre | null
+export function seTraslapan(a: Trimestre, b: Trimestre): boolean
+export function traslapes(ts: Trimestre[]): [Trimestre, Trimestre][]
+export function aceptaEscrituras(t: Trimestre): boolean
+export function puedeCerrarse(t: Trimestre, cts: CriterioTrimestre[]): boolean
+```
+
+Los parámetros piden solo los campos que usan (`Pick<...>`) en lugar de la
+entidad completa: una entidad la satisface por estructura, así que no cuesta nada
+en los llamadores, y las pruebas no tienen que inventar `id`, `updated_at` y
+`deleted_at` para preguntar si dos rangos se traslapan.
+
+`traslapes()` devuelve los pares y no un booleano para que la pantalla pueda decir
+*cuáles* chocan. Compara solo trimestres del mismo `ciclo_id`: en una base con
+historia, dos ciclos distintos no compiten por una fecha.
+
+Pendientes, la cadena de cálculo de C28:
+
+```ts
+export function valorConRubrica(niveles: number[]): number
+export function valorSinRubrica(entregada: boolean): number
+export function valorCriterio(valores: number[]): number | null
+export function valorExamenPorCampo(aciertos: number, preguntas: number): number
+export function valorExamenGeneral(res: ResultadoExamen, cfg: ExamenConfig): number
+export function valorTrimestre(parciales: { peso: number; valor: number }[]): number | null
+export function aBase10(valor: number): number
+```
+
+Pospuestas con los criterios automáticos:
+
+```ts
+export function valorPuntualidad(registros: RegistroAsistencia[]): number | null
+export function valorConducta(notas: Nota[]): number | null
+export function valorParticipacion(n: number, meta: number): number
+```
+
+`enRiesgo(pct, promedio)` sigue con el umbral del prototipo (asistencia < 90 %,
+promedio < 6) y sigue siendo una suposición: el umbral real es uno de los
+`[POR VALIDAR]` abiertos.
+
+# Semilla
 
 La lista entra por uno de dos caminos, y por ninguno se teclean 30 nombres:
 

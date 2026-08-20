@@ -3,11 +3,48 @@ import Dexie, { type EntityTable } from 'dexie'
 import type {
   Actividad,
   Alumno,
-  Calificacion,
+  CierreTrimestre,
+  Ciclo,
+  Criterio,
+  CriterioTrimestre,
+  Entrega,
+  EvaluacionRubrica,
+  ExamenConfig,
   Nota,
   RegistroAsistencia,
+  ResultadoExamen,
+  Rubrica,
+  RubricaCriterio,
+  Trimestre,
 } from '@/domain/entities'
 import type { Id, Instante } from '@/domain/values'
+
+/**
+ * Las tablas cuyo contenido se sincroniza. `outbox` no está: es local y efímera.
+ *
+ * Existe como arreglo y no como unión escrita a mano para que agregar una tabla
+ * se haga en un solo lugar. Con quince tablas, mantener al día una unión literal
+ * aparte del esquema es trabajo que no compra nada.
+ */
+export const TABLAS_SINCRONIZABLES = [
+  'alumnos',
+  'asistencia',
+  'notas',
+  'ciclos',
+  'trimestres',
+  'criterios',
+  'criterios_trimestre',
+  'rubricas',
+  'rubrica_criterios',
+  'actividades',
+  'entregas',
+  'eval_rubrica',
+  'examen_config',
+  'resultados_examen',
+  'cierres',
+] as const
+
+export type TablaSincronizable = (typeof TABLAS_SINCRONIZABLES)[number]
 
 /**
  * Una fila de la bitácora de cambios por subir. Vive en la capa de datos y no
@@ -16,7 +53,7 @@ import type { Id, Instante } from '@/domain/values'
  */
 export interface CambioPendiente {
   seq?: number
-  tabla: 'alumnos' | 'asistencia' | 'actividades' | 'calificaciones' | 'notas'
+  tabla: TablaSincronizable
   registro_id: Id
   op: 'upsert' | 'delete'
   at: Instante
@@ -25,9 +62,23 @@ export interface CambioPendiente {
 export const db = new Dexie('palomita') as Dexie & {
   alumnos: EntityTable<Alumno, 'id'>
   asistencia: EntityTable<RegistroAsistencia, 'id'>
-  actividades: EntityTable<Actividad, 'id'>
-  calificaciones: EntityTable<Calificacion, 'id'>
   notas: EntityTable<Nota, 'id'>
+
+  ciclos: EntityTable<Ciclo, 'id'>
+  trimestres: EntityTable<Trimestre, 'id'>
+  criterios: EntityTable<Criterio, 'id'>
+  criterios_trimestre: EntityTable<CriterioTrimestre, 'id'>
+
+  rubricas: EntityTable<Rubrica, 'id'>
+  rubrica_criterios: EntityTable<RubricaCriterio, 'id'>
+
+  actividades: EntityTable<Actividad, 'id'>
+  entregas: EntityTable<Entrega, 'id'>
+  eval_rubrica: EntityTable<EvaluacionRubrica, 'id'>
+  examen_config: EntityTable<ExamenConfig, 'id'>
+  resultados_examen: EntityTable<ResultadoExamen, 'id'>
+  cierres: EntityTable<CierreTrimestre, 'id'>
+
   outbox: EntityTable<CambioPendiente, 'seq'>
 }
 
@@ -39,6 +90,57 @@ db.version(1).stores({
   notas: 'id, alumno_id, fecha, deleted_at',
   outbox: '++seq, tabla, registro_id',
 })
+
+/**
+ * La jerarquía de evaluación (docs/DATA-MODEL.md). Va completa en una sola
+ * versión a propósito: es una migración sobre el iPad con los datos reales del
+ * salón, y hacerla por partes multiplica las ocasiones de romperlo.
+ *
+ * `calificaciones` se elimina y `actividades` se redefine: la `Actividad` del
+ * prototipo no tenía `criterio_trimestre_id`, así que ninguna fila vieja sería
+ * válida en el modelo nuevo. No hay conversión que escribir porque no hay nada
+ * que convertir — la pantalla de calificaciones nunca se construyó y **ninguna
+ * ruta de código escribió jamás en esas dos tablas**, así que están vacías por
+ * construcción, no por suposición. El `clear()` del upgrade es el cinturón sobre
+ * los tirantes.
+ *
+ * `participaciones` no entra: el criterio está pospuesto y una tabla vacía no se
+ * agrega por adelantado. Cuando se retome será `version(3)`, que es una
+ * migración barata.
+ */
+db.version(2)
+  .stores({
+    calificaciones: null,
+
+    ciclos: 'id, estado, deleted_at',
+    trimestres: 'id, ciclo_id, numero, inicio, fin, estado, deleted_at',
+    criterios: 'id, tipo, deleted_at',
+    criterios_trimestre:
+      'id, trimestre_id, criterio_id, [trimestre_id+orden], deleted_at',
+
+    rubricas: 'id, deleted_at',
+    rubrica_criterios: 'id, rubrica_id, [rubrica_id+orden], deleted_at',
+
+    actividades: 'id, criterio_trimestre_id, campo, fecha, deleted_at',
+    entregas: 'id, actividad_id, alumno_id, [actividad_id+alumno_id], deleted_at',
+    eval_rubrica: 'id, actividad_id, alumno_id, [actividad_id+alumno_id], deleted_at',
+    examen_config: 'id, criterio_trimestre_id, deleted_at',
+    resultados_examen:
+      'id, criterio_trimestre_id, alumno_id, [criterio_trimestre_id+alumno_id], deleted_at',
+    cierres: 'id, trimestre_id, alumno_id, [trimestre_id+alumno_id], deleted_at',
+  })
+  .upgrade(async (tx) => {
+    const viejas = await tx.table('actividades').count()
+    if (viejas > 0) {
+      // No debería pasar: no existe código que las haya escrito. Si pasa, queda
+      // dicho en la consola en vez de desaparecer en silencio.
+      console.warn(
+        `[palomita] version(2) descartó ${viejas} actividades del prototipo, ` +
+          'sin criterio_trimestre_id.',
+      )
+      await tx.table('actividades').clear()
+    }
+  })
 
 /**
  * ID de un registro nuevo. Siempre UUID del cliente, nunca autoincremento: con

@@ -1,4 +1,12 @@
-import type { EstadoAsistencia, Fecha, Id, Sincronizable } from './values'
+import type {
+  CampoFormativo,
+  EstadoAsistencia,
+  Fecha,
+  Id,
+  Instante,
+  Nivel,
+  Sincronizable,
+} from './values'
 
 export interface Alumno extends Sincronizable {
   /** "Apellidos, Nombres" — el orden de la lista oficial */
@@ -21,34 +29,161 @@ export interface RegistroAsistencia extends Sincronizable {
   estado: EstadoAsistencia
 }
 
-/**
- * [POR VALIDAR] Los cuatro campos formativos de la Nueva Escuela Mexicana según
- * mi entendimiento. No está confirmado que su escuela organice así la
- * evaluación, ni que agrupar por campo le sirva de algo en la práctica.
- * Confirmar antes de construir la pantalla de calificaciones.
- */
-export type CampoFormativo =
-  | 'lenguajes'
-  | 'saberes_pensamiento_cientifico'
-  | 'etica_naturaleza_sociedades'
-  | 'humano_comunitario'
-
-export interface Actividad extends Sincronizable {
-  nombre: string
-  campo: CampoFormativo
-  fecha: Fecha
-}
-
-export interface Calificacion extends Sincronizable {
-  alumno_id: Id
-  actividad_id: Id
-  /** [POR VALIDAR] Entero de 5 a 10. Si ella usa decimales, la captura por
-   *  botones se cae y este campo cambia de forma (docs/DATA-MODEL.md). */
-  valor: number
-}
-
 export interface Nota extends Sincronizable {
   alumno_id: Id
   fecha: Fecha
   texto: string
+}
+
+/*
+ * Jerarquía de evaluación
+ * =======================
+ *
+ *   Ciclo
+ *   └─ Trimestre                 fechas · abierto/cerrado
+ *      └─ CriterioTrimestre      peso %  ──→ Criterio (catálogo)
+ *         └─ Actividad
+ *            └─ Entrega | EvaluacionRubrica
+ *
+ * Salió de la validación con la usuaria, no de planeación previa
+ * (docs/DECISIONES.md D-015).
+ */
+
+export interface Ciclo extends Sincronizable {
+  /** "2026–2027" */
+  nombre: string
+  estado: EstadoPeriodo
+}
+
+export type EstadoPeriodo = 'abierto' | 'cerrado'
+
+/**
+ * Las fechas no son decorativas: son lo que **atribuye automáticamente** los
+ * registros diarios a un trimestre. La asistencia se captura por fecha, sin que
+ * ella elija trimestre, y el rango decide a cuál pertenece.
+ *
+ * Cerrar un trimestre lo congela: los pesos quedan inmutables, no se aceptan
+ * calificaciones nuevas y se escribe un `CierreTrimestre` por alumno. Sin eso,
+ * editar un porcentaje en enero cambiaría una calificación ya reportada en la
+ * boleta de diciembre y la app dejaría de coincidir con el papel.
+ */
+export interface Trimestre extends Sincronizable {
+  ciclo_id: Id
+  numero: 1 | 2 | 3
+  inicio: Fecha
+  fin: Fecha
+  estado: EstadoPeriodo
+  cerrado_en: Instante | null
+}
+
+export type TipoCriterio =
+  | 'entregable'
+  | 'examen'
+  | 'auto_puntualidad'
+  | 'auto_conducta'
+  | 'auto_participacion'
+  | 'personalizado'
+
+/** Catálogo: el criterio existe una vez y se reusa en cada trimestre. */
+export interface Criterio extends Sincronizable {
+  nombre: string
+  tipo: TipoCriterio
+}
+
+/**
+ * El criterio *dentro de* un trimestre, con su peso.
+ *
+ * Las actividades cuelgan de aquí y no del catálogo: es lo que resuelve el
+ * cambio de trimestre por construcción. Un trimestre nuevo nace con filas nuevas
+ * y por lo tanto cero actividades, sin borrar ni filtrar nada por fecha, y
+ * cambiar un peso en T2 no puede tocar lo ya calculado en T1.
+ */
+export interface CriterioTrimestre extends Sincronizable {
+  trimestre_id: Id
+  criterio_id: Id
+  /** 0–100. La suma del trimestre debe dar 100 para poder **cerrarlo**, no para
+   *  poder guardar: editar siempre pasa por estados intermedios inválidos. */
+  peso: number
+  orden: number
+  /** `null` ⇒ la captura es binaria, entregada / no entregada. */
+  rubrica_id: Id | null
+  /** Solo para `auto_participacion`, que está pospuesto. */
+  meta_participacion: number | null
+}
+
+export interface Actividad extends Sincronizable {
+  criterio_trimestre_id: Id
+  nombre: string
+  campo: CampoFormativo
+  /** Ejes articuladores. Opcionales. */
+  ejes: string[]
+  fecha: Fecha
+}
+
+export interface Rubrica extends Sincronizable {
+  nombre: string
+}
+
+/**
+ * Un renglón de la rúbrica, con un descriptor por nivel. Todos los criterios de
+ * una rúbrica pesan lo mismo: no hay ponderación interna.
+ */
+export interface RubricaCriterio extends Sincronizable {
+  rubrica_id: Id
+  nombre: string
+  /** Uno por nivel, en el orden de `NIVELES`. */
+  descriptores: [string, string, string, string]
+  orden: number
+}
+
+/** Captura de un criterio entregable sin rúbrica. */
+export interface Entrega extends Sincronizable {
+  actividad_id: Id
+  alumno_id: Id
+  entregada: boolean
+}
+
+/** Captura de un criterio entregable con rúbrica. */
+export interface EvaluacionRubrica extends Sincronizable {
+  actividad_id: Id
+  alumno_id: Id
+  /** `rubrica_criterio_id` → índice del nivel elegido, nunca su valor. */
+  niveles: Record<Id, Nivel>
+}
+
+/**
+ * Aciertos de examen por campo formativo.
+ *
+ * [POR VALIDAR] Apunta a `CriterioTrimestre` porque el modelo asume **un** examen
+ * por trimestre. Si son varios, el examen pasa a ser una actividad más y esta
+ * referencia cambia (docs/DATA-MODEL.md).
+ */
+export interface ResultadoExamen extends Sincronizable {
+  criterio_trimestre_id: Id
+  alumno_id: Id
+  aciertos: Partial<Record<CampoFormativo, number>>
+}
+
+/** Cuántas preguntas trae el examen por campo. Es el denominador. */
+export interface ExamenConfig extends Sincronizable {
+  criterio_trimestre_id: Id
+  preguntas: Partial<Record<CampoFormativo, number>>
+}
+
+/**
+ * Snapshot de la calificación final de un alumno al cerrar el trimestre.
+ *
+ * Guarda nombres y pesos como **texto**, no referencias: es la verdad histórica
+ * aunque después se renombre o se borre un criterio.
+ */
+export interface CierreTrimestre extends Sincronizable {
+  trimestre_id: Id
+  alumno_id: Id
+  final: number
+  desglose: {
+    /** Nombre del criterio al momento del cierre. */
+    criterio: string
+    peso: number
+    calificacion: number
+  }[]
 }

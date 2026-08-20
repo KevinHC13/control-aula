@@ -4,27 +4,27 @@ import 'fake-indexeddb/auto'
 
 import { afterAll, describe, expect, it } from 'vitest'
 
-import { ahora, db } from './db'
+import { ahora, db, TABLAS_SINCRONIZABLES } from './db'
 
-const TABLAS_DE_DOMINIO = [
-  'alumnos',
-  'asistencia',
-  'actividades',
-  'calificaciones',
-  'notas',
-] as const
+const TABLAS_DE_DOMINIO = TABLAS_SINCRONIZABLES
 
 afterAll(() => {
   db.close()
 })
 
 describe('esquema de la base', () => {
-  it('abre y tiene las seis tablas', async () => {
+  it('abre y tiene las tablas sincronizables más la outbox', async () => {
     await db.open()
     expect(db.name).toBe('palomita')
     expect(db.tables.map((t) => t.name).sort()).toEqual(
       [...TABLAS_DE_DOMINIO, 'outbox'].sort(),
     )
+  })
+
+  it('ya no existe la tabla calificaciones del prototipo', async () => {
+    await db.open()
+    // La escala 5-10 no existe en el modelo nuevo (docs/DECISIONES.md D-015).
+    expect(db.tables.map((t) => t.name)).not.toContain('calificaciones')
   })
 
   it('asistencia tiene el índice compuesto [fecha+alumno_id]', async () => {
@@ -37,12 +37,28 @@ describe('esquema de la base', () => {
     expect(compuestos).toContain('[fecha+alumno_id]')
   })
 
-  it('calificaciones tiene el índice compuesto [actividad_id+alumno_id]', async () => {
+  it('la captura de evaluación tiene su índice compuesto, como asistencia', async () => {
     await db.open()
-    const compuestos = db.calificaciones.schema.indexes
-      .filter((i) => i.compound)
-      .map((i) => i.name)
-    expect(compuestos).toContain('[actividad_id+alumno_id]')
+    const compuestos = (tabla: string) =>
+      db
+        .table(tabla)
+        .schema.indexes.filter((i) => i.compound)
+        .map((i) => i.name)
+
+    // Un registro por alumno por actividad, y upsert directo sin recorrer la
+    // tabla. Es lo que hace [fecha+alumno_id] en asistencia.
+    expect(compuestos('entregas')).toContain('[actividad_id+alumno_id]')
+    expect(compuestos('eval_rubrica')).toContain('[actividad_id+alumno_id]')
+    expect(compuestos('resultados_examen')).toContain('[criterio_trimestre_id+alumno_id]')
+    expect(compuestos('cierres')).toContain('[trimestre_id+alumno_id]')
+  })
+
+  it('actividades cuelga de criterio_trimestre_id, no de un criterio global', async () => {
+    await db.open()
+    const indices = db.actividades.schema.indexes.map((i) => i.name)
+    // Es lo que hace que un trimestre nuevo nazca con cero actividades sin
+    // borrar ni filtrar nada por fecha (docs/DECISIONES.md D-015).
+    expect(indices).toContain('criterio_trimestre_id')
   })
 
   it('toda tabla de dominio indexa deleted_at para el filtro de borrados', async () => {
