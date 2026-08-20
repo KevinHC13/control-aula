@@ -393,18 +393,41 @@ con el esquema viejo y tres días de asistencia de 30 alumnos, la abre con el
 esquema nuevo y verifica que no se pierda un registro —ni el conteo ni los estados
 capturados— y que el upsert por `[fecha+alumno_id]` siga funcionando después.
 
-### ▶ C19 · `feat(evaluacion): administrar ciclo, trimestres y sus fechas`
+### ✅ C19 · `feat(evaluacion): administrar ciclo, trimestres y sus fechas`
 
-Las reglas puras ya están (`trimestreDeFecha`, `traslapes`, `rangoValido`); falta
-el puerto, el adaptador y la pantalla.
+El primer vertical de la fase: puerto `evaluacion.ts`, adaptador de Dexie, casos
+de uso y dos pantallas —*Ciclo escolar* en Ajustes y la etiqueta permanente en
+Asistencia—.
 
 **Aceptación**
-- [ ] Se ve siempre qué trimestre está activo
-- [ ] Un registro de asistencia se atribuye a un trimestre por su fecha, sin elección manual
-- [ ] Una fecha fuera de todo rango no cuenta para ningún trimestre y no falla
-- [ ] No se pueden editar fechas de un trimestre cerrado
+- [x] Se ve siempre qué trimestre está activo
+- [x] Un registro de asistencia se atribuye a un trimestre por su fecha, sin elección manual
+- [x] Una fecha fuera de todo rango no cuenta para ningún trimestre y no falla
+- [x] No se pueden editar fechas de un trimestre cerrado
 
-### ⬜ C20 · `feat(evaluacion): configurar criterios y pesos por trimestre`
+Los cuatro se verificaron en el navegador, además de en Vitest: la etiqueta dice
+«Trimestre 1» en un día dentro del rango y «Fuera de los trimestres» en uno de
+vacaciones, y con el trimestre 1 cerrado a mano en IndexedDB sus dos campos de
+fecha salen deshabilitados mientras los del 2 y el 3 siguen editables.
+
+Decisiones que salieron de construirlo:
+
+- **La etiqueta sigue al día seleccionado, no a hoy.** Hojear un día de noviembre
+  y ver «Trimestre 1» es lo que hace visible que la atribución es por fecha. Con
+  la etiqueta clavada en hoy, la regla quedaría invisible justo cuando importa.
+- **Las fechas se capturan con `type="date"`**, que en iPadOS abre el selector y
+  no el teclado. Es la misma razón por la que las calificaciones no usan un campo
+  numérico, y de paso garantiza el formato.
+- **El traslape se marca en las dos filas** y dice con cuál choca, así que
+  corregir una apaga las dos marcas. Mismo patrón que el número de lista repetido
+  en la carga de la lista (D-014).
+- **Un hueco entre trimestres es válido.** No todo día del calendario es día de
+  clases, y los días fuera de rango ya tienen una respuesta definida.
+- **No se abre un segundo ciclo mientras haya uno en curso**: dos ciclos abiertos
+  harían ambigua la atribución de una fecha, que es lo que este commit existe para
+  volver inequívoco.
+
+### ▶ C20 · `feat(evaluacion): configurar criterios y pesos por trimestre`
 
 **Aceptación**
 - [ ] El total corriente de pesos es visible mientras se edita

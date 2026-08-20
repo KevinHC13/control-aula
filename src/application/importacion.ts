@@ -1,6 +1,6 @@
 import { repos } from '@/data'
 import type { DatosAlumno } from '@/domain/entities'
-import { comoDate, fechaLocal } from '@/domain/fechas'
+import { fechaValida } from '@/domain/fechas'
 import type { AlumnoExtraido } from '@/services/extraccion'
 
 /**
@@ -64,17 +64,6 @@ function capitalizar(nombre: string): string {
     .split(',')
     .map((segmento, i) => (i === 0 ? '' : ' ') + capitalizarSegmento(segmento.trim()))
     .join(',')
-}
-
-/**
- * Una fecha es válida si sobrevive el viaje de ida y vuelta: `comoDate` corrige
- * en silencio un 31 de febrero a un 3 de marzo, así que si vuelve distinta es
- * que el día no existe. El formato lo filtra antes la expresión regular —una
- * fecha en `12/03/2015` es ambigua entre día y mes y no se adivina, se marca—.
- */
-function fechaValida(fecha: string): boolean {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return false
-  return fechaLocal(comoDate(fecha)) === fecha
 }
 
 /**

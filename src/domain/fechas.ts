@@ -26,6 +26,17 @@ export function comoDate(fecha: Fecha): Date {
   return new Date(anio, mes - 1, dia, 12)
 }
 
+/**
+ * Una fecha es válida si sobrevive el viaje de ida y vuelta: `comoDate` corrige
+ * en silencio un 31 de febrero a un 3 de marzo, así que si vuelve distinta es
+ * que el día no existe. El formato lo filtra antes la expresión regular —una
+ * fecha en `12/03/2015` es ambigua entre día y mes y no se adivina, se marca—.
+ */
+export function fechaValida(fecha: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return false
+  return fechaLocal(comoDate(fecha)) === fecha
+}
+
 /** Días de diferencia a partir de una fecha, para moverse por la tira de días. */
 export function fechaMas(fecha: Fecha, dias: number): Fecha {
   const d = comoDate(fecha)

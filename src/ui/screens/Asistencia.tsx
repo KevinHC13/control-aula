@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react'
 
 import { type FilaAsistencia, marcarEstado, pasarLista } from '@/application/asistencia'
+import { trimestreDe } from '@/application/evaluacion'
 import { fechaLocal, mesDe } from '@/domain/fechas'
 import type { Fecha } from '@/domain/values'
 import { CalendarioMes } from '@/ui/components/CalendarioMes'
 import { ContadorPresentes } from '@/ui/components/ContadorPresentes'
+import { EtiquetaTrimestre } from '@/ui/components/EtiquetaTrimestre'
 import { FilaAlumno } from '@/ui/components/FilaAlumno'
 import { TiraDeDias } from '@/ui/components/TiraDeDias'
 import {
@@ -16,12 +18,14 @@ import {
 } from '@/ui/components/ui/dialog'
 import { useAsistenciaDelDia } from '@/ui/hooks/useAsistenciaDelDia'
 import { useAsistenciaDelMes } from '@/ui/hooks/useAsistenciaDelMes'
+import { useCicloEnCurso } from '@/ui/hooks/useCicloEnCurso'
 import { useInterfaz } from '@/ui/store/interfaz'
 
 export function Asistencia() {
   const diaSeleccionado = useInterfaz((s) => s.diaSeleccionado)
   const seleccionarDia = useInterfaz((s) => s.seleccionarDia)
   const { filas, cargando } = useAsistenciaDelDia(diaSeleccionado)
+  const { ciclo, cargando: cargandoCiclo } = useCicloEnCurso()
 
   // Se calcula una vez por montaje: si la app queda abierta al cruzar la
   // medianoche, "hoy" se corrige al volver a entrar, que es cuando importa.
@@ -90,7 +94,16 @@ export function Asistencia() {
         </DialogContent>
       </Dialog>
 
-      <ContadorPresentes filas={filas} />
+      <div className="flex flex-col gap-1">
+        <ContadorPresentes filas={filas} />
+        {/* A qué trimestre va lo que se capture hoy. Informa, no pregunta: la
+            atribución es por fecha y nunca manual. */}
+        <EtiquetaTrimestre
+          trimestre={trimestreDe(diaSeleccionado, ciclo)}
+          hayCiclo={ciclo !== null}
+          cargando={cargandoCiclo}
+        />
+      </div>
 
       {/* -mx-4 para que la barra de color toque el borde de la pantalla: es lo
           que hace que la columna bicolor se lea de corrido. */}

@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Actualizado el **2026-08-20**, con C18 terminado. Este es el documento que se lee primero para saber
+Actualizado el **2026-08-20**, con C18 y C19 terminados. Este es el documento que se lee primero para saber
 dónde va el proyecto y qué sigue. El plan detallado, con criterios de aceptación
 por commit, está en [COMMITS.md](./COMMITS.md).
 
@@ -13,8 +13,9 @@ se queda viejo; el código no.
 
 Asistencia está terminada y entregada en el iPad. La semana de uso real ya pasó y
 la validación con la usuaria tiró el modelo de calificaciones que estaba planeado.
-La Fase 4 arrancó: **C18 está hecho** —dominio de evaluación y `db.version(2)`— y
-lo que sigue es `C19`, el primer vertical que llega a pantalla.
+La Fase 4 va en marcha: **C18 y C19 están hechos** —dominio de evaluación,
+`db.version(2)`, y el ciclo escolar con sus trimestres ya configurable y visible—.
+Lo que sigue es `C20`: los criterios y sus pesos.
 
 ## Fases
 
@@ -24,7 +25,7 @@ lo que sigue es `C19`, el primer vertical que llega a pantalla.
 | 2 · Asistencia | El vertical completo hasta el iPad | ✅ Terminada |
 | Hito | Entrega, pausa de una semana, validación | ✅ Cumplido |
 | 3 · Resto de la v1 | Notas, resumen, respaldo, cumpleaños, sincronía | ⬜ Sin empezar |
-| 4 · Evaluación | Ciclo, trimestres, criterios, rúbricas, cálculo | ▶ En curso: C18 hecho, sigue C19 |
+| 4 · Evaluación | Ciclo, trimestres, criterios, rúbricas, cálculo | ▶ En curso: C18 y C19 hechos, sigue C20 |
 
 ## Lo que existe y funciona
 
@@ -34,10 +35,10 @@ Verificado en `src/` a esta fecha:
 |---|---|
 | `domain/` | `entities.ts` con la jerarquía de evaluación completa, `values.ts`, `fechas.ts`, `rules.ts`, `evaluacion.ts`, con pruebas |
 | `data/dexie/` | `db.ts` en `version(2)`, adaptadores de alumnos y asistencia, `outbox`, semilla |
-| `data/ports/` | `alumnos.ts`, `asistencia.ts` — falta el de evaluación |
-| `application/` | `asistencia.ts`, `grupo.ts`, `importacion.ts` |
+| `data/ports/` | `alumnos.ts`, `asistencia.ts`, `evaluacion.ts` (ciclo y trimestres) |
+| `application/` | `asistencia.ts`, `grupo.ts`, `importacion.ts`, `evaluacion.ts` |
 | `services/` | `extraccion.ts` — única salida a red del cliente |
-| `ui/` | Cuatro pestañas, Asistencia completa, Ajustes, CargarLista |
+| `ui/` | Cuatro pestañas, Asistencia completa (con la etiqueta del trimestre), Ajustes, CargarLista, CicloEscolar |
 | `tests/` | `arquitectura.test.ts` — verifica las reglas de dependencia en cada `npm test` |
 | Infra | PWA con `vite-plugin-pwa` y aviso de actualización; Edge Function `extraer-lista` desplegada |
 
@@ -81,21 +82,22 @@ asistencia capturada.
 
 ## Con qué continuar
 
-**Siguiente commit: `C19 · feat(evaluacion): administrar ciclo, trimestres y sus
-fechas`.** Las reglas puras que necesita ya existen en `domain/evaluacion.ts`
-(`trimestreDeFecha`, `traslapes`, `rangoValido`, `aceptaEscrituras`); lo que falta
-es el puerto, el adaptador de Dexie y la pantalla.
+**Siguiente commit: `C20 · feat(evaluacion): configurar criterios y pesos por
+trimestre`.** El puerto `evaluacion.ts` y su adaptador ya existen y es donde se
+agregan los métodos; la pantalla va en Ajustes, junto a *Ciclo escolar*, por la
+misma razón que aquella —se toca tres veces al año, no todos los días—.
 
-Es el primer commit de la fase que llega a pantalla, y hay una decisión de diseño
-que tomar en él y no después: **dónde vive la administración del ciclo.** No es
-camino diario —se toca tres veces al año— así que por la regla de `docs/UX.md` §4
-va en Ajustes, no en una quinta pestaña.
+Lo que hay que resolver ahí: el total corriente de pesos se muestra siempre, pero
+guardar **no** exige que sume 100 —editar pasa siempre por estados intermedios
+inválidos— y lo que se bloquea es el cierre (`puedeCerrarse`, ya escrito). Y
+copiar el esquema de un trimestre anterior trae criterios, pesos y rúbricas, pero
+nunca actividades ni calificaciones.
 
 El orden del resto de la Fase 4 es:
 
 ```
 C18 ─ C19 ─ C20 ─ C21 ─ C21b ─┬─ C22 ─┐
- ✅                           ├─ C23 ─┼─ C28 ─┬─ C29
+ ✅    ✅                     ├─ C23 ─┼─ C28 ─┬─ C29
                               └─ C24 ─┘       └─ C27
 ```
 
@@ -144,8 +146,12 @@ campos formativos. Los tres se resolvieron en la validación.
 
 ## Deuda conocida
 
-- Las once tablas nuevas existen en el esquema pero todavía no tienen puerto ni
-  adaptador: sin eso, ninguna pantalla puede leerlas. Es lo que abre C19.
+- De las once tablas nuevas, solo `ciclos` y `trimestres` tienen puerto y
+  adaptador. Las otras nueve existen en el esquema y nadie las puede leer
+  todavía; cada commit de la fase abre las que su pantalla necesita.
+- Cerrar un trimestre no tiene interfaz (es C27). La regla de que un trimestre
+  cerrado rechaza cambios de fecha ya está escrita y probada, pero hoy solo se
+  puede llegar a ese estado tocando IndexedDB a mano.
 - El respaldo no existe y la sincronía tampoco: el único ejemplar de los datos
   reales vive en un iPad.
 - Los criterios de aceptación de C10 y C10c que dependen del dispositivo se

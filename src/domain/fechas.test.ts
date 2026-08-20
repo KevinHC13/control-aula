@@ -5,6 +5,7 @@ import {
   diasDelMes,
   fechaLocal,
   fechaMas,
+  fechaValida,
   huecosIniciales,
   mesDe,
   mesMas,
@@ -42,6 +43,32 @@ describe('fechaLocal', () => {
   it('la medianoche pertenece al día que empieza', () => {
     expect(fechaLocal(new Date(2026, 7, 18, 0, 0, 0))).toBe('2026-08-18')
     expect(fechaLocal(new Date(2026, 7, 18, 23, 59, 59))).toBe('2026-08-18')
+  })
+})
+
+describe('fechaValida', () => {
+  it('acepta el formato del dominio', () => {
+    expect(fechaValida('2026-08-24')).toBe(true)
+    expect(fechaValida('2028-02-29')).toBe(true)
+  })
+
+  it('rechaza un día que no existe', () => {
+    // `comoDate` corrige en silencio un 31 de febrero a un 3 de marzo, así que
+    // el viaje de ida y vuelta es lo que lo delata.
+    expect(fechaValida('2026-02-31')).toBe(false)
+    // 2026 no es bisiesto, así que su 29 de febrero tampoco existe.
+    expect(fechaValida('2026-02-29')).toBe(false)
+    expect(fechaValida('2026-13-01')).toBe(false)
+    expect(fechaValida('2026-04-31')).toBe(false)
+  })
+
+  it('rechaza lo que no viene en AAAA-MM-DD', () => {
+    // Una fecha en 12/03/2015 es ambigua entre día y mes: no se adivina, se
+    // marca (docs/DECISIONES.md D-014).
+    expect(fechaValida('12/03/2015')).toBe(false)
+    expect(fechaValida('2026-8-2')).toBe(false)
+    expect(fechaValida('')).toBe(false)
+    expect(fechaValida('2026-08-24T00:00:00Z')).toBe(false)
   })
 })
 

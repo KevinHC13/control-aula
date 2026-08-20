@@ -12,9 +12,11 @@ import { Button } from '@/ui/components/ui/button'
 export function Ajustes({
   alVolver,
   alCargarLista,
+  alConfigurarCiclo,
 }: {
   alVolver: () => void
   alCargarLista: () => void
+  alConfigurarCiclo: () => void
 }) {
   return (
     <section aria-labelledby="titulo-ajustes" className="flex flex-col gap-4">
@@ -37,6 +39,18 @@ export function Ajustes({
             <span className="text-base font-medium text-tinta">Cargar lista de alumnos</span>
             <span className="text-base text-tinta-2">
               Desde un PDF o una foto de la lista oficial
+            </span>
+          </button>
+        </li>
+        <li>
+          <button
+            type="button"
+            onClick={alConfigurarCiclo}
+            className="flex w-full flex-col items-start gap-0.5 px-4 py-3 text-left"
+          >
+            <span className="text-base font-medium text-tinta">Ciclo escolar</span>
+            <span className="text-base text-tinta-2">
+              Las fechas de los tres trimestres
             </span>
           </button>
         </li>

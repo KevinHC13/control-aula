@@ -12,7 +12,7 @@ español también (`asistencia`, `calificaciones`, `alumnos`).
 **`docs/ESTADO.md` es la fuente de verdad del estatus.** Leerlo antes de decidir
 qué construir; el resumen de aquí abajo se queda viejo primero.
 
-Hecho hasta C18. Existen y funcionan:
+Hecho hasta C19. Existen y funcionan:
 
 - **`domain/`** completo para asistencia y para la **estructura** de la
   evaluación: `entities.ts` con la jerarquía `Ciclo → … → Actividad`,
@@ -21,21 +21,23 @@ Hecho hasta C18. Existen y funcionan:
 - **`data/`** con Dexie en `version(2)`: `db.ts` con las quince tablas
   sincronizables, adaptadores de alumnos y asistencia, los dos puertos, la
   `outbox` y la semilla (`grupo.ts` ignorado, `grupo.example.ts` versionado).
-  Las once tablas de evaluación existen pero **todavía no tienen puerto ni
-  adaptador**.
-- **`application/`**: `asistencia.ts`, `grupo.ts`, `importacion.ts`.
+  De las once tablas de evaluación, solo `ciclos` y `trimestres` tienen puerto y
+  adaptador; las otras nueve existen en el esquema y nadie las lee todavía.
+- **`application/`**: `asistencia.ts`, `grupo.ts`, `importacion.ts`,
+  `evaluacion.ts`.
 - **`services/`**: `extraccion.ts`, la única salida a red del cliente.
 - **`ui/`**: las cuatro pestañas, la de asistencia terminada (tira de días,
-  calendario del mes, contador, filas), Ajustes y la carga de lista con IA.
+  calendario del mes, contador, filas, etiqueta del trimestre), Ajustes, la carga
+  de lista con IA y la configuración del ciclo escolar.
   `Calificaciones`, `Notas` y el resumen de `Grupo` siguen siendo placeholders.
 - PWA con `vite-plugin-pwa`, Zustand y el aviso de actualización.
 - Una Edge Function desplegada en Supabase, `extraer-lista`, en
   `supabase/functions/`.
 
-**Lo que sigue es C19**: puerto, adaptador y pantalla para administrar el ciclo y
-sus trimestres. Las reglas puras que necesita ya están en `domain/evaluacion.ts`.
-La migración a `version(2)` ya ocurrió y está probada en
-`src/data/dexie/migracion.test.ts`; no hay otra migración pendiente en la Fase 4.
+**Lo que sigue es C20**: criterios y pesos por trimestre, que se agregan al puerto
+`evaluacion.ts` ya existente y a una pantalla en Ajustes. La migración a
+`version(2)` ya ocurrió y está probada en `src/data/dexie/migracion.test.ts`; no
+hay otra migración pendiente en la Fase 4.
 
 Falta además de la Fase 3: notas, resumen del grupo, respaldo JSON, cumpleaños y
 el motor de sincronía. `C25` y `C26` —criterios automáticos de puntualidad,
@@ -161,6 +163,9 @@ y fórmulas en `docs/DATA-MODEL.md`; lo que no se negocia al escribir código:
   `CierreTrimestre`, no de recalcular.
 - Los pesos pueden sumar cualquier cosa mientras se editan; solo el **cierre**
   exige 100.
+- La atribución al trimestre es **por fecha y nunca manual**: no existe ni debe
+  existir un selector de trimestre. Una fecha fuera de todo rango devuelve `null`,
+  que es un resultado normal —vacaciones, puentes— y no un error.
 
 ## Restricciones de UI que son requisitos, no sugerencias
 

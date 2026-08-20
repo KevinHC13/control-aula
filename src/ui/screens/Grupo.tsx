@@ -4,25 +4,34 @@ import { IconoEngrane } from '@/ui/components/iconos'
 import { Button } from '@/ui/components/ui/button'
 import { Ajustes } from '@/ui/screens/Ajustes'
 import { CargarLista } from '@/ui/screens/CargarLista'
+import { CicloEscolar } from '@/ui/screens/CicloEscolar'
 
 /**
  * Subvista con estado local y no en el store, mismo criterio que el calendario
  * de `Asistencia.tsx`: ajustes vive y muere dentro de la pestaña Grupo, no cruza
  * pantallas, y el store guarda solo lo que sí (docs/ARCHITECTURE.md).
  */
-type Vista = 'resumen' | 'ajustes' | 'cargar'
+type Vista = 'resumen' | 'ajustes' | 'cargar' | 'ciclo'
 
 export function Grupo() {
   const [vista, setVista] = useState<Vista>('resumen')
 
   if (vista === 'ajustes') {
     return (
-      <Ajustes alVolver={() => setVista('resumen')} alCargarLista={() => setVista('cargar')} />
+      <Ajustes
+        alVolver={() => setVista('resumen')}
+        alCargarLista={() => setVista('cargar')}
+        alConfigurarCiclo={() => setVista('ciclo')}
+      />
     )
   }
 
   if (vista === 'cargar') {
     return <CargarLista alVolver={() => setVista('ajustes')} />
+  }
+
+  if (vista === 'ciclo') {
+    return <CicloEscolar alVolver={() => setVista('ajustes')} />
   }
 
   return (
