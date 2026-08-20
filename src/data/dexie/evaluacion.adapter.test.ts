@@ -995,3 +995,176 @@ describe('borrarActividad', () => {
     await expect(repo.borrarActividad('no-existe')).resolves.toBeUndefined()
   })
 })
+
+describe('entregasDeActividad', () => {
+  it('sin captura devuelve la lista vacía', async () => {
+    const grupo = await unGrupo()
+    const id = await repo.crearActividad(datosDe(grupo, { nombre: 'Cuento' }))
+    expect(await repo.entregasDeActividad(id)).toEqual([])
+  })
+
+  it('no devuelve las de otra actividad', async () => {
+    const grupo = await unGrupo()
+    const una = await repo.crearActividad(datosDe(grupo, { nombre: 'Una' }))
+    const otra = await repo.crearActividad(datosDe(grupo, { nombre: 'Otra' }))
+    await repo.materializarEntregas(una, ['alumno-1', 'alumno-2'])
+    await repo.materializarEntregas(otra, ['alumno-1'])
+
+    expect(await repo.entregasDeActividad(una)).toHaveLength(2)
+    expect(await repo.entregasDeActividad(otra)).toHaveLength(1)
+  })
+
+  it('no devuelve las borradas', async () => {
+    const grupo = await unGrupo()
+    const id = await repo.crearActividad(datosDe(grupo, { nombre: 'Cuento' }))
+    await repo.materializarEntregas(id, ['alumno-1', 'alumno-2'])
+    const primera = (await repo.entregasDeActividad(id))[0]!
+    await db.entregas.update(primera.id, { deleted_at: '2026-09-02T00:00:00.000Z' })
+
+    expect(await repo.entregasDeActividad(id)).toHaveLength(1)
+  })
+})
+
+describe('materializarEntregas', () => {
+  it('escribe una por alumno, en entregada', async () => {
+    const grupo = await unGrupo()
+    const id = await repo.crearActividad(datosDe(grupo, { nombre: 'Cuento' }))
+
+    await repo.materializarEntregas(id, ['alumno-1', 'alumno-2', 'alumno-3'])
+
+    const entregas = await repo.entregasDeActividad(id)
+    expect(entregas).toHaveLength(3)
+    expect(entregas.every((e) => e.entregada)).toBe(true)
+    expect(entregas.every((e) => e.deleted_at === null)).toBe(true)
+    expect(entregas.every((e) => e.updated_at.endsWith('Z'))).toBe(true)
+  })
+
+  it('usa UUID del cliente', async () => {
+    const grupo = await unGrupo()
+    const id = await repo.crearActividad(datosDe(grupo, { nombre: 'Cuento' }))
+    await repo.materializarEntregas(id, ['alumno-1'])
+    expect((await repo.entregasDeActividad(id))[0]?.id).toMatch(/^[0-9a-f-]{36}$/)
+  })
+
+  it('no toca a los que ya tienen registro', async () => {
+    const grupo = await unGrupo()
+    const id = await repo.crearActividad(datosDe(grupo, { nombre: 'Cuento' }))
+    await repo.marcarEntrega(id, 'alumno-1', false)
+
+    await repo.materializarEntregas(id, ['alumno-1', 'alumno-2'])
+
+    const entregas = await repo.entregasDeActividad(id)
+    expect(entregas).toHaveLength(2)
+    expect(entregas.find((e) => e.alumno_id === 'alumno-1')?.entregada).toBe(false)
+  })
+
+  it('sin faltantes no escribe nada: la outbox no se llena en cada apertura', async () => {
+    const grupo = await unGrupo()
+    const id = await repo.crearActividad(datosDe(grupo, { nombre: 'Cuento' }))
+    await repo.materializarEntregas(id, ['alumno-1'])
+    await db.outbox.clear()
+
+    await repo.materializarEntregas(id, ['alumno-1'])
+
+    expect(await db.outbox.count()).toBe(0)
+  })
+
+  it('encola una por entrega, en un solo lote', async () => {
+    const grupo = await unGrupo()
+    const id = await repo.crearActividad(datosDe(grupo, { nombre: 'Cuento' }))
+    await db.outbox.clear()
+
+    await repo.materializarEntregas(id, ['alumno-1', 'alumno-2', 'alumno-3'])
+
+    const pendientes = await db.outbox.toArray()
+    expect(pendientes).toHaveLength(3)
+    expect(pendientes.every((c) => c.tabla === 'entregas')).toBe(true)
+    // Mismo instante: salieron de una sola escritura, no de tres.
+    expect(new Set(pendientes.map((c) => c.at)).size).toBe(1)
+  })
+
+  it('no deja entregas sin su pendiente si la transacción falla', async () => {
+    const grupo = await unGrupo()
+    const id = await repo.crearActividad(datosDe(grupo, { nombre: 'Cuento' }))
+    await repo.materializarEntregas(id, ['alumno-1'])
+    const antes = await db.entregas.count()
+
+    await expect(
+      db.transaction('rw', db.entregas, db.outbox, async () => {
+        const existente = (await db.entregas.toArray())[0]!
+        await db.entregas.add(existente) // choca con la clave primaria
+      }),
+    ).rejects.toThrow()
+
+    expect(await db.entregas.count()).toBe(antes)
+  })
+})
+
+describe('marcarEntrega', () => {
+  it('es upsert por [actividad_id+alumno_id]', async () => {
+    const grupo = await unGrupo()
+    const id = await repo.crearActividad(datosDe(grupo, { nombre: 'Cuento' }))
+
+    await repo.marcarEntrega(id, 'alumno-1', false)
+    await repo.marcarEntrega(id, 'alumno-1', true)
+    await repo.marcarEntrega(id, 'alumno-1', false)
+
+    // Un registro por alumno por actividad, nunca tres.
+    const entregas = await repo.entregasDeActividad(id)
+    expect(entregas).toHaveLength(1)
+    expect(entregas[0]?.entregada).toBe(false)
+  })
+
+  it('el mismo alumno en otra actividad es otro registro', async () => {
+    const grupo = await unGrupo()
+    const una = await repo.crearActividad(datosDe(grupo, { nombre: 'Una' }))
+    const otra = await repo.crearActividad(datosDe(grupo, { nombre: 'Otra' }))
+
+    await repo.marcarEntrega(una, 'alumno-1', false)
+    await repo.marcarEntrega(otra, 'alumno-1', true)
+
+    expect((await repo.entregasDeActividad(una))[0]?.entregada).toBe(false)
+    expect((await repo.entregasDeActividad(otra))[0]?.entregada).toBe(true)
+  })
+
+  it('revive un registro borrado en vez de crear uno nuevo', async () => {
+    const grupo = await unGrupo()
+    const id = await repo.crearActividad(datosDe(grupo, { nombre: 'Cuento' }))
+    await repo.marcarEntrega(id, 'alumno-1', true)
+    const primera = (await repo.entregasDeActividad(id))[0]!
+    await db.entregas.update(primera.id, { deleted_at: '2026-09-02T00:00:00.000Z' })
+
+    await repo.marcarEntrega(id, 'alumno-1', false)
+
+    // Para la maestra es el mismo alumno en la misma actividad, no uno nuevo.
+    const entregas = await repo.entregasDeActividad(id)
+    expect(entregas).toHaveLength(1)
+    expect(entregas[0]?.id).toBe(primera.id)
+  })
+
+  it('refresca updated_at en cada mutación', async () => {
+    const grupo = await unGrupo()
+    const id = await repo.crearActividad(datosDe(grupo, { nombre: 'Cuento' }))
+    await repo.marcarEntrega(id, 'alumno-1', true)
+    const antes = (await repo.entregasDeActividad(id))[0]!
+
+    await repo.marcarEntrega(id, 'alumno-1', false)
+
+    const despues = (await repo.entregasDeActividad(id))[0]!
+    expect(despues.updated_at >= antes.updated_at).toBe(true)
+  })
+
+  it('la captura hace que la actividad cuente como calificada', async () => {
+    const grupo = await unGrupo()
+    const id = await repo.crearActividad(datosDe(grupo, { nombre: 'Cuento' }))
+    expect(
+      (await repo.actividadesDeTrimestre(grupo.trimestreId))[0]?.actividades[0]?.registros,
+    ).toBe(0)
+
+    await repo.materializarEntregas(id, ['alumno-1', 'alumno-2'])
+
+    expect(
+      (await repo.actividadesDeTrimestre(grupo.trimestreId))[0]?.actividades[0]?.registros,
+    ).toBe(2)
+  })
+})

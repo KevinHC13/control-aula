@@ -1,6 +1,7 @@
 import type {
   Actividad,
   Ciclo,
+  Entrega,
   Criterio,
   CriterioTrimestre,
   Rubrica,
@@ -258,4 +259,32 @@ export interface EvaluacionRepo {
 
   /** Borra en suave la actividad y todo lo capturado en ella. */
   borrarActividad(actividadId: Id): Promise<void>
+
+  /** Las entregas de una actividad, sin las borradas. */
+  entregasDeActividad(actividadId: Id): Promise<Entrega[]>
+
+  /**
+   * Lo mismo, reactivo. Es lo que sostiene que la barra de color y el contador
+   * cambien al toque, sin recargar.
+   */
+  observarEntregasDeActividad(actividadId: Id): Suscribible<Entrega[]>
+
+  /**
+   * Materializa la actividad: deja en `entregada: true` a los alumnos que todavía
+   * no tienen registro, sin tocar a los que ya lo tienen. Idempotente, y todo en
+   * una transacción, no 30.
+   *
+   * Es lo mismo que `pasarLista` hace con el día, y por la misma razón al revés:
+   * aquí se llama **al abrir**, porque a una actividad no se entra si no es a
+   * calificarla, y así «cero registros ⇒ sin calificar» queda inequívoco
+   * (docs/DATA-MODEL.md).
+   */
+  materializarEntregas(actividadId: Id, alumnoIds: Id[]): Promise<void>
+
+  /**
+   * Deja al alumno como entregada o no entregada en esa actividad. Es un upsert:
+   * el índice `[actividad_id+alumno_id]` garantiza un registro por alumno por
+   * actividad.
+   */
+  marcarEntrega(actividadId: Id, alumnoId: Id, entregada: boolean): Promise<void>
 }

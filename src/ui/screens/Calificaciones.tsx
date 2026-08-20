@@ -12,7 +12,9 @@ import { fechaLocal } from '@/domain/fechas'
 import { Button } from '@/ui/components/ui/button'
 import { useActividadesDelTrimestre } from '@/ui/hooks/useActividadesDelTrimestre'
 import { useCicloEnCurso } from '@/ui/hooks/useCicloEnCurso'
+import { useRubricas } from '@/ui/hooks/useRubricas'
 import { cn } from '@/ui/lib/utils'
+import { CapturaEntregas } from '@/ui/screens/CapturaEntregas'
 import { FormaActividad } from '@/ui/screens/FormaActividad'
 
 /**
@@ -37,27 +39,46 @@ export function Calificaciones() {
 
   const { grupos } = useActividadesDelTrimestre(trimestre?.id ?? null)
 
-  // La forma vive y muere aquí dentro, como el calendario en Asistencia: no cruza
-  // pantallas, así que no va al store.
-  const [forma, setForma] = useState<{
+  // La subvista vive y muere aquí dentro, como el calendario en Asistencia: no
+  // cruza pantallas, así que no va al store.
+  const [subvista, setSubvista] = useState<{
+    modo: 'forma' | 'captura'
     grupoId: string
-    actividad?: ActividadConEstado
+    actividadId?: string
   } | null>(null)
 
-  const grupoDeLaForma = grupos.find((g) => g.ponderado.id === forma?.grupoId)
+  const grupoAbierto = grupos.find((g) => g.ponderado.id === subvista?.grupoId)
+  // Se busca por id y no se guarda la actividad: así la subvista siempre ve la
+  // versión recién emitida por la suscripción, no una copia congelada al abrirla.
+  const actividadAbierta = grupoAbierto?.actividades.find(
+    (a) => a.actividad.id === subvista?.actividadId,
+  )
 
-  if (forma && grupoDeLaForma && trimestre) {
-    return (
-      <FormaActividad
-        key={forma.actividad?.actividad.id ?? 'nueva'}
-        trimestre={trimestre}
-        grupo={grupoDeLaForma}
-        actual={forma.actividad}
-        rubricaPorOmision={rubricaSugerida(grupoDeLaForma)}
-        hoy={hoy}
-        alVolver={() => setForma(null)}
-      />
-    )
+  if (subvista && grupoAbierto && trimestre) {
+    if (subvista.modo === 'captura' && actividadAbierta) {
+      return (
+        <CapturaEntregas
+          trimestre={trimestre}
+          actividad={actividadAbierta}
+          alVolver={() => setSubvista(null)}
+          alEditar={() => setSubvista({ ...subvista, modo: 'forma' })}
+        />
+      )
+    }
+
+    if (subvista.modo === 'forma') {
+      return (
+        <FormaActividad
+          key={subvista.actividadId ?? 'nueva'}
+          trimestre={trimestre}
+          grupo={grupoAbierto}
+          actual={actividadAbierta}
+          rubricaPorOmision={rubricaSugerida(grupoAbierto)}
+          hoy={hoy}
+          alVolver={() => setSubvista(null)}
+        />
+      )
+    }
   }
 
   return (
@@ -111,9 +132,16 @@ export function Calificaciones() {
                 key={grupo.ponderado.id}
                 grupo={grupo}
                 trimestre={trimestre}
-                alNueva={() => setForma({ grupoId: grupo.ponderado.id })}
+                alNueva={() => setSubvista({ modo: 'forma', grupoId: grupo.ponderado.id })}
                 alAbrir={(actividad) =>
-                  setForma({ grupoId: grupo.ponderado.id, actividad })
+                  setSubvista({
+                    // La fila lleva a capturar, que es lo que se hace todos los
+                    // días; editarla es un toque más desde ahí. Las de rúbrica
+                    // llevan a la forma hasta que exista su captura (C23).
+                    modo: actividad.actividad.rubrica_id === null ? 'captura' : 'forma',
+                    grupoId: grupo.ponderado.id,
+                    actividadId: actividad.actividad.id,
+                  })
                 }
               />
             ))
@@ -184,8 +212,15 @@ function FilaActividad({
   alAbrir: () => void
 }) {
   const { actividad } = item
+  const { rubricas } = useRubricas()
   const calificada = estaCalificada(item)
   const campo = CAMPOS_CON_NOMBRE.find((c) => c.campo === actividad.campo)?.nombre
+  // Con qué se califica, por nombre. Sin rúbrica no es un hueco: es captura
+  // binaria, y decirlo evita abrir la actividad para averiguarlo.
+  const conQue =
+    actividad.rubrica_id === null
+      ? 'entregada / no entregada'
+      : rubricas.find((r) => r.rubrica.id === actividad.rubrica_id)?.rubrica.nombre
 
   return (
     <li className="border-b border-linea">
@@ -210,7 +245,7 @@ function FilaActividad({
           <span className="text-[13px] text-tinta-2">
             <span className="cifra">{actividad.fecha}</span>
             {campo && ` · ${campo}`}
-            {actividad.rubrica_id === null && ' · entregada / no entregada'}
+            {conQue && ` · ${conQue}`}
           </span>
         </span>
 

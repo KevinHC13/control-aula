@@ -14,6 +14,7 @@ import type {
 import type {
   Actividad,
   Ciclo,
+  Entrega,
   Criterio,
   CriterioTrimestre,
   Rubrica,
@@ -568,6 +569,80 @@ export class DexieEvaluacionRepo implements EvaluacionRepo {
         await this.descartarCapturaDe(actividadId, momento)
       },
     )
+  }
+
+  async entregasDeActividad(actividadId: Id): Promise<Entrega[]> {
+    const registros = await db.entregas.where('actividad_id').equals(actividadId).toArray()
+    // El filtro va en memoria: IndexedDB no indexa `null`. Ver la nota en
+    // alumnos.adapter.ts.
+    return registros.filter((e) => e.deleted_at === null)
+  }
+
+  observarEntregasDeActividad(actividadId: Id): Suscribible<Entrega[]> {
+    return liveQuery(() => this.entregasDeActividad(actividadId))
+  }
+
+  async materializarEntregas(actividadId: Id, alumnoIds: Id[]): Promise<void> {
+    await db.transaction('rw', db.entregas, db.outbox, async () => {
+      const yaRegistrados = new Set(
+        (await db.entregas.where('actividad_id').equals(actividadId).toArray())
+          .filter((e) => e.deleted_at === null)
+          .map((e) => e.alumno_id),
+      )
+
+      const faltantes = alumnoIds.filter((id) => !yaRegistrados.has(id))
+      if (faltantes.length === 0) return
+
+      const momento = ahora()
+      const nuevas: Entrega[] = faltantes.map((alumnoId) => ({
+        id: nuevoId(),
+        actividad_id: actividadId,
+        alumno_id: alumnoId,
+        // El estado más probable es el estado por defecto: casi todos entregan, y
+        // solo se toca a los pocos que no (docs/UX.md).
+        entregada: true,
+        updated_at: momento,
+        deleted_at: null,
+      }))
+
+      await db.entregas.bulkPut(nuevas)
+      await db.outbox.bulkAdd(
+        nuevas.map((e) => ({
+          tabla: 'entregas' as const,
+          registro_id: e.id,
+          op: 'upsert' as const,
+          at: momento,
+        })),
+      )
+    })
+  }
+
+  async marcarEntrega(actividadId: Id, alumnoId: Id, entregada: boolean): Promise<void> {
+    await db.transaction('rw', db.entregas, db.outbox, async () => {
+      const existente = await db.entregas
+        .where('[actividad_id+alumno_id]')
+        .equals([actividadId, alumnoId])
+        .first()
+
+      const registro: Entrega = {
+        id: existente?.id ?? nuevoId(),
+        actividad_id: actividadId,
+        alumno_id: alumnoId,
+        entregada,
+        updated_at: ahora(),
+        // Volver a marcar revive un registro borrado: para la maestra es el mismo
+        // alumno en la misma actividad, no uno nuevo.
+        deleted_at: null,
+      }
+
+      await db.entregas.put(registro)
+      await db.outbox.add({
+        tabla: 'entregas',
+        registro_id: registro.id,
+        op: 'upsert',
+        at: ahora(),
+      })
+    })
   }
 
   /**

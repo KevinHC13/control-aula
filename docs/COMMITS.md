@@ -620,16 +620,49 @@ Decisiones que salieron de construirlo:
   es lo que se evita. Se guardan como `string[]`, así que corregir la lista no
   migra nada.
 
-### ▶ C22 · `feat(evaluacion): capturar entregas por actividad`
+### ✅ C22 · `feat(evaluacion): capturar entregas por actividad`
+
+La captura binaria: entregada o no entregada. La de rúbrica es C23.
 
 **Aceptación**
-- [ ] Al abrir la actividad se escriben los 30 registros de golpe, todos en entregada
-- [ ] Al abrir, todos los alumnos aparecen como **entregada**
-- [ ] Un toque marca no entregada; el color cambia de inmediato
-- [ ] Cada toque guarda; no existe botón de Guardar
-- [ ] **Capturar un grupo de 30 con 4 no entregadas toma menos de 15 segundos**
+- [x] Al abrir la actividad se escriben los 30 registros de golpe, todos en entregada
+- [x] Al abrir, todos los alumnos aparecen como **entregada**
+- [x] Un toque marca no entregada; el color cambia de inmediato
+- [x] Cada toque guarda; no existe botón de Guardar
+- [~] **Capturar un grupo de 30 con 4 no entregadas toma menos de 15 segundos**
 
-### ⬜ C23 · `feat(evaluacion): calificar con rúbrica, alumno por alumno`
+El último queda **medido a medias, a propósito**: en el navegador, abrir y tocar a
+los cuatro que no entregaron cuesta 73 ms desde el primer toque hasta ver los cuatro
+en rojo, contando el viaje a IndexedDB y el repintado. Eso mide la parte de la app;
+la parte de ella —encontrar cuatro nombres en una lista de 30— solo se mide con el
+iPad en la mano y un cronómetro. **Pendiente de confirmar en el dispositivo**, como
+se hizo con C8.
+
+Verificado en el navegador: al abrir, los 30 salen entregada y el contador dice
+30 / 30; cuatro toques lo dejan en 26 / 30 con «4 sin entregar»; recargar conserva
+exactamente esos cuatro; y no existe ningún botón de Guardar en la pantalla.
+
+Decisiones que salieron de construirlo:
+
+- **La fila de la actividad lleva a capturar, no a editar.** Capturar es lo que se
+  hace todos los días; editar la actividad es un toque más desde ahí. Las de rúbrica
+  siguen llevando a la forma hasta que exista su captura (C23).
+- **La captura vive en `application/entregas.ts`**, no en `evaluacion.ts`. Es camino
+  de captura, se mide con cronómetro y no comparte nada con configurar un ciclo —el
+  mismo criterio por el que `asistencia.ts` vive aparte—.
+- **El toque no lee la base.** `alternarEntrega` recibe el estado que la pantalla ya
+  tiene por suscripción; un viaje extra por toque es justo lo que el presupuesto no
+  paga.
+- **Materializar es idempotente y no revierte.** Abrir dos veces no duplica, y si la
+  lista creció, completa a los nuevos sin recrear a los que ya estaban.
+- **En un trimestre cerrado, abrir no escribe** —consultar una actividad vieja es
+  legítimo— pero tocar sí falla, y las filas salen deshabilitadas.
+
+La fila muestra **con qué se califica**, por nombre de rúbrica o «entregada / no
+entregada». Sin eso hay que abrir la actividad para saber qué pantalla te va a
+tocar.
+
+### ▶ C23 · `feat(evaluacion): calificar con rúbrica, alumno por alumno`
 
 **Aceptación**
 - [ ] La lista muestra quién ya está calificado

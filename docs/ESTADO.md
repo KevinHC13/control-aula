@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Actualizado el **2026-08-20**, con C18 a C21b terminados, más los fixes C19b y
+Actualizado el **2026-08-20**, con C18 a C22 terminados, más los fixes C19b y
 C21c. Este es el documento que se lee primero para saber
 dónde va el proyecto y qué sigue. El plan detallado, con criterios de aceptación
 por commit, está en [COMMITS.md](./COMMITS.md).
@@ -16,10 +16,9 @@ Asistencia está terminada y entregada en el iPad. La semana de uso real ya pas�
 la validación con la usuaria tiró el modelo de calificaciones que estaba planeado.
 La Fase 4 va en marcha: **C18 a C21 están hechos** —dominio de evaluación,
 `db.version(2)`, el ciclo escolar con sus trimestres, los criterios con sus pesos y
-las rúbricas y las actividades—, con una corrección de modelo encima: la rúbrica
-cuelga de la actividad, no del criterio (D-016). La pestaña Calificaciones dejó de
-ser un placeholder. Lo que sigue es `C22`: capturar las entregas, que es lo primero
-que entra al camino diario de verdad.
+las rúbricas, las actividades y la captura de entregas—, con una corrección de
+modelo encima: la rúbrica cuelga de la actividad, no del criterio (D-016). Lo que
+sigue es `C23`: calificar con rúbrica, alumno por alumno.
 
 ## Fases
 
@@ -29,7 +28,7 @@ que entra al camino diario de verdad.
 | 2 · Asistencia | El vertical completo hasta el iPad | ✅ Terminada |
 | Hito | Entrega, pausa de una semana, validación | ✅ Cumplido |
 | 3 · Resto de la v1 | Notas, resumen, respaldo, cumpleaños, sincronía | ⬜ Sin empezar |
-| 4 · Evaluación | Ciclo, trimestres, criterios, rúbricas, cálculo | ▶ En curso: C18–C21b hechos, sigue C22 |
+| 4 · Evaluación | Ciclo, trimestres, criterios, rúbricas, cálculo | ▶ En curso: C18–C22 hechos, sigue C23 |
 
 ## Lo que existe y funciona
 
@@ -40,9 +39,9 @@ Verificado en `src/` a esta fecha:
 | `domain/` | `entities.ts` con la jerarquía de evaluación completa, `values.ts`, `fechas.ts`, `rules.ts`, `evaluacion.ts`, con pruebas |
 | `data/dexie/` | `db.ts` en `version(2)`, adaptadores de alumnos y asistencia, `outbox`, semilla |
 | `data/ports/` | `alumnos.ts`, `asistencia.ts`, `evaluacion.ts` (ciclo, trimestres, criterios, pesos, rúbricas y actividades) |
-| `application/` | `asistencia.ts`, `grupo.ts`, `importacion.ts`, `evaluacion.ts` |
+| `application/` | `asistencia.ts`, `grupo.ts`, `importacion.ts`, `evaluacion.ts`, `entregas.ts` |
 | `services/` | `extraccion.ts` — única salida a red del cliente |
-| `ui/` | Cuatro pestañas, Asistencia completa (con la etiqueta del trimestre), Calificaciones con sus actividades, Ajustes, CargarLista, CicloEscolar, CriteriosYPesos, Rubricas |
+| `ui/` | Cuatro pestañas, Asistencia completa (con la etiqueta del trimestre), Calificaciones con sus actividades y la captura de entregas, Ajustes, CargarLista, CicloEscolar, CriteriosYPesos, Rubricas |
 | `tests/` | `arquitectura.test.ts` — verifica las reglas de dependencia en cada `npm test` |
 | Infra | PWA con `vite-plugin-pwa` y aviso de actualización; Edge Function `extraer-lista` desplegada |
 
@@ -53,8 +52,9 @@ bicolor.
 ## Lo que es placeholder
 
 `ui/screens/Notas.tsx` y el resumen de `ui/screens/Grupo.tsx`. Existen, navegan y
-no hacen nada. `Calificaciones` ya no: lista y administra las actividades del
-trimestre, aunque **calificarlas** llega en C22 y C23.
+no hacen nada. `Calificaciones` ya no: lista las actividades del trimestre, las
+administra y captura las entregas de las que no usan rúbrica. Las de rúbrica se
+califican en C23.
 
 ## Lo que cambió con la validación
 
@@ -87,28 +87,30 @@ asistencia capturada.
 
 ## Con qué continuar
 
-**Siguiente commit: `C22 · feat(evaluacion): capturar entregas por actividad`.** Es
-el primero de la fase que se mide con cronómetro: **capturar un grupo de 30 con 4 no
-entregadas tiene que tomar menos de 15 segundos**, el mismo presupuesto que la
-asistencia.
+**Siguiente commit: `C23 · feat(evaluacion): calificar con rúbrica, alumno por
+alumno`.** Es la otra mitad de la captura, y la más lenta de las dos: aquí no es un
+toque por alumno, son tantos como renglones tenga la rúbrica.
 
-Dos cosas ya decididas que hay que respetar ahí:
+Lo que ya está decidido y hay que respetar:
 
-- **Al abrir la actividad se escriben los 30 registros de golpe**, todos en
-  `entregada: true`, como `pasarLista()` hace con el día. Es lo contrario de la
-  asistencia (D-013) y a propósito: a una actividad no se entra si no es a
-  calificarla, y así «cero registros ⇒ sin calificar» queda inequívoco.
-- **Cada toque guarda.** No hay botón de Guardar, igual que en el ciclo de estados
-  de asistencia y en los pesos.
+- **«Siguiente» salta al siguiente alumno *sin calificar*,** no al de al lado. Con
+  30 alumnos, volver a pasar por los que ya están es lo que hace que nadie termine.
+- Se puede saltar a cualquier alumno fuera de orden, y el progreso se ve: «12 de
+  30».
+- Cada toque de nivel guarda, como todo lo demás.
+- `EvaluacionRubrica.niveles` guarda el **índice** del nivel, nunca su valor.
 
-Solo entra la captura binaria: la de rúbrica es C23. La pantalla se abre desde la
-fila de la actividad en la pestaña Calificaciones, que hoy lleva a la forma de
-edición.
+El descriptor de cada nivel tiene que estar a la vista al calificar: es la razón por
+la que las rúbricas existen, y esconderlo detrás de un toque las vuelve cuatro
+botones sin significado.
+
+Ojo con una asimetría que ya existe: la fila de una actividad **con** rúbrica todavía
+lleva a la forma de edición, no a calificar. C23 la conecta a su captura.
 
 El orden del resto de la Fase 4 es:
 
 ```
-C18 ─ C19 ─ C20 ─ C21 ─ C21b ─┬─ C22 ─┐
+C18 ─ C19 ─ C20 ─ C21 ─ C21b ─┬─ C22 ─┐  ✅
  ✅    ✅    ✅    ✅    ✅     ├─ C23 ─┼─ C28 ─┬─ C29
                               └─ C24 ─┘       └─ C27
 ```
@@ -159,10 +161,13 @@ campos formativos. Los tres se resolvieron en la validación.
 ## Deuda conocida
 
 - De las once tablas nuevas, tienen puerto y adaptador `ciclos`, `trimestres`,
-  `criterios`, `criterios_trimestre`, `rubricas`, `rubrica_criterios` y
-  `actividades`. `entregas` y `eval_rubrica` solo se **leen** —para contar si una
-  actividad está calificada— y se borran al descartar una captura; escribirlas es
-  C22 y C23. `examen_config`, `resultados_examen` y `cierres` no se tocan todavía.
+  `criterios`, `criterios_trimestre`, `rubricas`, `rubrica_criterios`,
+  `actividades` y `entregas`. `eval_rubrica` solo se **lee** —para contar si una
+  actividad está calificada— y se borra al descartar una captura; escribirla es C23.
+  `examen_config`, `resultados_examen` y `cierres` no se tocan todavía.
+- El criterio de los 15 segundos de C22 está medido en el navegador (73 ms para
+  cuatro toques, incluyendo el viaje a IndexedDB), **no en el iPad con cronómetro**.
+  Falta confirmarlo en el dispositivo, como se hizo con C8.
 - `CriterioTrimestre.meta_participacion` se escribe siempre en `null`: la copia de
   esquema lo arrastra, pero nada lo pone. Pertenece a participación, que está
   pospuesta.
