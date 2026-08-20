@@ -427,16 +427,50 @@ Decisiones que salieron de construirlo:
   harían ambigua la atribución de una fecha, que es lo que este commit existe para
   volver inequívoco.
 
-### ▶ C20 · `feat(evaluacion): configurar criterios y pesos por trimestre`
+### ✅ C20 · `feat(evaluacion): configurar criterios y pesos por trimestre`
+
+Pantalla *Criterios y pesos* en Ajustes, con selector de trimestre. Amplía el
+puerto `evaluacion.ts` en vez de abrir uno nuevo: `Rubrica` sin `RubricaCriterio`
+no significa nada y una actividad sin sus entregas tampoco, así que el puerto se
+corta por caso de uso (docs/ARCHITECTURE.md).
 
 **Aceptación**
-- [ ] El total corriente de pesos es visible mientras se edita
-- [ ] Se permite guardar con suma distinta de 100; solo se bloquea el cierre
-- [ ] Copiar de un trimestre anterior trae criterios, pesos y rúbricas
-- [ ] Copiar **no** trae actividades ni calificaciones
-- [ ] Cambiar un peso en T2 no altera ninguna calificación de T1
+- [x] El total corriente de pesos es visible mientras se edita
+- [x] Se permite guardar con suma distinta de 100; solo se bloquea el cierre
+- [x] Copiar de un trimestre anterior trae criterios, pesos y rúbricas
+- [x] Copiar **no** trae actividades ni calificaciones
+- [x] Cambiar un peso en T2 no altera ninguna calificación de T1
 
-### ⬜ C21 · `feat(evaluacion): editar rúbricas con niveles y descriptores`
+Los cinco se verificaron en el navegador además de en Vitest: agregar «Tareas» y
+«Examen» en T1 con 60/40 lleva el contador a «100 / 100 · El reparto cuadra»,
+copiar a T2 trae los dos con sus pesos, y bajar el de T2 a 25 deja T1 intacto en
+60. Con T1 cerrado a mano en IndexedDB sus pesos salen deshabilitados, el alta
+desaparece y la copia deja de ofrecerse.
+
+Decisiones que salieron de construirlo:
+
+- **No hay botón de guardar.** Cada cambio de peso escribe, como el ciclo de
+  estados de asistencia. Un botón de guardar en una pantalla que se abandona a
+  medias es una forma de perder el reparto sin avisar.
+- **El peso nace en 0**, no en un reparto sugerido: adivinarlo la obligaría a
+  corregir una cifra inventada.
+- **Sí se guarda un reparto que no suma 100**, y la pantalla lo dice —«Faltan 30
+  para cerrar el trimestre»— en lugar de bloquear. Editar pasa siempre por
+  estados intermedios inválidos.
+- **El catálogo de criterios se reutiliza** entre trimestres, comparando sin
+  acentos ni mayúsculas: «Tareas» tiene que ser el mismo criterio en los tres para
+  que copiar el esquema y comparar entre periodos signifiquen algo. Las filas de
+  `CriterioTrimestre`, en cambio, son siempre nuevas, y es eso lo que aísla los
+  pesos.
+- **Quitar un criterio no toca el catálogo**, solo la fila del trimestre.
+- **La pantalla no ofrece `personalizado` ni los `auto_*`.** Un tipo sin forma de
+  captura definida la llevaría a crear un criterio que después no tiene pantalla
+  donde llenarse.
+- **Aquí sí hay selector de trimestre**, a diferencia de la asistencia: configurar
+  el trimestre que viene mientras corre el actual es justo lo que necesita poder
+  hacer. Arranca en el trimestre de hoy.
+
+### ▶ C21 · `feat(evaluacion): editar rúbricas con niveles y descriptores`
 
 **Aceptación**
 - [ ] `niveles` y `valores` tienen la misma longitud

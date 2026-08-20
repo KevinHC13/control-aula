@@ -8,16 +8,24 @@ import type { Trimestre } from '@/domain/entities'
 
 import {
   abrirCicloEscolar,
+  agregarCriterio,
   ajustarFechasTrimestre,
+  ajustarPeso,
   cicloEnCurso,
+  copiarEsquemaDe,
+  esquemaDelTrimestre,
+  estadoDelReparto,
   guardarFechas,
   nombreDeCicloEn,
   type Periodo,
   periodosCompletos,
   periodosDe,
   periodosVacios,
+  quitarCriterio,
   revisarPeriodos,
+  TIPOS_OFRECIDOS,
   trimestreDe,
+  trimestreParaCopiar,
 } from './evaluacion'
 
 const BUENOS: Periodo[] = [
@@ -42,8 +50,20 @@ beforeEach(async () => {
   await db.open()
   await db.ciclos.clear()
   await db.trimestres.clear()
+  await db.criterios.clear()
+  await db.criterios_trimestre.clear()
   await db.outbox.clear()
 })
+
+/** Un ciclo recién abierto, con sus tres trimestres. */
+async function unCiclo() {
+  await abrirCicloEscolar('2026–2027', BUENOS)
+  return (await cicloEnCurso())!
+}
+
+async function primerTrimestre(): Promise<Trimestre> {
+  return (await unCiclo()).trimestres[0]!
+}
 
 afterAll(() => {
   db.close()
@@ -316,5 +336,229 @@ describe('guardarFechas', () => {
       ]),
     ).rejects.toThrow()
     expect((await cicloEnCurso())?.trimestres[0]?.fin).toBe('2026-11-27')
+  })
+})
+
+describe('estadoDelReparto', () => {
+  const conPesos = (...pesos: number[]) => ({
+    trimestre: trimestre(1, '2026-08-24', '2026-11-27'),
+    criterios: pesos.map((peso, i) => ({
+      ponderado: {
+        id: `ct-${i}`,
+        updated_at: '2026-08-24T00:00:00.000Z',
+        deleted_at: null,
+        trimestre_id: 'trimestre-1',
+        criterio_id: `criterio-${i}`,
+        peso,
+        orden: i,
+        rubrica_id: null,
+        meta_participacion: null,
+      },
+      criterio: {
+        id: `criterio-${i}`,
+        updated_at: '2026-08-24T00:00:00.000Z',
+        deleted_at: null,
+        nombre: `Criterio ${i}`,
+        tipo: 'entregable' as const,
+      },
+    })),
+  })
+
+  it('sin esquema el total es 0 y no cierra', () => {
+    expect(estadoDelReparto(null)).toEqual({ total: 0, cierra: false, faltan: 100 })
+  })
+
+  it('sin criterios no cierra, aunque el total sea 0', () => {
+    // Cerrar un trimestre vacío escribiría un snapshot indistinguible de uno en
+    // el que todos sacaron 0.
+    expect(estadoDelReparto(conPesos()).cierra).toBe(false)
+  })
+
+  it('dice cuánto falta mientras se reparte', () => {
+    const reparto = estadoDelReparto(conPesos(40, 30))
+    expect(reparto.total).toBe(70)
+    expect(reparto.faltan).toBe(30)
+    expect(reparto.cierra).toBe(false)
+  })
+
+  it('dice cuánto sobra si se pasó de 100', () => {
+    const reparto = estadoDelReparto(conPesos(60, 60))
+    expect(reparto.total).toBe(120)
+    expect(reparto.faltan).toBe(-20)
+    expect(reparto.cierra).toBe(false)
+  })
+
+  it('cierra cuando suma 100', () => {
+    expect(estadoDelReparto(conPesos(50, 30, 20)).cierra).toBe(true)
+  })
+})
+
+describe('agregarCriterio', () => {
+  it('agrega el criterio con peso 0', async () => {
+    const t1 = await primerTrimestre()
+    await agregarCriterio(t1, 'Tareas', 'entregable')
+
+    const esquema = await esquemaDelTrimestre(t1.id)
+    expect(esquema?.criterios[0]?.criterio.nombre).toBe('Tareas')
+    expect(esquema?.criterios[0]?.ponderado.peso).toBe(0)
+  })
+
+  it('recorta el nombre y colapsa los espacios de sobra', async () => {
+    const t1 = await primerTrimestre()
+    await agregarCriterio(t1, '  Trabajos   en clase  ', 'entregable')
+
+    const esquema = await esquemaDelTrimestre(t1.id)
+    expect(esquema?.criterios[0]?.criterio.nombre).toBe('Trabajos en clase')
+  })
+
+  it('rechaza un nombre vacío', async () => {
+    const t1 = await primerTrimestre()
+    await expect(agregarCriterio(t1, '   ', 'entregable')).rejects.toThrow(/nombre/)
+  })
+
+  it('un trimestre cerrado no admite criterios nuevos', async () => {
+    const t1 = await primerTrimestre()
+    await expect(
+      agregarCriterio({ ...t1, estado: 'cerrado' }, 'Tareas', 'entregable'),
+    ).rejects.toThrow(/cerrado/)
+    expect((await esquemaDelTrimestre(t1.id))?.criterios).toEqual([])
+  })
+})
+
+describe('ajustarPeso', () => {
+  it('acepta un reparto que no suma 100: solo el cierre lo exige', async () => {
+    const t1 = await primerTrimestre()
+    await agregarCriterio(t1, 'Tareas', 'entregable')
+    const fila = (await esquemaDelTrimestre(t1.id))!.criterios[0]!.ponderado
+
+    // Editar pasa siempre por estados intermedios inválidos; bloquear el guardado
+    // obligaría a cuadrar la pantalla antes de poder salir de ella.
+    await ajustarPeso(t1, fila.id, 35)
+
+    const esquema = await esquemaDelTrimestre(t1.id)
+    expect(esquema?.criterios[0]?.ponderado.peso).toBe(35)
+    expect(estadoDelReparto(esquema).cierra).toBe(false)
+  })
+
+  it('acepta los extremos 0 y 100', async () => {
+    const t1 = await primerTrimestre()
+    await agregarCriterio(t1, 'Tareas', 'entregable')
+    const fila = (await esquemaDelTrimestre(t1.id))!.criterios[0]!.ponderado
+
+    await ajustarPeso(t1, fila.id, 100)
+    expect((await esquemaDelTrimestre(t1.id))?.criterios[0]?.ponderado.peso).toBe(100)
+    await ajustarPeso(t1, fila.id, 0)
+    expect((await esquemaDelTrimestre(t1.id))?.criterios[0]?.ponderado.peso).toBe(0)
+  })
+
+  it('rechaza lo que no es un peso', async () => {
+    const t1 = await primerTrimestre()
+    await agregarCriterio(t1, 'Tareas', 'entregable')
+    const fila = (await esquemaDelTrimestre(t1.id))!.criterios[0]!.ponderado
+
+    await expect(ajustarPeso(t1, fila.id, -1)).rejects.toThrow(/0 a 100/)
+    await expect(ajustarPeso(t1, fila.id, 101)).rejects.toThrow(/0 a 100/)
+    await expect(ajustarPeso(t1, fila.id, Number.NaN)).rejects.toThrow(/0 a 100/)
+  })
+
+  it('un trimestre cerrado no admite cambios de peso', async () => {
+    const t1 = await primerTrimestre()
+    await agregarCriterio(t1, 'Tareas', 'entregable')
+    const fila = (await esquemaDelTrimestre(t1.id))!.criterios[0]!.ponderado
+
+    await expect(
+      ajustarPeso({ ...t1, estado: 'cerrado' }, fila.id, 50),
+    ).rejects.toThrow(/cerrado/)
+    expect((await esquemaDelTrimestre(t1.id))?.criterios[0]?.ponderado.peso).toBe(0)
+  })
+})
+
+describe('quitarCriterio', () => {
+  it('lo saca del trimestre', async () => {
+    const t1 = await primerTrimestre()
+    await agregarCriterio(t1, 'Tareas', 'entregable')
+    const fila = (await esquemaDelTrimestre(t1.id))!.criterios[0]!.ponderado
+
+    await quitarCriterio(t1, fila.id)
+
+    expect((await esquemaDelTrimestre(t1.id))?.criterios).toEqual([])
+  })
+
+  it('un trimestre cerrado no admite quitar criterios', async () => {
+    const t1 = await primerTrimestre()
+    await agregarCriterio(t1, 'Tareas', 'entregable')
+    const fila = (await esquemaDelTrimestre(t1.id))!.criterios[0]!.ponderado
+
+    await expect(quitarCriterio({ ...t1, estado: 'cerrado' }, fila.id)).rejects.toThrow(
+      /cerrado/,
+    )
+    expect((await esquemaDelTrimestre(t1.id))?.criterios).toHaveLength(1)
+  })
+})
+
+describe('copiarEsquemaDe', () => {
+  it('copia criterios y pesos al trimestre siguiente', async () => {
+    const ciclo = await unCiclo()
+    const [t1, t2] = ciclo.trimestres as [Trimestre, Trimestre]
+    await agregarCriterio(t1, 'Tareas', 'entregable')
+    const fila = (await esquemaDelTrimestre(t1.id))!.criterios[0]!.ponderado
+    await ajustarPeso(t1, fila.id, 60)
+
+    await copiarEsquemaDe(t1, t2)
+
+    const copia = (await esquemaDelTrimestre(t2.id))!.criterios
+    expect(copia[0]?.criterio.nombre).toBe('Tareas')
+    expect(copia[0]?.ponderado.peso).toBe(60)
+  })
+
+  it('no se copia un trimestre sobre sí mismo', async () => {
+    const t1 = await primerTrimestre()
+    await expect(copiarEsquemaDe(t1, t1)).rejects.toThrow(/sí mismo/)
+  })
+
+  it('no copia entre ciclos distintos', async () => {
+    const ciclo = await unCiclo()
+    const [t1, t2] = ciclo.trimestres as [Trimestre, Trimestre]
+    await expect(
+      copiarEsquemaDe(t1, { ...t2, ciclo_id: 'otro-ciclo' }),
+    ).rejects.toThrow(/mismo ciclo/)
+  })
+
+  it('un trimestre cerrado no admite recibir una copia', async () => {
+    const ciclo = await unCiclo()
+    const [t1, t2] = ciclo.trimestres as [Trimestre, Trimestre]
+    await agregarCriterio(t1, 'Tareas', 'entregable')
+
+    await expect(copiarEsquemaDe(t1, { ...t2, estado: 'cerrado' })).rejects.toThrow(/cerrado/)
+    expect((await esquemaDelTrimestre(t2.id))?.criterios).toEqual([])
+  })
+})
+
+describe('trimestreParaCopiar', () => {
+  it('ofrece el anterior por número', async () => {
+    const ciclo = await unCiclo()
+    const [t1, t2, t3] = ciclo.trimestres as [Trimestre, Trimestre, Trimestre]
+    expect(trimestreParaCopiar(t2, ciclo)?.id).toBe(t1.id)
+    expect(trimestreParaCopiar(t3, ciclo)?.id).toBe(t2.id)
+  })
+
+  it('el primero no tiene de dónde copiar', async () => {
+    const ciclo = await unCiclo()
+    const [t1] = ciclo.trimestres as [Trimestre]
+    expect(trimestreParaCopiar(t1, ciclo)).toBeNull()
+  })
+})
+
+describe('TIPOS_OFRECIDOS', () => {
+  it('no ofrece los criterios automáticos, que están pospuestos', () => {
+    const tipos = TIPOS_OFRECIDOS.map((t) => t.tipo)
+    expect(tipos).not.toContain('auto_puntualidad')
+    expect(tipos).not.toContain('auto_conducta')
+    expect(tipos).not.toContain('auto_participacion')
+  })
+
+  it('no ofrece personalizado, que no tiene forma de captura', () => {
+    // Elegirlo la llevaría a crear un criterio sin pantalla donde llenarse.
+    expect(TIPOS_OFRECIDOS.map((t) => t.tipo)).not.toContain('personalizado')
   })
 })

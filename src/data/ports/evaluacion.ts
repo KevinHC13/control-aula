@@ -1,4 +1,4 @@
-import type { Ciclo, Trimestre } from '@/domain/entities'
+import type { Ciclo, Criterio, CriterioTrimestre, TipoCriterio, Trimestre } from '@/domain/entities'
 import type { Fecha, Id, Suscribible } from '@/domain/values'
 
 /**
@@ -11,6 +11,25 @@ export interface CicloEnCurso {
   ciclo: Ciclo
   /** Ordenados por número, del 1 al 3. */
   trimestres: Trimestre[]
+}
+
+/**
+ * Un criterio dentro de un trimestre, con el nombre y el tipo que trae del
+ * catálogo. Siempre se leen juntos: el peso no dice nada sin saber de qué es, y
+ * el tipo es lo que decide cómo se captura.
+ */
+export interface CriterioDelTrimestre {
+  /** La fila del trimestre: peso, orden, rúbrica. Es la que se edita. */
+  ponderado: CriterioTrimestre
+  /** La entrada del catálogo: nombre y tipo. Se comparte entre trimestres. */
+  criterio: Criterio
+}
+
+/** El reparto de pesos de un trimestre, que es lo que edita la pantalla. */
+export interface EsquemaTrimestre {
+  trimestre: Trimestre
+  /** Ordenados por `orden`. */
+  criterios: CriterioDelTrimestre[]
 }
 
 /** Un trimestre por crear: todavía no tiene `id` ni `ciclo_id`. */
@@ -57,4 +76,45 @@ export interface EvaluacionRepo {
    * acepta escrituras: la regla vive en el caso de uso, no repetida aquí.
    */
   ajustarFechas(trimestreId: Id, inicio: Fecha, fin: Fecha): Promise<void>
+
+  /** El reparto de pesos de un trimestre. `null` si el trimestre no existe. */
+  esquemaDeTrimestre(trimestreId: Id): Promise<EsquemaTrimestre | null>
+
+  /**
+   * Lo mismo, reactivo. Sostiene que el total corriente de pesos se recalcule al
+   * cambiar un peso, sin botón de refrescar.
+   */
+  observarEsquemaDeTrimestre(trimestreId: Id): Suscribible<EsquemaTrimestre | null>
+
+  /**
+   * Agrega un criterio al trimestre. Si el catálogo ya tiene uno con ese nombre y
+   * ese tipo lo reutiliza, en vez de crear un duplicado: el catálogo existe para
+   * que «Tareas» sea el mismo criterio en los tres trimestres y en los ciclos que
+   * vengan.
+   *
+   * El peso nace en 0. Poner un valor de arranque obligaría a adivinar el reparto
+   * y a que ella corrija una cifra inventada.
+   */
+  agregarCriterio(trimestreId: Id, nombre: string, tipo: TipoCriterio): Promise<void>
+
+  /** Cambia el peso de una fila. */
+  ajustarPeso(criterioTrimestreId: Id, peso: number): Promise<void>
+
+  /**
+   * Saca el criterio del trimestre. Borrado suave, y **solo** de la fila del
+   * trimestre: la entrada del catálogo se queda, porque otros trimestres la
+   * comparten.
+   */
+  quitarCriterio(criterioTrimestreId: Id): Promise<void>
+
+  /**
+   * Copia el reparto de otro trimestre: criterios, pesos, rúbrica y meta de
+   * participación.
+   *
+   * **No** copia actividades, entregas, evaluaciones ni resultados de examen. Son
+   * filas nuevas de `CriterioTrimestre`, así que cambiar un peso en el trimestre
+   * nuevo no puede tocar nada de lo ya calculado en el de origen
+   * (docs/DATA-MODEL.md).
+   */
+  copiarEsquema(desdeTrimestreId: Id, haciaTrimestreId: Id): Promise<void>
 }

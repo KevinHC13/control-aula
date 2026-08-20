@@ -1,9 +1,16 @@
 import { repos } from '@/data'
-import type { CicloEnCurso, PeriodoNuevo } from '@/data/ports/evaluacion'
-import type { Trimestre } from '@/domain/entities'
-import { aceptaEscrituras, rangoValido, seTraslapan, trimestreDeFecha } from '@/domain/evaluacion'
+import type { CicloEnCurso, EsquemaTrimestre, PeriodoNuevo } from '@/data/ports/evaluacion'
+import type { TipoCriterio, Trimestre } from '@/domain/entities'
+import {
+  aceptaEscrituras,
+  pesosSuman100,
+  rangoValido,
+  seTraslapan,
+  sumaDePesos,
+  trimestreDeFecha,
+} from '@/domain/evaluacion'
 import { fechaValida } from '@/domain/fechas'
-import type { Fecha } from '@/domain/values'
+import type { Fecha, Id } from '@/domain/values'
 
 const NUMEROS = [1, 2, 3] as const
 
@@ -186,4 +193,128 @@ export async function guardarFechas(
 
     await ajustarFechasTrimestre(trimestre, periodo.inicio, periodo.fin)
   }
+}
+
+/*
+ * Criterios y pesos del trimestre (C20)
+ * =====================================
+ */
+
+/**
+ * Los tipos de criterio que la pantalla ofrece hoy.
+ *
+ * `personalizado` existe en el modelo pero no se ofrece: no tiene forma de
+ * captura definida, y dejarla elegirlo la llevaría a crear un criterio que
+ * después no tiene pantalla donde llenarse. Los `auto_*` están pospuestos por
+ * decisión suya (docs/DECISIONES.md D-015).
+ */
+export const TIPOS_OFRECIDOS = [
+  { tipo: 'entregable', etiqueta: 'Entregable', ayuda: 'Tareas, trabajos, portafolio' },
+  { tipo: 'examen', etiqueta: 'Examen', ayuda: 'Aciertos por campo formativo' },
+] as const satisfies readonly { tipo: TipoCriterio; etiqueta: string; ayuda: string }[]
+
+export async function esquemaDelTrimestre(trimestreId: Id): Promise<EsquemaTrimestre | null> {
+  return repos.evaluacion.esquemaDeTrimestre(trimestreId)
+}
+
+/**
+ * Cómo va el reparto de pesos.
+ *
+ * `cierra` es la única condición dura, y **no** bloquea guardar: editar pasa
+ * siempre por estados intermedios inválidos, y exigir 100 para poder guardar
+ * obligaría a dejar la pantalla cuadrada antes de poder salir de ella. Lo que se
+ * bloquea con esto es el cierre del trimestre (C27).
+ */
+export function estadoDelReparto(esquema: EsquemaTrimestre | null): {
+  total: number
+  cierra: boolean
+  faltan: number
+} {
+  const criterios = esquema?.criterios.map((c) => c.ponderado) ?? []
+  const total = sumaDePesos(criterios)
+  return {
+    total,
+    cierra: criterios.length > 0 && pesosSuman100(criterios),
+    faltan: 100 - total,
+  }
+}
+
+/**
+ * Agrega un criterio al trimestre. El nombre se recorta aquí y no en cada tecla:
+ * es un campo que se envía, no uno que se revalida mientras se escribe.
+ */
+export async function agregarCriterio(
+  trimestre: Trimestre,
+  nombre: string,
+  tipo: TipoCriterio,
+): Promise<void> {
+  if (!aceptaEscrituras(trimestre)) {
+    throw new Error('Un trimestre cerrado no admite criterios nuevos')
+  }
+  const limpio = nombre.trim().replace(/\s+/g, ' ')
+  if (limpio === '') throw new Error('El criterio necesita un nombre')
+
+  await repos.evaluacion.agregarCriterio(trimestre.id, limpio, tipo)
+}
+
+/**
+ * Deja el peso de una fila. Acepta cualquier valor de 0 a 100, incluido un
+ * reparto que no sume 100: solo el cierre exige que cuadre.
+ */
+export async function ajustarPeso(
+  trimestre: Trimestre,
+  criterioTrimestreId: Id,
+  peso: number,
+): Promise<void> {
+  if (!aceptaEscrituras(trimestre)) {
+    throw new Error('Un trimestre cerrado no admite cambios de peso')
+  }
+  if (!Number.isFinite(peso) || peso < 0 || peso > 100) {
+    throw new Error('El peso va de 0 a 100')
+  }
+
+  await repos.evaluacion.ajustarPeso(criterioTrimestreId, peso)
+}
+
+export async function quitarCriterio(
+  trimestre: Trimestre,
+  criterioTrimestreId: Id,
+): Promise<void> {
+  if (!aceptaEscrituras(trimestre)) {
+    throw new Error('Un trimestre cerrado no admite quitar criterios')
+  }
+  await repos.evaluacion.quitarCriterio(criterioTrimestreId)
+}
+
+/**
+ * Copia el reparto de otro trimestre del mismo ciclo.
+ *
+ * Trae criterios, pesos y rúbricas; nunca actividades ni calificaciones. Son
+ * filas nuevas, así que cambiar un peso aquí después no puede alterar nada de lo
+ * ya calculado en el trimestre de origen.
+ */
+export async function copiarEsquemaDe(
+  origen: Trimestre,
+  destino: Trimestre,
+): Promise<void> {
+  if (!aceptaEscrituras(destino)) {
+    throw new Error('Un trimestre cerrado no admite copiar un esquema')
+  }
+  if (origen.id === destino.id) throw new Error('No se copia un trimestre sobre sí mismo')
+  if (origen.ciclo_id !== destino.ciclo_id) {
+    throw new Error('Solo se copia entre trimestres del mismo ciclo')
+  }
+
+  await repos.evaluacion.copiarEsquema(origen.id, destino.id)
+}
+
+/**
+ * El trimestre del que conviene ofrecer la copia: el anterior por número, si
+ * tiene algo que copiar. Devuelve `null` cuando no hay de dónde.
+ */
+export function trimestreParaCopiar(
+  destino: Trimestre,
+  ciclo: CicloEnCurso,
+): Trimestre | null {
+  return ciclo.trimestres.find((t) => t.numero === destino.numero - 1) ?? null
 }

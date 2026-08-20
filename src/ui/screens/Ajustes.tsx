@@ -13,10 +13,12 @@ export function Ajustes({
   alVolver,
   alCargarLista,
   alConfigurarCiclo,
+  alConfigurarCriterios,
 }: {
   alVolver: () => void
   alCargarLista: () => void
   alConfigurarCiclo: () => void
+  alConfigurarCriterios: () => void
 }) {
   return (
     <section aria-labelledby="titulo-ajustes" className="flex flex-col gap-4">
@@ -51,6 +53,18 @@ export function Ajustes({
             <span className="text-base font-medium text-tinta">Ciclo escolar</span>
             <span className="text-base text-tinta-2">
               Las fechas de los tres trimestres
+            </span>
+          </button>
+        </li>
+        <li>
+          <button
+            type="button"
+            onClick={alConfigurarCriterios}
+            className="flex w-full flex-col items-start gap-0.5 px-4 py-3 text-left"
+          >
+            <span className="text-base font-medium text-tinta">Criterios y pesos</span>
+            <span className="text-base text-tinta-2">
+              Con qué se evalúa cada trimestre y cuánto vale
             </span>
           </button>
         </li>
