@@ -896,6 +896,25 @@ export class DexieEvaluacionRepo implements EvaluacionRepo {
       ]
     }
 
+    // Lo de los criterios automáticos, por rango de fechas sobre el índice
+    // `fecha`: la atribución al trimestre se deriva al leer. Se lee aquí y no en
+    // los adaptadores de asistencia o bitácora porque el cálculo necesita todo
+    // junto, y porque así `liveQuery` vuelve a emitir cuando cualquiera de las
+    // tres cambia.
+    const { inicio, fin } = esquema.trimestre
+    const enElTrimestre = <T extends Sincronizable & { fecha: string }>(registros: T[]) =>
+      vivos(registros).filter((r) => r.fecha >= inicio && r.fecha <= fin)
+
+    const asistencia = enElTrimestre(
+      await db.asistencia.where('fecha').between(inicio, fin, true, true).toArray(),
+    )
+    const reportes = enElTrimestre(
+      await db.bitacora.where('fecha').between(inicio, fin, true, true).toArray(),
+    )
+    const participaciones = enElTrimestre(
+      await db.participaciones.where('fecha').between(inicio, fin, true, true).toArray(),
+    )
+
     return {
       trimestre: esquema.trimestre,
       criterios: esquema.criterios,
@@ -905,6 +924,9 @@ export class DexieEvaluacionRepo implements EvaluacionRepo {
       evaluaciones,
       configuraciones,
       resultados,
+      asistencia,
+      reportes,
+      participaciones,
     }
   }
 

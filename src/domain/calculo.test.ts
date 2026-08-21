@@ -5,11 +5,14 @@ import {
   calificacionDeCriterio,
   calificacionDeTrimestre,
   comoCalificacion,
+  valorConducta,
   valorConRubrica,
   valorCriterio,
   valorDeEvaluacion,
   valorExamenGeneral,
   valorExamenPorCampo,
+  valorParticipacion,
+  valorPuntualidad,
   valorSinRubrica,
 } from './calculo'
 import type { Nivel } from './values'
@@ -299,5 +302,116 @@ describe('aBase10 y comoCalificacion', () => {
   it('nunca muestra el porcentaje', () => {
     // La cifra que ve la maestra es base 10; el porcentaje solo existe como peso.
     expect(comoCalificacion(0.611)).toBe('6.1')
+  })
+})
+
+describe('valorPuntualidad', () => {
+  const dias = (presentes: number, ausentes = 0, retardos = 0, justificadas = 0) => [
+    ...Array.from({ length: presentes }, () => 'presente' as const),
+    ...Array.from({ length: ausentes }, () => 'ausente' as const),
+    ...Array.from({ length: retardos }, () => 'retardo' as const),
+    ...Array.from({ length: justificadas }, () => 'justificada' as const),
+  ]
+
+  it('sin días capturados vale null, no 0', () => {
+    // Un alumno del que no hay un solo día no es un alumno impuntual.
+    expect(valorPuntualidad([], 3)).toBeNull()
+    expect(valorPuntualidad([], null)).toBeNull()
+  })
+
+  it('sin faltas ni retardos vale 1', () => {
+    expect(valorPuntualidad(dias(20), 3)).toBe(1)
+  })
+
+  it('las faltas penalizan sobre los días capturados', () => {
+    // 8 de 10 días.
+    expect(valorPuntualidad(dias(8, 2), null)).toBeCloseTo(0.8)
+  })
+
+  it('con retardos_por_falta en null, un retardo no penaliza', () => {
+    expect(valorPuntualidad(dias(3, 0, 7), null)).toBe(1)
+  })
+
+  it('convierte retardos en faltas por división entera', () => {
+    // El ejemplo de docs/DATA-MODEL.md: 40 días, 2 ausencias, 7 retardos y
+    // retardos_por_falta 3 → 2 + ⌊7 ÷ 3⌋ = 4 faltas efectivas → 36/40 = 0.9.
+    expect(valorPuntualidad(dias(31, 2, 7), 3)).toBeCloseTo(0.9)
+  })
+
+  it('dos retardos con la conversión en 3 todavía no hacen falta', () => {
+    expect(valorPuntualidad(dias(8, 0, 2), 3)).toBe(1)
+  })
+
+  it('con la conversión en 1, cada retardo es una falta', () => {
+    // Es duro, y es la política de algunas escuelas.
+    expect(valorPuntualidad(dias(8, 0, 2), 1)).toBeCloseTo(0.8)
+  })
+
+  it('justificada no penaliza nunca', () => {
+    // Es el trato con la escuela, y la misma regla del porcentaje de asistencia.
+    expect(valorPuntualidad(dias(5, 0, 0, 5), 3)).toBe(1)
+  })
+
+  it('nunca baja de cero', () => {
+    // Veinte retardos en diez días no es una calificación negativa: es un cero.
+    expect(valorPuntualidad(dias(0, 0, 10), 1)).toBe(0)
+  })
+})
+
+describe('valorConducta', () => {
+  it('sin reportes vale 10, no null', () => {
+    // No tener reportes es el dato. Es el único de los tres automáticos que
+    // siempre tiene valor.
+    expect(valorConducta(0)).toBe(1)
+    expect(comoCalificacion(valorConducta(0))).toBe('10.0')
+  })
+
+  it('el primer reporte se deja pasar', () => {
+    expect(comoCalificacion(valorConducta(1))).toBe('10.0')
+  })
+
+  it('dos reportes valen la mitad', () => {
+    expect(comoCalificacion(valorConducta(2))).toBe('5.0')
+  })
+
+  it('tres o más la anulan', () => {
+    expect(comoCalificacion(valorConducta(3))).toBe('0.0')
+    expect(comoCalificacion(valorConducta(9))).toBe('0.0')
+  })
+})
+
+describe('valorParticipacion', () => {
+  it('es proporcional contra la meta', () => {
+    // Con la meta en 5: una vale 2.0 y tres valen 6.0 (D-021).
+    expect(comoCalificacion(valorParticipacion(1, 5, 10))).toBe('2.0')
+    expect(comoCalificacion(valorParticipacion(3, 5, 10))).toBe('6.0')
+  })
+
+  it('tiene tope: de la meta para arriba vale 10', () => {
+    // Sin tope, el criterio sería una carrera entre los tres de siempre.
+    expect(comoCalificacion(valorParticipacion(5, 5, 20))).toBe('10.0')
+    expect(comoCalificacion(valorParticipacion(12, 5, 20))).toBe('10.0')
+  })
+
+  it('sin meta configurada vale null', () => {
+    expect(valorParticipacion(3, null, 10)).toBeNull()
+    expect(valorParticipacion(3, 0, 10)).toBeNull()
+  })
+
+  it('sin una sola participación en el grupo, vale null para todos', () => {
+    // Ella no usó el criterio ese trimestre. Ponerle 0.0 a treinta niños por algo
+    // que nadie capturó sería inventar el dato.
+    expect(valorParticipacion(0, 5, 0)).toBeNull()
+  })
+
+  it('con marcas de alguien, quien no tiene ninguna saca 0', () => {
+    // Participar es lo que el criterio mide. [POR VALIDAR]
+    expect(comoCalificacion(valorParticipacion(0, 5, 7))).toBe('0.0')
+  })
+
+  it('no se compara contra el máximo del grupo', () => {
+    // El mismo alumno con la misma meta vale lo mismo, participe mucho o poco el
+    // resto: un alumno muy participativo no hunde a los demás.
+    expect(valorParticipacion(2, 5, 4)).toBe(valorParticipacion(2, 5, 400))
   })
 })

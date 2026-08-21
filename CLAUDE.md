@@ -18,7 +18,8 @@ Existen y funcionan:
 
 - **`domain/`** completo: `entities.ts` con la jerarquía `Ciclo → … → Actividad`,
   `values.ts`, `fechas.ts`, `rules.ts`, `evaluacion.ts` —la estructura de la
-  evaluación— y `calculo.ts` —la cadena de cálculo, C28—, con pruebas.
+  evaluación— y `calculo.ts` —la cadena de cálculo, C28, más las tres fórmulas de
+  los criterios automáticos, C26—, con pruebas.
 - **`data/`** con Dexie en `version(3)`: `db.ts` con las dieciséis tablas
   sincronizables, adaptadores de alumnos, asistencia, evaluación y bitácora, sus
   puertos, la `outbox` y la semilla (`grupo.ts` ignorado, `grupo.example.ts`
@@ -54,12 +55,15 @@ dieciséis tablas a un archivo y lo restaura por upsert. Falta una sola cosa y e
 dispositivo, no de código: ver en el iPad que la hoja de compartir ofrezca *Guardar
 en Archivos*.
 
-Del **alcance nuevo del 2026-08-21** —la usuaria retomó los tres criterios
-automáticos con reglas propias (D-020)— ya están `C12`, `C25b` y `C25`: la bitácora,
-la configuración de los tres criterios y el modo de participación en la pantalla de
-asistencia. **Lo único que falta es `C26`, el cálculo**: hasta que entre, los tres
-criterios pesan en el reparto pero califican `null`, y el reporte los excluye del
-promedio igual que un criterio sin captura (D-019).
+El **alcance nuevo del 2026-08-21** —la usuaria retomó los tres criterios
+automáticos con reglas propias (D-020)— **está terminado**: `C12` la bitácora, `C25b`
+la configuración, `C25` el modo de participación y `C26` las tres fórmulas. Con
+conducta configurada, todo el grupo tiene 10.0 desde el primer día: no tener reportes
+es el dato.
+
+**Lo que sigue son las dos herramientas de aula** (D-021): `C30` —sortear quién
+participa— y `C31` —formar equipos—. Y de la Fase 3 quedan `C13` (resumen del grupo),
+`C15` (cumpleaños) y `C16` (el motor de sincronía, el que cierra la v1).
 
 Encima entran dos **herramientas de aula** (D-021): `C30` —sortear quién participa,
 que escribe en `participaciones` y no registra nada por sí solo— y `C31` —formar

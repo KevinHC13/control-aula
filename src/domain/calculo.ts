@@ -1,7 +1,7 @@
 import { promedioDe } from './rules'
 import { aciertosCompletos, camposConPreguntas, nivelesCompletos } from './evaluacion'
 import { NIVEL_MAXIMO, VALOR_NIVEL } from './values'
-import type { CampoFormativo, Id, Nivel } from './values'
+import type { CampoFormativo, EstadoAsistencia, Id, Nivel } from './values'
 
 /**
  * La cadena de cálculo de calificaciones. Funciones puras: no leen la base, no
@@ -170,6 +170,102 @@ export function valorExamenGeneral(
 
   const totalAciertos = campos.reduce((acc, c) => acc + (aciertos[c] ?? 0), 0)
   return totalAciertos / totalPreguntas
+}
+
+/*
+ * Criterios automáticos
+ * =====================
+ *
+ * Los tres se **derivan** de lo que ya está capturado y nunca se almacenan
+ * (D-020). Ninguno aporta a un campo formativo —un retardo no es de Lenguajes—,
+ * así que solo cuentan para el general del trimestre; eso lo resuelve quien los
+ * compone, devolviendo su `porCampo` vacío.
+ */
+
+/**
+ * La puntualidad de un alumno: los días que llegó a tiempo, sobre los días
+ * capturados.
+ *
+ * ```
+ * extra = retardosPorFalta === null ? 0 : ⌊retardos ÷ retardosPorFalta⌋
+ * valor = máx(0, (días − faltas − extra) ÷ días)
+ * ```
+ *
+ * `justificada` **nunca penaliza**: es la misma regla que ya usa el porcentaje de
+ * asistencia, y es el trato con la escuela.
+ *
+ * `null` sin días capturados, no 0: un alumno del que no hay un solo día no es un
+ * alumno impuntual. El `máx(0, …)` existe porque con muchos retardos la resta se
+ * pasa —veinte retardos en diez días no es una calificación negativa, es un cero—.
+ */
+export function valorPuntualidad(
+  estados: readonly EstadoAsistencia[],
+  retardosPorFalta: number | null,
+): number | null {
+  const dias = estados.length
+  if (dias === 0) return null
+
+  const faltas = estados.filter((e) => e === 'ausente').length
+  const retardos = estados.filter((e) => e === 'retardo').length
+  const extra = retardosPorFalta === null ? 0 : Math.floor(retardos / retardosPorFalta)
+
+  return Math.max(0, (dias - faltas - extra) / dias)
+}
+
+/**
+ * La conducta de un alumno, a partir de **cuántos reportes** tiene en el
+ * trimestre. Todos los reportes de la bitácora son negativos, así que basta
+ * contarlos.
+ *
+ * | Reportes | Valor | Base 10 |
+ * |---|---|---|
+ * | 0 o 1 | 1.0 | 10.0 |
+ * | 2 | 0.5 | 5.0 |
+ * | 3 o más | 0.0 | 0.0 |
+ *
+ * El primero se deja pasar a propósito (D-020).
+ *
+ * **Nunca devuelve `null`**, y es el único de los tres que no puede: no tener
+ * reportes no es falta de dato, es el dato. Un grupo sin reportes tiene 10.0 de
+ * conducta desde el primer día, y eso es correcto —con la consecuencia de que el
+ * trimestre deja de mostrar `—` en cuanto el criterio existe—.
+ */
+export function valorConducta(reportes: number): number {
+  if (reportes <= 1) return 1
+  if (reportes === 2) return 0.5
+  return 0
+}
+
+/**
+ * La participación de un alumno: **proporcional con tope** contra la meta del
+ * trimestre.
+ *
+ * ```
+ * valor = mín(participaciones ÷ meta, 1)
+ * ```
+ *
+ * Con la meta en 5, una participación vale 2.0 y cinco o más valen 10.0. Con tope,
+ * porque premiar volumen sin límite convierte el criterio en una carrera entre los
+ * tres de siempre; y contra la meta y **no contra el máximo del grupo**, porque un
+ * alumno muy participativo hundiría a todos los demás.
+ *
+ * Dos `null` distintos, y los dos importan:
+ *
+ * - **Sin meta** el criterio no está configurado y no hay con qué normalizar.
+ * - **Sin una sola participación en todo el grupo** ella no usó el criterio ese
+ *   trimestre, y calificar a treinta niños con 0.0 por algo que nadie capturó
+ *   sería inventar el dato. En cuanto alguien tiene marcas, quien no tiene ninguna
+ *   saca 0.0: participar es lo que el criterio mide. `[POR VALIDAR]`
+ */
+export function valorParticipacion(
+  delAlumno: number,
+  meta: number | null,
+  totalDelGrupo: number,
+): number | null {
+  if (meta === null || meta <= 0) return null
+  if (totalDelGrupo === 0) return null
+
+  return Math.min(delAlumno / meta, 1)
 }
 
 /*

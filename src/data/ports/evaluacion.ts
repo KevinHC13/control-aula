@@ -5,6 +5,9 @@ import type {
   Entrega,
   EvaluacionRubrica,
   ExamenConfig,
+  Participacion,
+  RegistroAsistencia,
+  Reporte,
   ResultadoExamen,
   Criterio,
   CriterioTrimestre,
@@ -154,6 +157,20 @@ export interface CapturasDelTrimestre {
   /** La configuración de preguntas de cada criterio de examen que la tenga. */
   configuraciones: ExamenConfig[]
   resultados: ResultadoExamen[]
+
+  /*
+   * Lo que alimenta a los criterios automáticos, recortado a las fechas del
+   * trimestre. Se atribuye **por fecha y al leer**, nunca por un campo
+   * almacenado, así que ajustar las fechas del trimestre cambia lo que entra aquí
+   * sin migrar una sola fila (docs/DATA-MODEL.md).
+   *
+   * Viene en la misma lectura que el resto y no por su cuenta: así el reporte se
+   * recalcula solo cuando se marca una falta o se anota un reporte, sin que la
+   * pantalla tenga que suscribirse a tres cosas más.
+   */
+  asistencia: RegistroAsistencia[]
+  reportes: Reporte[]
+  participaciones: Participacion[]
 }
 
 /** Un snapshot por escribir al cerrar. Sin los campos que genera el dispositivo. */

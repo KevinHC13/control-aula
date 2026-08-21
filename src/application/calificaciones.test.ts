@@ -4,10 +4,10 @@ import 'fake-indexeddb/auto'
 import { afterAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { db } from '@/data/dexie/db'
-import type { CapturasDelTrimestre } from '@/data/ports/evaluacion'
+import type { CapturasDelTrimestre, CriterioDelTrimestre } from '@/data/ports/evaluacion'
 import { comoCalificacion } from '@/domain/calculo'
-import type { Alumno, CierreTrimestre, Trimestre } from '@/domain/entities'
-import type { CampoFormativo, Id, Nivel } from '@/domain/values'
+import type { Alumno, CierreTrimestre, TipoCriterio, Trimestre } from '@/domain/entities'
+import type { CampoFormativo, EstadoAsistencia, Id, Nivel } from '@/domain/values'
 
 import {
   cerrarTrimestre,
@@ -46,8 +46,8 @@ function criterio(
   id: Id,
   nombre: string,
   peso: number,
-  tipo: 'entregable' | 'examen' | 'auto_conducta' = 'entregable',
-) {
+  tipo: TipoCriterio = 'entregable',
+): CriterioDelTrimestre {
   return {
     ponderado: {
       id,
@@ -103,6 +103,9 @@ function capturas(cambios: Partial<CapturasDelTrimestre> = {}): CapturasDelTrime
     evaluaciones: [],
     configuraciones: [],
     resultados: [],
+    asistencia: [],
+    reportes: [],
+    participaciones: [],
     ...cambios,
   }
 }
@@ -227,7 +230,10 @@ describe('reporteDeCapturas', () => {
     expect(uno!.pesoConsiderado).toBe(40)
   })
 
-  it('un criterio automático no aporta ni hunde el promedio', () => {
+  it('la conducta sin reportes vale 10 y cuenta con todo su peso', () => {
+    // Es el único criterio automático que siempre tiene valor: no tener reportes
+    // es el dato (C26). La consecuencia visible es esta: con conducta
+    // configurada, el trimestre pesa 100 desde el primer día.
     const datos = capturas({
       criterios: [criterio('ct-tareas', 'Tareas', 70), criterio('ct-cond', 'Conducta', 30, 'auto_conducta')],
       actividades: [actividad('a1', 'ct-tareas', 'lenguajes', null)],
@@ -236,8 +242,26 @@ describe('reporteDeCapturas', () => {
 
     const [uno] = reporteDeCapturas(datos, DOS)
     expect(comoCalificacion(uno!.general)).toBe('10.0')
+    expect(uno!.pesoConsiderado).toBe(100)
+    expect(uno!.criterios.find((c) => c.nombre === 'Conducta')?.general).toBe(1)
+  })
+
+  it('un criterio personalizado sigue sin aportar ni hundir el promedio', () => {
+    // Existe en el tipo y no tiene forma de captura: se excluye, y el trimestre
+    // se normaliza sobre lo que sí aporta (D-019).
+    const datos = capturas({
+      criterios: [
+        criterio('ct-tareas', 'Tareas', 70),
+        criterio('ct-otro', 'Otro', 30, 'personalizado'),
+      ],
+      actividades: [actividad('a1', 'ct-tareas', 'lenguajes', null)],
+      entregas: [entrega('a1', 'alumno-1', true)],
+    })
+
+    const [uno] = reporteDeCapturas(datos, DOS)
+    expect(comoCalificacion(uno!.general)).toBe('10.0')
     expect(uno!.pesoConsiderado).toBe(70)
-    expect(uno!.criterios.find((c) => c.nombre === 'Conducta')?.general).toBeNull()
+    expect(uno!.criterios.find((c) => c.nombre === 'Otro')?.general).toBeNull()
   })
 
   it('el desglose por campo del trimestre pondera campo por campo', () => {
@@ -487,5 +511,163 @@ describe('reabrirTrimestre', () => {
     expect(comoCalificacion(cierres.find((c) => c.alumno_id === 'alumno-2')!.final)).toBe(
       '10.0',
     )
+  })
+})
+
+describe('criterios automáticos en el reporte', () => {
+  const asistencia = (alumnoId: Id, fecha: string, estado: EstadoAsistencia) => ({
+    id: `asis-${alumnoId}-${fecha}`,
+    ...base,
+    alumno_id: alumnoId,
+    fecha,
+    estado,
+  })
+
+  const reporte = (alumnoId: Id, fecha: string) => ({
+    id: `rep-${alumnoId}-${fecha}`,
+    ...base,
+    alumno_id: alumnoId,
+    fecha,
+    texto: 'Algo pasó',
+  })
+
+  const participacion = (alumnoId: Id, fecha: string, cantidad: number) => ({
+    id: `part-${alumnoId}-${fecha}`,
+    ...base,
+    alumno_id: alumnoId,
+    fecha,
+    cantidad,
+  })
+
+  it('la puntualidad sale de la asistencia, con su conversión de retardos', () => {
+    const puntualidad = criterio('ct-punt', 'Puntualidad', 100, 'auto_puntualidad')
+    puntualidad.ponderado.retardos_por_falta = 3
+    const datos = capturas({
+      criterios: [puntualidad],
+      asistencia: [
+        ...Array.from({ length: 8 }, (_, i) => asistencia('alumno-1', `2026-09-0${i + 1}`, 'presente')),
+        asistencia('alumno-1', '2026-09-09', 'ausente'),
+        asistencia('alumno-1', '2026-09-10', 'retardo'),
+      ],
+    })
+
+    const [uno] = reporteDeCapturas(datos, DOS)
+    // 10 días, 1 falta y 1 retardo que todavía no hace falta → 9/10.
+    expect(comoCalificacion(uno!.criterios[0]!.general)).toBe('9.0')
+  })
+
+  it('la puntualidad de un alumno sin días capturados vale —', () => {
+    const datos = capturas({
+      criterios: [criterio('ct-punt', 'Puntualidad', 100, 'auto_puntualidad')],
+      asistencia: [asistencia('alumno-1', '2026-09-01', 'presente')],
+    })
+
+    const [, dos] = reporteDeCapturas(datos, DOS)
+    expect(comoCalificacion(dos!.criterios[0]!.general)).toBe('—')
+  })
+
+  it('la conducta cuenta los reportes de la bitácora del alumno', () => {
+    const datos = capturas({
+      criterios: [criterio('ct-cond', 'Conducta', 100, 'auto_conducta')],
+      reportes: [
+        reporte('alumno-1', '2026-09-01'),
+        reporte('alumno-1', '2026-09-05'),
+        reporte('alumno-2', '2026-09-05'),
+      ],
+    })
+
+    const [uno, dos] = reporteDeCapturas(datos, DOS)
+    // Dos reportes valen la mitad; uno se deja pasar.
+    expect(comoCalificacion(uno!.criterios[0]!.general)).toBe('5.0')
+    expect(comoCalificacion(dos!.criterios[0]!.general)).toBe('10.0')
+  })
+
+  it('la participación usa la meta del criterio, no el máximo del grupo', () => {
+    const participar = criterio('ct-part', 'Participación', 100, 'auto_participacion')
+    participar.ponderado.meta_participacion = 5
+    const datos = capturas({
+      criterios: [participar],
+      participaciones: [
+        participacion('alumno-1', '2026-09-01', 2),
+        participacion('alumno-1', '2026-09-02', 1),
+        participacion('alumno-2', '2026-09-01', 9),
+      ],
+    })
+
+    const [uno, dos] = reporteDeCapturas(datos, DOS)
+    // Tres de cinco, aunque su compañero lleve nueve.
+    expect(comoCalificacion(uno!.criterios[0]!.general)).toBe('6.0')
+    expect(comoCalificacion(dos!.criterios[0]!.general)).toBe('10.0')
+  })
+
+  it('sin participaciones de nadie, el criterio vale — para todo el grupo', () => {
+    const participar = criterio('ct-part', 'Participación', 100, 'auto_participacion')
+    participar.ponderado.meta_participacion = 5
+    const datos = capturas({ criterios: [participar] })
+
+    for (const alumno of reporteDeCapturas(datos, DOS)) {
+      expect(comoCalificacion(alumno.criterios[0]!.general)).toBe('—')
+    }
+  })
+
+  it('con marcas de alguien, quien no tiene ninguna saca 0.0', () => {
+    const participar = criterio('ct-part', 'Participación', 100, 'auto_participacion')
+    participar.ponderado.meta_participacion = 5
+    const datos = capturas({
+      criterios: [participar],
+      participaciones: [participacion('alumno-1', '2026-09-01', 2)],
+    })
+
+    const [, dos] = reporteDeCapturas(datos, DOS)
+    expect(comoCalificacion(dos!.criterios[0]!.general)).toBe('0.0')
+  })
+
+  it('ninguno de los tres aporta a un campo formativo', () => {
+    // Un retardo no es de Lenguajes: la calificación por campo se normaliza sobre
+    // los criterios que sí evalúan campos.
+    const puntualidad = criterio('ct-punt', 'Puntualidad', 50, 'auto_puntualidad')
+    const participar = criterio('ct-part', 'Participación', 20, 'auto_participacion')
+    participar.ponderado.meta_participacion = 5
+    const datos = capturas({
+      criterios: [
+        criterio('ct-tareas', 'Tareas', 30),
+        puntualidad,
+        criterio('ct-cond', 'Conducta', 0, 'auto_conducta'),
+        participar,
+      ],
+      actividades: [actividad('a1', 'ct-tareas', 'lenguajes', null)],
+      entregas: [entrega('a1', 'alumno-1', true)],
+      asistencia: [asistencia('alumno-1', '2026-09-01', 'presente')],
+      participaciones: [participacion('alumno-1', '2026-09-01', 5)],
+    })
+
+    const [uno] = reporteDeCapturas(datos, DOS)
+    for (const automatico of uno!.criterios.filter((c) => c.nombre !== 'Tareas')) {
+      expect(automatico.porCampo, automatico.nombre).toEqual({})
+    }
+    // El campo sale solo de Tareas, no diluido por los tres automáticos.
+    expect(comoCalificacion(uno!.porCampo.lenguajes ?? null)).toBe('10.0')
+    // Y el general sí los incluye a todos.
+    expect(comoCalificacion(uno!.general)).toBe('10.0')
+  })
+
+  it('los tres se derivan: no se almacena ninguna calificación', () => {
+    // La prueba de que se derivan es que el mismo reporte, con una falta más en
+    // la asistencia, da otro número sin que nada se haya recalculado a mano.
+    const puntualidad = criterio('ct-punt', 'Puntualidad', 100, 'auto_puntualidad')
+    const conUnDia = capturas({
+      criterios: [puntualidad],
+      asistencia: [asistencia('alumno-1', '2026-09-01', 'presente')],
+    })
+    const conUnaFalta = capturas({
+      criterios: [puntualidad],
+      asistencia: [
+        asistencia('alumno-1', '2026-09-01', 'presente'),
+        asistencia('alumno-1', '2026-09-02', 'ausente'),
+      ],
+    })
+
+    expect(comoCalificacion(reporteDeCapturas(conUnDia, DOS)[0]!.criterios[0]!.general)).toBe('10.0')
+    expect(comoCalificacion(reporteDeCapturas(conUnaFalta, DOS)[0]!.criterios[0]!.general)).toBe('5.0')
   })
 })

@@ -34,6 +34,9 @@ beforeEach(async () => {
   await db.resultados_examen.clear()
   await db.rubricas.clear()
   await db.rubrica_criterios.clear()
+  await db.asistencia.clear()
+  await db.bitacora.clear()
+  await db.participaciones.clear()
   await db.outbox.clear()
 })
 
@@ -1559,5 +1562,68 @@ describe('registrarAciertos', () => {
     expect(pendientes).toHaveLength(1)
     expect(pendientes[0]?.tabla).toBe('resultados_examen')
     expect(pendientes[0]?.op).toBe('upsert')
+  })
+})
+
+describe('capturasDelTrimestre y los criterios automáticos', () => {
+  const base = { updated_at: '2026-09-01T00:00:00.000Z', deleted_at: null }
+
+  it('trae asistencia, bitácora y participaciones recortadas al trimestre', async () => {
+    // La atribución al trimestre se deriva de la fecha: T1 va del 2026-08-24 al
+    // 2026-11-27, así que lo de agosto 23 y lo de diciembre quedan fuera.
+    const [t1] = await conCiclo()
+
+    await db.asistencia.bulkPut([
+      { id: 'a-fuera', ...base, alumno_id: 'alumno-1', fecha: '2026-08-23', estado: 'ausente' },
+      { id: 'a-dentro', ...base, alumno_id: 'alumno-1', fecha: '2026-09-01', estado: 'ausente' },
+      { id: 'a-despues', ...base, alumno_id: 'alumno-1', fecha: '2026-12-01', estado: 'ausente' },
+    ])
+    await db.bitacora.bulkPut([
+      { id: 'r-dentro', ...base, alumno_id: 'alumno-1', fecha: '2026-09-02', texto: 'Algo' },
+      { id: 'r-fuera', ...base, alumno_id: 'alumno-1', fecha: '2026-12-02', texto: 'Algo' },
+    ])
+    await db.participaciones.bulkPut([
+      { id: 'p-dentro', ...base, alumno_id: 'alumno-1', fecha: '2026-09-03', cantidad: 2 },
+      { id: 'p-fuera', ...base, alumno_id: 'alumno-1', fecha: '2026-08-01', cantidad: 9 },
+    ])
+
+    const capturas = (await repo.capturasDelTrimestre(t1!.id))!
+    expect(capturas.asistencia.map((r) => r.id)).toEqual(['a-dentro'])
+    expect(capturas.reportes.map((r) => r.id)).toEqual(['r-dentro'])
+    expect(capturas.participaciones.map((p) => p.id)).toEqual(['p-dentro'])
+  })
+
+  it('no trae los borrados', async () => {
+    const [t1] = await conCiclo()
+    await db.bitacora.put({
+      id: 'r-borrado',
+      ...base,
+      deleted_at: '2026-09-03T00:00:00.000Z',
+      alumno_id: 'alumno-1',
+      fecha: '2026-09-02',
+      texto: 'Se quitó',
+    })
+
+    const capturas = (await repo.capturasDelTrimestre(t1!.id))!
+    expect(capturas.reportes).toHaveLength(0)
+  })
+
+  it('ajustar las fechas del trimestre cambia lo que entra, sin migrar nada', async () => {
+    // Es lo que permite abrir el ciclo con un solo trimestre (D-017): lo capturado
+    // antes queda atribuido en cuanto el rango lo contiene.
+    const [t1] = await conCiclo()
+    await db.participaciones.put({
+      id: 'p-agosto',
+      ...base,
+      alumno_id: 'alumno-1',
+      fecha: '2026-08-10',
+      cantidad: 3,
+    })
+
+    expect((await repo.capturasDelTrimestre(t1!.id))!.participaciones).toHaveLength(0)
+
+    await repo.ajustarFechas(t1!.id, '2026-08-01', '2026-11-27')
+
+    expect((await repo.capturasDelTrimestre(t1!.id))!.participaciones).toHaveLength(1)
   })
 })

@@ -4,9 +4,12 @@ import {
   type CalificacionDeCriterio,
   calificacionDeCriterio,
   calificacionDeTrimestre,
+  valorConducta,
   valorDeEvaluacion,
   valorExamenGeneral,
   valorExamenPorCampo,
+  valorParticipacion,
+  valorPuntualidad,
   valorSinRubrica,
   type ValorDeActividad,
 } from '@/domain/calculo'
@@ -138,13 +141,69 @@ function criterioExamen(
 }
 
 /**
+ * La puntualidad de un alumno: sale de sus días de asistencia en el trimestre,
+ * con la conversión de retardos que diga el criterio.
+ *
+ * `porCampo` va vacío, como en los tres automáticos: un retardo no es de
+ * Lenguajes. Con eso, la calificación por campo se normaliza sobre los criterios
+ * que sí evalúan campos y la general los incluye a todos, sin ningún caso especial
+ * en las dos fórmulas del trimestre.
+ */
+function criterioPuntualidad(
+  capturas: CapturasDelTrimestre,
+  retardosPorFalta: number | null,
+  alumnoId: Id,
+): CalificacionDeCriterio {
+  const estados = capturas.asistencia
+    .filter((r) => r.alumno_id === alumnoId)
+    .map((r) => r.estado)
+
+  return { general: valorPuntualidad(estados, retardosPorFalta), porCampo: {} }
+}
+
+/** La conducta: cuántos reportes de la bitácora tiene en el trimestre. */
+function criterioConducta(
+  capturas: CapturasDelTrimestre,
+  alumnoId: Id,
+): CalificacionDeCriterio {
+  const reportes = capturas.reportes.filter((r) => r.alumno_id === alumnoId).length
+
+  // Nunca `null`: no tener reportes es el dato, y vale 10.
+  return { general: valorConducta(reportes), porCampo: {} }
+}
+
+/**
+ * La participación: las marcas del alumno contra la meta del trimestre.
+ *
+ * El total del grupo entra en el cálculo porque decide si el criterio se usó: sin
+ * una sola participación en todo el trimestre, vale `null` para todos en vez de
+ * ponerle cero a treinta niños por algo que nadie capturó.
+ */
+function criterioParticipacion(
+  capturas: CapturasDelTrimestre,
+  meta: number | null,
+  alumnoId: Id,
+): CalificacionDeCriterio {
+  const suma = (filas: typeof capturas.participaciones) =>
+    filas.reduce((total, p) => total + p.cantidad, 0)
+
+  const delAlumno = suma(capturas.participaciones.filter((p) => p.alumno_id === alumnoId))
+  const delGrupo = suma(capturas.participaciones)
+
+  return { general: valorParticipacion(delAlumno, meta, delGrupo), porCampo: {} }
+}
+
+/**
  * Qué calificación produce un criterio para un alumno, según su tipo.
  *
- * Los criterios automáticos —puntualidad, conducta, participación— y el
- * `personalizado` devuelven `null`. Los tres automáticos ya se **configuran**
- * (C25b), pero su cálculo llega en `C26`; hasta entonces se excluyen del promedio
- * igual que un criterio sin captura, y el trimestre se normaliza sobre los pesos
- * que sí aportan (D-019). Devolver 0 los haría reprobar a todos.
+ * Los tres automáticos se **derivan** de lo que ya está capturado —asistencia,
+ * bitácora, participaciones— y no se almacenan en ninguna parte (D-020). Ninguno
+ * aporta a un campo formativo, así que solo cuentan para el general.
+ *
+ * `personalizado` sigue devolviendo `null`: existe en el tipo pero no tiene forma
+ * de captura, así que se excluye del promedio igual que un criterio sin capturar y
+ * el trimestre se normaliza sobre los pesos que sí aportan (D-019). Devolver 0 lo
+ * haría reprobar a todos.
  */
 function calificarCriterio(
   capturas: CapturasDelTrimestre,
@@ -156,7 +215,13 @@ function calificarCriterio(
       ? criterioEntregable(capturas, ponderado.id, alumnoId)
       : criterio.tipo === 'examen'
         ? criterioExamen(capturas, ponderado.id, alumnoId)
-        : { general: null, porCampo: {} }
+        : criterio.tipo === 'auto_puntualidad'
+          ? criterioPuntualidad(capturas, ponderado.retardos_por_falta, alumnoId)
+          : criterio.tipo === 'auto_conducta'
+            ? criterioConducta(capturas, alumnoId)
+            : criterio.tipo === 'auto_participacion'
+              ? criterioParticipacion(capturas, ponderado.meta_participacion, alumnoId)
+              : { general: null, porCampo: {} }
 
   return {
     nombre: criterio.nombre,

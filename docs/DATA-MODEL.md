@@ -983,13 +983,26 @@ export function valorTrimestre(parciales: { peso: number; valor: number }[]): nu
 export function aBase10(valor: number): number
 ```
 
-Pendientes, con los criterios automáticos (C26):
+Construidas con los criterios automáticos (C26):
 
 ```ts
-export function valorPuntualidad(registros: RegistroAsistencia[]): number | null
-export function valorConducta(reportes: Reporte[]): number | null
-export function valorParticipacion(n: number, meta: number): number
+export function valorPuntualidad(
+  estados: readonly EstadoAsistencia[],
+  retardosPorFalta: number | null,
+): number | null
+/** Nunca null: no tener reportes es el dato, y vale 10. */
+export function valorConducta(reportes: number): number
+export function valorParticipacion(
+  delAlumno: number,
+  meta: number | null,
+  totalDelGrupo: number,
+): number | null
 ```
+
+Las tres reciben cuentas y no entidades: agrupar por alumno es de quien lee, y así
+`domain/` no necesita conocer `Reporte` ni `Participacion` para saber cuánto valen.
+`valorParticipacion` sí necesita el total del grupo, porque de ahí sale la regla de
+que un criterio que nadie usó vale `—` para todos.
 
 `enRiesgo(pct, promedio)` sigue con el umbral del prototipo (asistencia < 90 %,
 promedio < 6) y sigue siendo una suposición: el umbral real es uno de los

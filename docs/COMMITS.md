@@ -921,7 +921,7 @@ Cómo quedó:
   así que aparecen en el reparto con su peso y el reporte los excluye del promedio,
   igual que un criterio sin captura (D-019). El cálculo es el commit siguiente.
 
-### ⬜ C26 · `feat(evaluacion): calcular puntualidad, conducta y participación`
+### ✅ C26 · `feat(evaluacion): calcular puntualidad, conducta y participación`
 
 Las tres fórmulas en `domain/calculo.ts` y su composición en
 `application/calificaciones.ts`, que hoy devuelve `null` para todo criterio
@@ -931,21 +931,40 @@ tocar ninguna de las dos pantallas.
 Depende de `C12` (bitácora), `C25` (participaciones) y `C25b` (parámetros).
 
 **Aceptación**
-- [ ] Puntualidad, conducta y participación se derivan; no se almacenan
-- [ ] Los retardos se convierten en faltas según `retardos_por_falta`, y con `null`
+- [x] Puntualidad, conducta y participación se derivan; no se almacenan
+- [x] Los retardos se convierten en faltas según `retardos_por_falta`, y con `null`
       un retardo no penaliza
-- [ ] `justificada` no penaliza nunca
-- [ ] Conducta: 0 o 1 reportes → 10.0, 2 → 5.0, 3 o más → 0.0
-- [ ] **Conducta sin reportes vale 10, no `—`**: no tener reportes es el dato
-- [ ] Puntualidad sin días capturados vale `—`, no 0
-- [ ] Participación es **proporcional con tope**: `mín(participaciones ÷ meta, 1)`,
+- [x] `justificada` no penaliza nunca
+- [x] Conducta: 0 o 1 reportes → 10.0, 2 → 5.0, 3 o más → 0.0
+- [x] **Conducta sin reportes vale 10, no `—`**: no tener reportes es el dato
+- [x] Puntualidad sin días capturados vale `—`, no 0
+- [x] Participación es **proporcional con tope**: `mín(participaciones ÷ meta, 1)`,
       así que con la meta en 5 una participación vale 2.0 y cinco o más valen 10.0
-- [ ] Sin una sola participación en el trimestre, el criterio vale `—` para todos;
+- [x] Sin una sola participación en el trimestre, el criterio vale `—` para todos;
       con marcas de alguien, quien no tiene ninguna saca 0.0
-- [ ] Los tres cuentan para el general del trimestre y **no** para ningún campo
+- [x] Los tres cuentan para el general del trimestre y **no** para ningún campo
       formativo
-- [ ] Los reportes y las participaciones se atribuyen al trimestre **por fecha**,
+- [x] Los reportes y las participaciones se atribuyen al trimestre **por fecha**,
       derivado al leer
+
+Cómo quedó:
+
+- **Las tres fórmulas en `domain/calculo.ts`**, puras y con todo lo que necesitan
+  como argumento. `valorParticipacion` recibe también el total del grupo, porque de
+  ahí sale la única de las tres reglas que depende del grupo: sin una sola
+  participación de nadie, el criterio no se usó.
+- **La lectura entró en `CapturasDelTrimestre`**, que ahora trae asistencia,
+  bitácora y participaciones recortadas por las fechas del trimestre. Va en la misma
+  lectura y no por su cuenta para que `liveQuery` vuelva a emitir cuando se marca una
+  falta o se anota un reporte: el reporte del trimestre se recalcula solo, sin que
+  C29 se suscriba a nada nuevo.
+- **Ninguna de las dos pantallas se tocó.** C29 y el cierre de C27 los recogieron
+  solos, que era la prueba de que la composición estaba en el lugar correcto.
+- Y la consecuencia que había que mirar antes de darla por buena, confirmada: con
+  conducta configurada, **todo el grupo tiene 10.0 desde el primer día** y el
+  trimestre pesa 100 aunque no haya una sola actividad capturada. Es correcto —no
+  tener reportes es el dato— y hace que el aviso de «sobre cuánto» de C29 pase de
+  útil a indispensable.
 
 Una consecuencia que conviene mirar en la pantalla antes de darla por buena: con
 conducta configurada, **todo el grupo tiene calificación desde el primer día** —10.0
