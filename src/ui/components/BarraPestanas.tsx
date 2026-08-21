@@ -4,7 +4,7 @@ import { type Pestana, useInterfaz } from '@/ui/store/interfaz'
 const PESTANAS: { id: Pestana; etiqueta: string }[] = [
   { id: 'asistencia', etiqueta: 'Asistencia' },
   { id: 'calificaciones', etiqueta: 'Calificaciones' },
-  { id: 'notas', etiqueta: 'Notas' },
+  { id: 'bitacora', etiqueta: 'Bitácora' },
   { id: 'grupo', etiqueta: 'Grupo' },
 ]
 

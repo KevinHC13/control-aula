@@ -10,8 +10,9 @@ import type {
   Entrega,
   EvaluacionRubrica,
   ExamenConfig,
-  Nota,
+  Participacion,
   RegistroAsistencia,
+  Reporte,
   ResultadoExamen,
   Rubrica,
   RubricaCriterio,
@@ -23,13 +24,14 @@ import type { Id, Instante } from '@/domain/values'
  * Las tablas cuyo contenido se sincroniza. `outbox` no está: es local y efímera.
  *
  * Existe como arreglo y no como unión escrita a mano para que agregar una tabla
- * se haga en un solo lugar. Con quince tablas, mantener al día una unión literal
- * aparte del esquema es trabajo que no compra nada.
+ * se haga en un solo lugar. Con dieciséis tablas, mantener al día una unión
+ * literal aparte del esquema es trabajo que no compra nada.
  */
 export const TABLAS_SINCRONIZABLES = [
   'alumnos',
   'asistencia',
-  'notas',
+  'bitacora',
+  'participaciones',
   'ciclos',
   'trimestres',
   'criterios',
@@ -62,7 +64,8 @@ export interface CambioPendiente {
 export const db = new Dexie('palomita') as Dexie & {
   alumnos: EntityTable<Alumno, 'id'>
   asistencia: EntityTable<RegistroAsistencia, 'id'>
-  notas: EntityTable<Nota, 'id'>
+  bitacora: EntityTable<Reporte, 'id'>
+  participaciones: EntityTable<Participacion, 'id'>
 
   ciclos: EntityTable<Ciclo, 'id'>
   trimestres: EntityTable<Trimestre, 'id'>
@@ -140,6 +143,38 @@ db.version(2)
       )
       await tx.table('actividades').clear()
     }
+  })
+
+/**
+ * La bitácora y las participaciones (docs/DECISIONES.md D-020).
+ *
+ * `notas` pasa a llamarse `bitacora` porque cambió de significado, no solo de
+ * nombre: todo lo que se anota ahí es un **reporte** y de ahí sale la
+ * calificación de conducta. La tabla nunca tuvo pantalla —el placeholder no
+ * escribía— así que está vacía en el iPad; el `upgrade` copia igual las filas que
+ * hubiera antes de que Dexie borre la tabla vieja, porque una migración que da por
+ * hecho que no hay nada que migrar es la que pierde datos.
+ *
+ * `participaciones` entra aquí y no cuando se use (C25): la migración del
+ * dispositivo se hace una vez, y partirla en dos versiones multiplica las
+ * ocasiones de romper la base por una tabla vacía.
+ *
+ * `retardos_por_falta` en `criterios_trimestre` no aparece abajo porque es un
+ * campo, no un índice: Dexie no lo declara y las filas viejas lo leen como
+ * `undefined`, que el cálculo trata igual que `null` —un retardo no penaliza—.
+ */
+db.version(3)
+  .stores({
+    notas: null,
+    bitacora: 'id, alumno_id, fecha, deleted_at',
+    participaciones: 'id, fecha, alumno_id, [fecha+alumno_id], deleted_at',
+  })
+  .upgrade(async (tx) => {
+    const viejas = await tx.table('notas').toArray()
+    if (viejas.length === 0) return
+
+    await tx.table('bitacora').bulkAdd(viejas)
+    console.warn(`[palomita] version(3) movió ${viejas.length} notas a bitacora.`)
   })
 
 /**

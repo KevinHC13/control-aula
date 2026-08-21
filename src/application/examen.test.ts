@@ -51,6 +51,7 @@ const examenCon = (
     peso: 30,
     orden: 1,
     meta_participacion: null,
+    retardos_por_falta: null,
   },
   criterio: {
     id: 'criterio-examen',

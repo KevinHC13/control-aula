@@ -9,7 +9,7 @@ el patrón se pueda reutilizar en proyectos más grandes.
 ```
 src/
 ├─ domain/                 Tipos y reglas puras
-│   ├─ entities.ts             Alumno, RegistroAsistencia, Nota, y la
+│   ├─ entities.ts             Alumno, RegistroAsistencia, Reporte, y la
 │   │                          jerarquía de evaluación (Ciclo … Actividad)
 │   ├─ values.ts               Fecha, Id, EstadoAsistencia, CampoFormativo, NIVELES
 │   ├─ fechas.ts               Aritmética de fechas sin librerías
@@ -20,13 +20,13 @@ src/
 │   │   ├─ alumnos.ts
 │   │   ├─ asistencia.ts
 │   │   ├─ evaluacion.ts
-│   │   └─ notas.ts
+│   │   └─ bitacora.ts
 │   ├─ dexie/                  Implementación actual
 │   │   ├─ db.ts                   Esquema y versiones
 │   │   ├─ alumnos.adapter.ts
 │   │   ├─ asistencia.adapter.ts
 │   │   ├─ evaluacion.adapter.ts
-│   │   └─ notas.adapter.ts
+│   │   └─ bitacora.adapter.ts
 │   ├─ seed/                   Semilla del grupo (grupo.ts ignorado por git)
 │   └─ index.ts                Contenedor: única línea que elige adaptadores
 │
@@ -35,7 +35,7 @@ src/
 │   ├─ grupo.ts
 │   ├─ importacion.ts
 │   ├─ evaluacion.ts
-│   └─ notas.ts
+│   └─ bitacora.ts
 │
 ├─ services/                 Única salida a red del cliente
 │   └─ extraccion.ts
@@ -187,7 +187,7 @@ Contenido permitido:
 - `pestanaActiva`
 - `aviso` (mensajes efímeros de confirmación)
 
-Contenido prohibido: alumnos, registros de asistencia, calificaciones, notas.
+Contenido prohibido: alumnos, registros de asistencia, calificaciones, reportes.
 
 ## Sincronía (fase 2)
 

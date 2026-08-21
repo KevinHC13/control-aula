@@ -226,7 +226,11 @@ export class DexieEvaluacionRepo implements EvaluacionRepo {
           // Nace en 0: un valor de arranque obligaría a adivinar el reparto.
           peso: 0,
           orden: yaEsta.length,
+          // Los parámetros de los criterios automáticos nacen vacíos y los llena
+          // su pantalla (C25b): un valor por omisión aquí sería una regla de
+          // evaluación escondida en el adaptador.
           meta_participacion: null,
+          retardos_por_falta: null,
           updated_at: momento,
           deleted_at: null,
         }
@@ -307,7 +311,10 @@ export class DexieEvaluacionRepo implements EvaluacionRepo {
         criterio_id: c.criterio_id,
         peso: c.peso,
         orden: destino.length + i,
+        // Se copian los parámetros junto con el peso: copiar el esquema y perder
+        // cuántos retardos hacen una falta obligaría a volver a decirlo.
         meta_participacion: c.meta_participacion,
+        retardos_por_falta: c.retardos_por_falta,
         updated_at: momento,
         deleted_at: null,
       }))

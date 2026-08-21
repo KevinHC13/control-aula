@@ -14,13 +14,14 @@ describe('contenido del store', () => {
   it('solo guarda estado de interfaz: ningún dato del salón', () => {
     const claves = Object.keys(useInterfaz.getState())
 
-    // Alumnos, asistencia, calificaciones y notas viven en IndexedDB y se leen
-    // por hook. Copiarlos aquí produce una interfaz que miente en silencio.
+    // Alumnos, asistencia, calificaciones y reportes viven en IndexedDB y se
+    // leen por hook. Copiarlos aquí produce una interfaz que miente en silencio.
     for (const prohibida of [
       'alumnos',
       'asistencia',
       'calificaciones',
-      'notas',
+      'bitacora',
+      'reportes',
       'registros',
       'grupo',
     ]) {
@@ -53,8 +54,8 @@ describe('estado inicial', () => {
 
 describe('acciones', () => {
   it('irA cambia de pestaña', () => {
-    useInterfaz.getState().irA('notas')
-    expect(useInterfaz.getState().pestanaActiva).toBe('notas')
+    useInterfaz.getState().irA('bitacora')
+    expect(useInterfaz.getState().pestanaActiva).toBe('bitacora')
   })
 
   it('seleccionarDia cambia el día sin tocar la pestaña', () => {

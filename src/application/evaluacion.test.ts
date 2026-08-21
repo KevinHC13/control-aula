@@ -124,6 +124,7 @@ const unPonderado = (): CriterioTrimestre => ({
   peso: 40,
   orden: 0,
   meta_participacion: null,
+  retardos_por_falta: null,
 })
 
 const unCriterio = (tipo: TipoCriterio): Criterio => ({
@@ -566,6 +567,7 @@ describe('estadoDelReparto', () => {
         orden: i,
         rubrica_id: null,
         meta_participacion: null,
+        retardos_por_falta: null,
       },
       criterio: {
         id: `criterio-${i}`,

@@ -1,9 +1,9 @@
 import { AvisoActualizacion } from '@/ui/components/AvisoActualizacion'
 import { BarraPestanas } from '@/ui/components/BarraPestanas'
 import { Asistencia } from '@/ui/screens/Asistencia'
+import { Bitacora } from '@/ui/screens/Bitacora'
 import { Calificaciones } from '@/ui/screens/Calificaciones'
 import { Grupo } from '@/ui/screens/Grupo'
-import { Notas } from '@/ui/screens/Notas'
 import { type Pestana, useInterfaz } from '@/ui/store/interfaz'
 
 /**
@@ -14,7 +14,7 @@ import { type Pestana, useInterfaz } from '@/ui/store/interfaz'
 const PANTALLAS: Record<Pestana, () => React.JSX.Element> = {
   asistencia: Asistencia,
   calificaciones: Calificaciones,
-  notas: Notas,
+  bitacora: Bitacora,
   grupo: Grupo,
 }
 

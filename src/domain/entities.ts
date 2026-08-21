@@ -29,10 +29,37 @@ export interface RegistroAsistencia extends Sincronizable {
   estado: EstadoAsistencia
 }
 
-export interface Nota extends Sincronizable {
+/**
+ * Un reporte de la **bitácora**.
+ *
+ * Todos los reportes son negativos: anotarlo ya es el reporte, así que no hay un
+ * `signo` que marcar —con toda la bitácora contando para conducta, marcarlo sería
+ * marcar siempre lo mismo (docs/DECISIONES.md D-020)—.
+ *
+ * De aquí sale la calificación de conducta: se cuentan los reportes del
+ * trimestre, atribuidos **por fecha** como todo lo demás, nunca por un campo
+ * almacenado.
+ */
+export interface Reporte extends Sincronizable {
   alumno_id: Id
   fecha: Fecha
   texto: string
+}
+
+/**
+ * Las participaciones de un alumno en un día. Una fila con un contador, no una
+ * fila por marca: deshacer es restar uno, el conteo del día es una lectura y la
+ * `outbox` no se llena con N filas por clase.
+ *
+ * Tabla aparte y **no** un campo en `RegistroAsistencia`, aunque costaría menos
+ * esquema: marcar una participación no puede fabricar un registro de asistencia.
+ * Un día sin lista pasada no tiene fila, y crearla para colgarle un contador
+ * inventaría presencia —lo contrario de D-013—.
+ */
+export interface Participacion extends Sincronizable {
+  alumno_id: Id
+  fecha: Fecha
+  cantidad: number
 }
 
 /*
@@ -105,8 +132,20 @@ export interface CriterioTrimestre extends Sincronizable {
    *  poder guardar: editar siempre pasa por estados intermedios inválidos. */
   peso: number
   orden: number
-  /** Solo para `auto_participacion`, que está pospuesto. */
+  /**
+   * Solo para `auto_participacion`: cuántas participaciones valen el 100 %. Nace
+   * en 5 (D-021) y se califica proporcional con tope, así que una participación
+   * vale 2.0 y cinco o más valen 10.0.
+   */
   meta_participacion: number | null
+  /**
+   * Solo para `auto_puntualidad`: cuántos retardos hacen una falta. `null` ⇒ un
+   * retardo no penaliza.
+   *
+   * Son los dos niveles que pidió la usuaria (D-020): si el criterio existe, la
+   * puntualidad se califica; este campo dice si un retardo cuenta y cuánto.
+   */
+  retardos_por_falta: number | null
 }
 
 export interface Actividad extends Sincronizable {

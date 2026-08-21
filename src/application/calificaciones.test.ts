@@ -57,6 +57,7 @@ function criterio(
       peso,
       orden: 0,
       meta_participacion: null,
+      retardos_por_falta: null,
     },
     criterio: { id: `cat-${id}`, ...base, nombre, tipo },
   }

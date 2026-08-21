@@ -12,22 +12,26 @@ español también (`asistencia`, `calificaciones`, `alumnos`).
 **`docs/ESTADO.md` es la fuente de verdad del estatus.** Leerlo antes de decidir
 qué construir; el resumen de aquí abajo se queda viejo primero.
 
-**La Fase 4 está terminada**: hecho de C18 a C29, más los fixes C19b y C21c.
+**La Fase 4 está terminada**: hecho de C18 a C29, más los fixes C19b y C21c. Y
+encima está hecho **`C12`, la bitácora**, con `db.version(3)`.
 Existen y funcionan:
 
 - **`domain/`** completo: `entities.ts` con la jerarquía `Ciclo → … → Actividad`,
   `values.ts`, `fechas.ts`, `rules.ts`, `evaluacion.ts` —la estructura de la
   evaluación— y `calculo.ts` —la cadena de cálculo, C28—, con pruebas.
-- **`data/`** con Dexie en `version(2)`: `db.ts` con las quince tablas
-  sincronizables, adaptadores de alumnos y asistencia, los dos puertos, la
-  `outbox` y la semilla (`grupo.ts` ignorado, `grupo.example.ts` versionado).
+- **`data/`** con Dexie en `version(3)`: `db.ts` con las dieciséis tablas
+  sincronizables, adaptadores de alumnos, asistencia, evaluación y bitácora, sus
+  puertos, la `outbox` y la semilla (`grupo.ts` ignorado, `grupo.example.ts`
+  versionado). `bitacora` reemplazó a `notas` y `participaciones` está creada y
+  vacía, esperando `C25`.
   De las once tablas de evaluación tienen puerto y adaptador `ciclos`,
   `trimestres`, `criterios`, `criterios_trimestre`, `rubricas`,
   `rubrica_criterios`, `actividades`, `entregas`, `eval_rubrica`, `examen_config`,
-  `resultados_examen` y `cierres`. **Las quince tablas están en uso.**
+  `resultados_examen` y `cierres`. **Quince de las dieciséis tablas están en uso**;
+  la que falta es `participaciones`.
 - **`application/`**: `asistencia.ts`, `grupo.ts`, `importacion.ts`,
-  `evaluacion.ts`, `entregas.ts`, `calificacion.ts`, `examen.ts` y
-  `calificaciones.ts` —el reporte del trimestre y su cierre—. `armarReporte` es la
+  `evaluacion.ts`, `entregas.ts`, `calificacion.ts`, `examen.ts`,
+  `calificaciones.ts` —el reporte del trimestre y su cierre— y `bitacora.ts`. `armarReporte` es la
   única función que decide entre recalcular y leer el snapshot: no duplicar esa
   decisión.
 - **`services/`**: `extraccion.ts`, la única salida a red del cliente.
@@ -38,23 +42,20 @@ Existen y funcionan:
   trimestre, sus tres capturas —entregas, rúbrica alumno por alumno y el examen por
   aciertos con teclado numérico propio— y el reporte por alumno y por campo
   formativo.
-  `Notas` —que pasa a llamarse **Bitácora**— y el resumen de `Grupo` siguen siendo
-  placeholders.
+  **`Bitácora`** —lo que era `Notas`— con el conteo de reportes por alumno y el
+  historial del trimestre. El resumen de `Grupo` es el único placeholder que queda.
 - PWA con `vite-plugin-pwa`, Zustand y el aviso de actualización.
 - Una Edge Function desplegada en Supabase, `extraer-lista`, en
   `supabase/functions/`.
 
 **Lo que sigue es C14, el respaldo en JSON**, y no por vistoso: el iPad ya guarda un
 trimestre entero de asistencia y calificaciones y **no hay ninguna forma de
-recuperarlo si se pierde**.
+recuperarlo si se pierde**. Ya se puede tomar sin condiciones: `version(3)` entró con
+`C12`, así que `TABLAS_SINCRONIZABLES` ya está en su forma definitiva.
 
-Después entra el **alcance nuevo del 2026-08-21**: la usuaria retomó los tres
-criterios automáticos con reglas propias (D-020), en el orden `C12` —la bitácora, que
-ahora alimenta conducta— → `C25b` —configuración— → `C25` —captura de
-participación— → `C26` —cálculo—. Necesitan **`db.version(3)`**: `notas` se renombra
-a `bitacora`, entra `participaciones` y `criterios_trimestre` gana
-`retardos_por_falta`. Si `C14` se toma antes, hay que volver a él: exporta
-`TABLAS_SINCRONIZABLES`.
+Del **alcance nuevo del 2026-08-21** —la usuaria retomó los tres criterios
+automáticos con reglas propias (D-020)— falta `C25b` —configuración— → `C25`
+—captura de participación— → `C26` —cálculo—. Ninguno vuelve a tocar el esquema.
 
 Encima entran dos **herramientas de aula** (D-021): `C30` —sortear quién participa,
 que escribe en `participaciones` y no registra nada por sí solo— y `C31` —formar
@@ -99,7 +100,7 @@ ESLint. Un archivo que necesite DOM o IndexedDB pide su propio entorno con
 ## Qué es esto
 
 App PWA offline-first para que una maestra de primaria registre asistencia,
-calificaciones y notas de un solo grupo. **Un usuario, un dispositivo (iPad), sin
+calificaciones y reportes de un solo grupo. **Un usuario, un dispositivo (iPad), sin
 red garantizada.** No hay login, no hay multi-grupo, no hay pantalla de ajustes.
 
 El criterio que gobierna todo: **la competencia es el cuaderno, no Excel.** Si
@@ -141,7 +142,7 @@ Consecuencias prácticas:
   declara solo lo que alguna pantalla usa hoy.
 - Zustand es hermano de React, no una capa de datos: guarda `diaSeleccionado`,
   `actividadActiva`, `pestanaActiva`, `aviso`. **Nunca** alumnos, asistencia,
-  calificaciones ni notas — eso vive en IndexedDB y se lee por hook.
+  calificaciones ni reportes — eso vive en IndexedDB y se lee por hook.
 - Sin router en la v1: cuatro pestañas manejadas con estado en Zustand.
 - Supabase (fase 2) **no** es una implementación alternativa del puerto. El
   repositorio siempre escribe en Dexie; un motor de sincronía aparte lee la
@@ -274,8 +275,8 @@ Lista de verificación antes de entregar el iPad: `docs/PWA-IOS.md`.
 
 Conventional Commits, en español, imperativo, sin punto final.
 Tipos: `feat`, `fix`, `refactor`, `chore`, `docs`, `test`, `style`, `perf`.
-Alcances: `domain`, `data`, `app`, `ui`, `asistencia`, `calificaciones`, `bitacora`
-—antes `notas`—, `grupo`, `pwa`, `sync`, `evaluacion`.
+Alcances: `domain`, `data`, `app`, `ui`, `asistencia`, `calificaciones`,
+`bitacora`, `grupo`, `pwa`, `sync`, `evaluacion`.
 
 ```
 feat(asistencia): ciclar estado con un toque en la fila

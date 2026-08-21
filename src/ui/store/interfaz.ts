@@ -3,13 +3,13 @@ import { create } from 'zustand'
 import { fechaLocal } from '@/domain/fechas'
 import type { Fecha } from '@/domain/values'
 
-export type Pestana = 'asistencia' | 'calificaciones' | 'notas' | 'grupo'
+export type Pestana = 'asistencia' | 'calificaciones' | 'bitacora' | 'grupo'
 
 /**
  * Estado de interfaz, y solo de interfaz.
  *
  * Zustand es hermano de React, no una capa de datos: aquí **nunca** van alumnos,
- * asistencia, calificaciones ni notas. Eso vive en IndexedDB y se lee por hook,
+ * asistencia, calificaciones ni reportes. Eso vive en IndexedDB y se lee por hook,
  * porque un dato copiado a memoria es un dato que puede quedar desactualizado y
  * mentir en silencio (docs/ARCHITECTURE.md).
  */

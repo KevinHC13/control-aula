@@ -13,7 +13,7 @@ Conventional Commits, en español, imperativo, sin punto final.
 **Tipos:** `feat`, `fix`, `refactor`, `chore`, `docs`, `test`, `style`, `perf`
 
 **Alcances:** `domain`, `data`, `app`, `ui`, `asistencia`, `calificaciones`,
-`notas`, `grupo`, `pwa`, `sync`, `evaluacion`
+`bitacora`, `grupo`, `pwa`, `sync`, `evaluacion`
 
 ```
 feat(asistencia): ciclar estado con un toque en la fila
@@ -287,7 +287,7 @@ Escrito antes de la validación con la usuaria. Lo sustituye la Fase 4 completa.
 Se conserva solo como registro de lo que se suponía y no era: la escala 5–10 con
 seis botones no existe en ninguna parte del modelo nuevo.
 
-### ⬜ C12 · `feat(bitacora): registrar reportes por alumno`
+### ✅ C12 · `feat(bitacora): registrar reportes por alumno`
 
 Era «anecdotario por alumno» y **cambió de nombre y de significado** (D-020): la
 pestaña se llama **Bitácora**, todo lo que se anota ahí es un **reporte** y todos los
@@ -299,17 +299,38 @@ nunca tuvo pantalla, así que está vacía en todas partes: es un renombre, no u
 migración de datos. Va en `db.version(3)` junto con `participaciones` (C25).
 
 **Aceptación**
-- [ ] Guardar requiere alumno y texto no vacío
-- [ ] El historial se ordena por fecha, más reciente primero
-- [ ] El estado vacío invita a actuar en lugar de solo informar
-- [ ] El campo de texto tiene al menos 16 px
-- [ ] La pantalla dice que un reporte **afecta la calificación de conducta**
-- [ ] El conteo de reportes del trimestre es visible por alumno
+- [x] Guardar requiere alumno y texto no vacío
+- [x] El historial se ordena por fecha, más reciente primero
+- [x] El estado vacío invita a actuar en lugar de solo informar
+- [x] El campo de texto tiene al menos 16 px
+- [x] La pantalla dice que un reporte **afecta la calificación de conducta**
+- [x] El conteo de reportes del trimestre es visible por alumno
 
 Los dos últimos no son adorno. Con toda la bitácora contando para conducta, esconder
 la consecuencia haría que ella la descubra en la boleta; y el conteo es lo que
 permite ver que un alumno ya va en dos —el umbral donde la conducta cae a la mitad—
 antes de escribir el tercero.
+
+Cómo quedó, más allá de la lista:
+
+- **`db.version(3)` completa, no solo la parte de este commit.** Entra `bitacora`,
+  entra `participaciones` —vacía hasta `C25`— y `criterios_trimestre` gana
+  `retardos_por_falta`. La migración del iPad se hace una vez: partirla en dos
+  versiones multiplica las ocasiones de romper la base por una tabla vacía. Con eso,
+  `C14` ya puede exportar `TABLAS_SINCRONIZABLES` sin volver a tocarse.
+- El `upgrade()` **copia** las filas de `notas` a `bitacora` antes de que Dexie borre
+  la tabla vieja. La tabla estaba vacía en el dispositivo, pero una migración que da
+  por hecho que no hay nada que migrar es la que pierde datos.
+- **Se puede quitar un reporte**, con un segundo toque en el mismo botón. No estaba
+  en la lista y se agregó porque un reporte de más **baja una calificación**: sin
+  forma de deshacerlo, un toque equivocado se arreglaría editando la base a mano.
+- El reporte se anota **con la fecha de hoy**, y solo si hoy cae en el trimestre que
+  se está viendo. Escribir un reporte «en T1» desde febrero lo fecharía en febrero y
+  desaparecería de la lista en cuanto se guardara: la atribución es por fecha y se
+  deriva al leer.
+- Es la única pantalla nueva **con botón de Guardar**. Un reporte es un texto que se
+  escribe, no un toque que cicla, y guardar a media frase dejaría media frase
+  contando para conducta.
 
 ### ⬜ C13 · `feat(grupo): mostrar resumen de asistencia y promedio`
 
@@ -374,7 +395,8 @@ C25, C25b y C26 —los criterios automáticos— estaban pospuestos y **volviero
 alcance el 2026-08-21 con las reglas de la usuaria** (D-020). Cuelgan de esta fase
 pero se toman después de que esté cerrada, y su orden es
 `C12 → C25b → C25 → C26`: la configuración antes de la captura, y el cálculo al
-final, cuando ya tiene de dónde leer.
+final, cuando ya tiene de dónde leer. **`C12` ya está hecho**, y con él
+`db.version(3)` completa: `C25b` y `C25` no vuelven a tocar el esquema.
 
 ```
 C18 ─ C19 ─ C20 ─ C21 ─ C21b ─┬─ C22 ─┐

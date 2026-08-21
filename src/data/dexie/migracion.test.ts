@@ -8,14 +8,18 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { db } from './db'
 
 /**
- * La migración de version(1) a version(2) corre sobre el iPad con los datos
- * reales del salón. Es la única de la Fase 4, y no hay forma de probarla ahí sin
- * arriesgar el ciclo escolar: aquí se levanta una base en el estado exacto que
- * tiene el dispositivo —esquema viejo, asistencia capturada— y se abre con el
- * esquema nuevo.
+ * Las migraciones corren sobre el iPad con los datos reales del salón, y no hay
+ * forma de probarlas ahí sin arriesgar el ciclo escolar: aquí se levanta una base
+ * en el estado exacto que tiene el dispositivo —esquema viejo, asistencia
+ * capturada— y se abre con el esquema nuevo.
+ *
+ * Se prueba el salto completo, `version(1)` → `version(3)`, y no cada versión por
+ * separado: es exactamente lo que le va a pasar al dispositivo, que se quedó en
+ * la versión desplegada y va a subir de un jalón.
  *
  * Lo que se verifica no es que la migración "funcione": es que **no pierda un
- * solo registro de asistencia**. Ese es el dato que no se puede reconstruir.
+ * solo registro**. Ni de asistencia, que es el dato que no se puede reconstruir,
+ * ni de la bitácora, que cambió de tabla.
  */
 
 const ESQUEMA_V1 = {
@@ -79,9 +83,9 @@ afterAll(() => {
   db.close()
 })
 
-describe('version(1) → version(2)', () => {
-  it('sube a la versión 2', () => {
-    expect(db.verno).toBe(2)
+describe('version(1) → version(3)', () => {
+  it('sube a la versión 3', () => {
+    expect(db.verno).toBe(3)
   })
 
   it('no pierde un solo registro de asistencia', async () => {
@@ -95,11 +99,33 @@ describe('version(1) → version(2)', () => {
     expect(ausentes[0]?.alumno_id).toBe('alumno-1')
   })
 
-  it('conserva alumnos y notas', async () => {
+  it('conserva a los alumnos', async () => {
     expect(await db.alumnos.count()).toBe(ALUMNOS)
-    expect(await db.notas.count()).toBe(1)
     // El id se conserva: de él cuelga toda la asistencia del alumno.
     expect((await db.alumnos.get('alumno-1'))?.numero_lista).toBe(1)
+  })
+
+  it('mueve las notas a bitacora sin perder ninguna', async () => {
+    // La tabla estaba vacía en el iPad —nunca tuvo pantalla— pero la migración
+    // no da eso por hecho: si hay filas, se mudan con su id y su texto.
+    expect(await db.bitacora.count()).toBe(1)
+    const reporte = await db.bitacora.get('nota-1')
+    expect(reporte?.alumno_id).toBe('alumno-3')
+    expect(reporte?.texto).toBe('Se quedó a ayudar a acomodar las sillas')
+  })
+
+  it('elimina la tabla notas', () => {
+    expect(db.tables.map((t) => t.name)).not.toContain('notas')
+  })
+
+  it('deja lista la tabla de participaciones, vacía', async () => {
+    // Entra con la bitácora aunque se use en C25: la migración del dispositivo
+    // se hace una vez.
+    expect(await db.participaciones.count()).toBe(0)
+    const compuestos = db.participaciones.schema.indexes
+      .filter((i) => i.compound)
+      .map((i) => i.name)
+    expect(compuestos).toContain('[fecha+alumno_id]')
   })
 
   it('elimina la tabla calificaciones del prototipo', () => {

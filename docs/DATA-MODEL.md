@@ -98,15 +98,24 @@ export interface RegistroAsistencia extends Sincronizable {
   estado: EstadoAsistencia
 }
 
-export interface Nota extends Sincronizable {
+/** Un reporte de la bitácora. Todos son negativos (D-020). */
+export interface Reporte extends Sincronizable {
   alumno_id: Id
   fecha: Fecha
   texto: string
 }
+
+/** Las participaciones de un alumno en un día. Un contador, no una fila por marca. */
+export interface Participacion extends Sincronizable {
+  alumno_id: Id
+  fecha: Fecha
+  cantidad: number
+}
 ```
 
-`Nota` **no lleva campo `signo`**. Se agrega solo si se retoma el criterio de
-conducta, que está pospuesto (ver más abajo).
+`Reporte` —que se llamaba `Nota`— **no lleva campo `signo`**, y ya no lo va a
+llevar: con toda la bitácora contando para conducta, marcarlo sería marcar siempre
+lo mismo (ver los criterios automáticos, más abajo).
 
 ---
 
@@ -741,27 +750,26 @@ pedir con todo el grupo para planear de un día para otro.
 
 ### Lo que hace falta en el esquema
 
-Todo esto necesita **`db.version(3)`**, la primera migración desde la de evaluación:
+Nada: **`db.version(3)` ya está** (C12), con las tres cosas que pedía esta sección.
 
-- `bitacora` en vez de `notas` —la tabla nunca tuvo pantalla, así que está vacía en
-  todas partes y renombrarla no migra datos, solo el nombre—, con `Nota` renombrada a
-  `Reporte`.
-- `participaciones`, con `[fecha+alumno_id]`.
+- `bitacora` en vez de `notas`, con `Nota` renombrada a `Reporte`. El `upgrade()`
+  copia las filas que hubiera antes de borrar la tabla vieja.
+- `participaciones`, con `[fecha+alumno_id]`. Vacía hasta `C25`.
 - `retardos_por_falta` en `criterios_trimestre`: es un campo, no un índice, así que
   no cuesta migración —igual que `meta_participacion`, que ya existía y por fin se
-  usa—.
+  va a usar—.
 
-Ojo con el orden: el respaldo (`C14`) exporta `TABLAS_SINCRONIZABLES`, así que si se
-toma antes de `version(3)` hay que volver a él —el mismo tropiezo que ya se anotó con
-`version(2)`—.
+Con eso, el respaldo (`C14`) ya puede exportar `TABLAS_SINCRONIZABLES` sin miedo a
+que el esquema cambie la semana siguiente: son las **dieciséis** tablas de ahora.
 
 ---
 
 # Esquema de Dexie
 
-`version(1)` es lo que está desplegado hoy: cinco tablas de dominio más la
+`version(1)` es lo que está desplegado en el iPad: cinco tablas de dominio más la
 `outbox`. Las tablas de evaluación entran en `version(2)`, y es una migración
 sobre datos reales del salón, así que se hace una sola vez, completa (C18).
+`version(3)` renombra `notas` y agrega `participaciones` (C12).
 
 ```ts
 // data/dexie/db.ts
@@ -799,6 +807,14 @@ db.version(2).stores({
 })
 ```
 
+```ts
+db.version(3).stores({
+  notas:            null,
+  bitacora:         'id, alumno_id, fecha, deleted_at',
+  participaciones:  'id, fecha, alumno_id, [fecha+alumno_id], deleted_at',
+})
+```
+
 `version(2)` **elimina** `calificaciones` y redefine `actividades`: la
 `Actividad` del prototipo no tenía `criterio_trimestre_id`, así que ninguna fila
 vieja es válida en el modelo nuevo. No hay conversión que escribir porque no hay
@@ -813,10 +829,19 @@ con el esquema viejo y un mes de asistencia capturada, la abre con el esquema
 nuevo y verifica que no se pierda un solo registro. Es la única forma de ensayar
 esto sin arriesgar el ciclo escolar en el dispositivo real.
 
-Las tablas de participación (`participaciones`) **no entran** en `version(2)`:
-el criterio está pospuesto y una tabla vacía no se agrega por adelantado. Cuando
-se retome, será `version(3)` — agregar una tabla nueva sí es una migración
-barata.
+`version(3)` es el renombre de la bitácora y la tabla de participaciones (C12).
+`notas` pasa a `bitacora` porque cambió de significado, no solo de nombre; la
+tabla nunca tuvo pantalla, así que está vacía en el dispositivo, pero el
+`upgrade()` **copia las filas que hubiera** antes de que Dexie borre la vieja: una
+migración que da por hecho que no hay nada que migrar es la que pierde datos.
+`participaciones` entra aquí aunque se use hasta C25 —la migración del dispositivo
+se hace una vez— y `retardos_por_falta` no aparece en el esquema porque es un
+campo y no un índice: las filas viejas lo leen como `undefined`, que el cálculo
+trata igual que `null`.
+
+La prueba de migración cubre el salto completo, `version(1)` → `version(3)`, que
+es exactamente lo que le va a pasar al iPad: se quedó en la versión desplegada y
+va a subir de un jalón.
 
 Notas sobre los índices:
 
@@ -864,7 +889,7 @@ await db.transaction('rw', db.asistencia, db.outbox, async () => {
 })
 ```
 
-Con quince tablas, la unión escrita a mano se cambió por un arreglo `as const`
+Con dieciséis tablas, la unión escrita a mano se cambió por un arreglo `as const`
 junto al esquema: agregar una tabla se hace en un solo lugar y el tipo sigue
 cerrado, así que un `tabla: 'califcaciones'` mal escrito sigue siendo un error de
 compilación. `outbox` no está en la lista: es local y nunca se sincroniza como
@@ -930,11 +955,11 @@ export function valorTrimestre(parciales: { peso: number; valor: number }[]): nu
 export function aBase10(valor: number): number
 ```
 
-Pospuestas con los criterios automáticos:
+Pendientes, con los criterios automáticos (C26):
 
 ```ts
 export function valorPuntualidad(registros: RegistroAsistencia[]): number | null
-export function valorConducta(notas: Nota[]): number | null
+export function valorConducta(reportes: Reporte[]): number | null
 export function valorParticipacion(n: number, meta: number): number
 ```
 
