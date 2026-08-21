@@ -15,6 +15,7 @@ src/
 │   ├─ fechas.ts               Aritmética de fechas sin librerías
 │   ├─ sorteo.ts               Sorteo ponderado, con el azar inyectado
 │   ├─ equipos.ts              Reparto en equipos, con la semilla inyectada
+│   ├─ cumpleanos.ts           Edad y próximo cumpleaños, sin librerías
 │   └─ rules.ts                porcentajeAsistencia(), valorCriterio(), aBase10()
 │
 ├─ data/
@@ -46,6 +47,7 @@ src/
 │   ├─ sorteo.ts
 │   ├─ equipos.ts
 │   ├─ resumen.ts
+│   ├─ cumpleanos.ts
 │   └─ respaldo.ts
 │
 ├─ services/                 Única salida a red del cliente

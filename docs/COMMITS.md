@@ -406,13 +406,39 @@ Cómo quedó:
   encola». No es una mutación del salón: qué hace la sincronía con un dispositivo
   restaurado lo decide `C16`, que tiene su propio «restaurar todo».
 
-### ⬜ C15 · `feat: avisar cumpleaños del día y de la semana`
+### ✅ C15 · `feat: avisar cumpleaños del día y de la semana`
 
 **Aceptación**
-- [ ] El aviso aparece en la pantalla de asistencia, no en un modal
-- [ ] La edad calculada es correcta
-- [ ] Sin cumpleaños en la semana, no se muestra nada
-- [ ] Funciona sin red
+- [x] El aviso aparece en la pantalla de asistencia, no en un modal
+- [x] La edad calculada es correcta
+- [x] Sin cumpleaños en la semana, no se muestra nada
+- [x] Funciona sin red
+
+Cómo quedó:
+
+- **No es un modal, y no es un detalle de estilo.** El camino diario tiene un
+  presupuesto de 15 segundos, y un diálogo que hay que cerrar para pasar lista se
+  lleva un toque de ese presupuesto *todos los días de la semana del cumpleaños*. Va
+  entre la tira de días y los controles, se lee de paso y no pide nada.
+- **Sin cumpleaños no se pinta nada**: ni un espacio ni un «no hay cumpleaños esta
+  semana». La mayoría de las semanas no hay ninguno, y un renglón vacío repetido
+  enseña a ignorar el lugar donde después va a aparecer algo.
+- **La edad no es una resta de años.** Quien nació en marzo tiene 8 en enero, y la
+  del aviso es la que cumple **el día que le toca**: el cumpleaños de enero visto en
+  diciembre cuenta los años del año siguiente. Un `slice` del año en curso se comía
+  ese caso.
+- **Un 29 de febrero cae el 1 de marzo los años que no son bisiestos.** Es lo que
+  hacen la mayoría de los calendarios, y no festejar es peor que festejar un día
+  después.
+- La ventana es **hoy y los seis siguientes**, para que el cumpleaños de hoy salga en
+  el mismo aviso, y se muestra «hoy», «mañana» o «el jueves» en vez de «en 3 días».
+- **Un alumno sin `fecha_nacimiento` no aparece** y no rompe nada: es lo más común en
+  una lista cargada de un PDF que no traía fechas, y pedirlas para poder usar la app
+  sería cobrarle treinta capturas por un aviso.
+- Funciona sin red por construcción: es una cuenta sobre `Alumno.fecha_nacimiento`,
+  que ya está en el dispositivo. No hay tabla nueva ni lectura nueva.
+- El aviso sigue **el día que se está viendo**, no `hoy`: hojear el jueves enseña los
+  cumpleaños de ese jueves, que es coherente con el resto de la pantalla.
 
 ### ⬜ C16 · `feat(sync): subir cambios pendientes a supabase`
 

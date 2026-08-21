@@ -66,8 +66,9 @@ Las dos **herramientas de aula** (D-021) están hechas: `C30` —el sorteo de
 participación, en la pantalla de asistencia— y `C31` —formar equipos, en la pestaña
 Grupo, que no guarda nada—.
 
-De la Fase 3 ya está `C13`, el resumen del grupo. **Lo que queda es `C15`**
-(cumpleaños) **y `C16`** (el motor de sincronía, el que cierra la v1).
+De la Fase 3 ya están `C13` —el resumen del grupo— y `C15` —el aviso de cumpleaños
+en la pantalla de asistencia—. **Lo único que queda de la v1 es `C16`, el motor de
+sincronía.**
 
 Encima entran dos **herramientas de aula** (D-021): `C30` —sortear quién participa,
 que escribe en `participaciones` y no registra nada por sí solo— y `C31` —formar
@@ -75,8 +76,8 @@ equipos, que no guarda nada porque los equipos son estado de interfaz—. Son la
 únicas funciones que se usan con los niños mirando la pantalla: se leen de lejos y no
 hacen esperar.
 
-De la Fase 3 queda **los cumpleaños (`C15`) y el motor de sincronía (`C16`)**; el
-resumen del grupo (`C13`) ya está.
+De la Fase 3 queda **solo el motor de sincronía (`C16`)**; el resumen del grupo
+(`C13`) y los cumpleaños (`C15`) ya están.
 
 Ojo con algo que no es un commit: **la Fase 4 nunca se ha usado en el iPad**, solo en
 el navegador; falta medir con cronómetro la captura con rúbrica y la del examen.

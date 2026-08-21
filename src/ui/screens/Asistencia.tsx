@@ -4,6 +4,7 @@ import { type FilaAsistencia, marcarEstado, pasarLista } from '@/application/asi
 import { faltaAbrirTrimestre, trimestreDe } from '@/application/evaluacion'
 import { fechaLocal, mesDe } from '@/domain/fechas'
 import type { Fecha } from '@/domain/values'
+import { AvisoCumpleanos } from '@/ui/components/AvisoCumpleanos'
 import { CalendarioMes } from '@/ui/components/CalendarioMes'
 import { ContadorPresentes } from '@/ui/components/ContadorPresentes'
 import { EtiquetaTrimestre } from '@/ui/components/EtiquetaTrimestre'
@@ -116,6 +117,11 @@ export function Asistencia() {
           />
         </DialogContent>
       </Dialog>
+
+      {/* Va después de la tira de días y antes de los controles: se lee de paso,
+          en el camino a pasar lista, y no pide nada. El día que se mira es el que
+          manda —hojear el jueves enseña los cumpleaños de ese jueves—. */}
+      <AvisoCumpleanos alumnos={filas.map((f) => f.alumno)} hoy={diaSeleccionado} />
 
       {/* Los dos controles de participación, juntos: el interruptor va antes del
           contador porque cambia lo que el contador significa, y el sorteo va al
