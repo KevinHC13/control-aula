@@ -118,12 +118,11 @@ guardada, y el login se pide solo al subir o restaurar (D-023).
 
 Lo que queda **no es código**, y es lo único que separa esto de estar en uso:
 
-1. **Dos pasos en el panel de Supabase**, en [PWA-IOS.md](./PWA-IOS.md): **crear su
-   cuenta** y **apagar los registros públicos**. La migración ya está aplicada —las
-   dieciséis tablas con RLS y sus políticas, comprobado que con la clave publicable
-   no se lee ni se escribe nada—, pero hasta que exista la cuenta la subida y la
-   restauración **no se han probado contra Supabase de verdad**: lo probado es el
-   motor, contra una nube simulada.
+1. **La primera sincronía de verdad.** Los tres pasos de Supabase ya están hechos
+   —migración aplicada con RLS, cuenta creada, registros cerrados—, así que lo que
+   falta es entrar desde *Grupo → Ajustes → Copia en la nube*, subir, y ver las filas
+   en las tablas. Hasta entonces subir y restaurar solo están probados contra una nube
+   simulada. Detalle y verificaciones en [PWA-IOS.md](./PWA-IOS.md).
 2. **Una pasada con el iPad en la mano.** De la Fase 2 en adelante —evaluación,
    bitácora, respaldo, criterios automáticos, herramientas de aula, resumen,
    cumpleaños y nube— **nada se ha usado en el dispositivo**: todo se ha visto en el
