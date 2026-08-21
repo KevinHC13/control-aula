@@ -1,12 +1,12 @@
 # Estado del proyecto
 
-Actualizado el **2026-08-21**, con la **Fase 4 terminada** —C18 a C29— más los
-fixes C19b y C21c. Ese mismo día la usuaria **retomó los tres criterios
-automáticos** con reglas propias (D-020): dejaron de estar pospuestos y son ahora
-`C12`, `C25`, `C25b` y `C26`. De esos ya está hecho **`C12`, la bitácora**, y con
-él `db.version(3)`. Este es el documento que se lee primero para saber
-dónde va el proyecto y qué sigue. El plan detallado, con criterios de aceptación
-por commit, está en [COMMITS.md](./COMMITS.md).
+Actualizado el **2026-08-21**, con **los treinta y un commits del plan escritos**:
+la Fase 4 completa —C18 a C29, más los fixes C19b y C21c—, el alcance nuevo que la
+usuaria pidió ese mismo día —los tres criterios automáticos (D-020) y las dos
+herramientas de aula (D-021)— y lo que faltaba de la Fase 3: bitácora, respaldo,
+resumen del grupo, cumpleaños y el motor de sincronía. Este es el documento que se
+lee primero para saber dónde va el proyecto y qué sigue. El plan detallado, con
+criterios de aceptación por commit, está en [COMMITS.md](./COMMITS.md).
 
 Regla: **antes de afirmar que algo existe, verificarlo en `src/`.** Este archivo
 se queda viejo; el código no.
@@ -15,20 +15,15 @@ se queda viejo; el código no.
 
 ## En una línea
 
-Asistencia está terminada y entregada en el iPad. La semana de uso real ya pasó y
-la validación con la usuaria tiró el modelo de calificaciones que estaba planeado.
-La Fase 4 va en marcha: **C18 a C21 están hechos** —dominio de evaluación,
-`db.version(2)`, el ciclo escolar con sus trimestres, los criterios con sus pesos y
-las rúbricas, las actividades, las dos capturas de entregable y el examen por
-aciertos—, con una corrección de modelo encima: la rúbrica cuelga de la actividad, no
-del criterio (D-016). **Toda la captura de la Fase 4 está construida, y también el
-cálculo** (C28), **el cierre con su snapshot** (C27) **y la pantalla donde ella lee
-los números** (C29). **La Fase 4 está terminada.** Encima de eso entró alcance
-nuevo: puntualidad, conducta y participación vuelven, con las reglas que dictó ella.
-De ese alcance ya entró la **bitácora** (`C12`), que trajo `db.version(3)` completa,
-y encima el **respaldo en JSON** (`C14`): los datos reales ya no viven solo en un
-iPad, o al menos ya hay con qué sacarlos. Lo que falta de la Fase 3 es el resumen
-del grupo, los cumpleaños y la sincronía.
+**La v1 está escrita completa y no está usada.** Asistencia lleva una semana de uso
+real en el iPad; todo lo demás —la evaluación con sus rúbricas y su examen, el cierre
+de trimestre con snapshot, la bitácora, los tres criterios automáticos, el sorteo, los
+equipos, el resumen del grupo, los cumpleaños, el respaldo en archivo y la copia en la
+nube— existe, tiene pruebas y **solo se ha visto en el navegador de escritorio**.
+
+Lo que separa esto de estar en uso no es código: son los tres pasos de Supabase, una
+pasada con el iPad en la mano y dos preguntas a la usuaria. Están abajo, en «Con qué
+continuar».
 
 ## Fases
 
@@ -37,7 +32,7 @@ del grupo, los cumpleaños y la sincronía.
 | 1 · Cimientos | Scaffold, shadcn, dominio, Dexie, puertos | ✅ Terminada |
 | 2 · Asistencia | El vertical completo hasta el iPad | ✅ Terminada |
 | Hito | Entrega, pausa de una semana, validación | ✅ Cumplido |
-| 3 · Resto de la v1 | Bitácora, resumen, respaldo, cumpleaños, sincronía | ▶ Todo hecho menos la sincronía: **`C16` es lo único que le falta a la v1** |
+| 3 · Resto de la v1 | Bitácora, resumen, respaldo, cumpleaños, sincronía | ✅ Terminada: C12, C13, C14, C15, C16 |
 | 5 · Criterios automáticos | Puntualidad, conducta y participación | ✅ Terminada: C12, C25b, C25, C26 |
 | 6 · Herramientas de aula | Sorteo de participación y formar equipos | ✅ Terminada: C30 y C31 |
 | 4 · Evaluación | Ciclo, trimestres, criterios, rúbricas, cálculo | ✅ Terminada: C18–C24 y C27–C29 |
@@ -49,13 +44,13 @@ Verificado en `src/` a esta fecha:
 | Capa | Contenido |
 |---|---|
 | `domain/` | `entities.ts` con la jerarquía de evaluación completa, `values.ts`, `fechas.ts`, `rules.ts`, `evaluacion.ts` (estructura), `calculo.ts` (los números, incluidas las tres fórmulas automáticas), `sorteo.ts` (el sorteo ponderado), `equipos.ts` (el reparto) y `cumpleanos.ts`, con pruebas |
-| `data/dexie/` | `db.ts` en `version(3)`, adaptadores de alumnos, asistencia, evaluación, bitácora, participaciones y respaldo, `outbox`, semilla |
+| `data/dexie/` | `db.ts` en `version(3)`, adaptadores de alumnos, asistencia, evaluación, bitácora, participaciones, respaldo y sincronía, `outbox`, semilla |
 | `data/ports/` | `alumnos.ts`, `asistencia.ts`, `evaluacion.ts` (ciclo, trimestres, criterios, pesos, rúbricas y actividades), `bitacora.ts`, `participaciones.ts`, `respaldo.ts` |
-| `application/` | `asistencia.ts`, `grupo.ts`, `importacion.ts`, `evaluacion.ts`, `entregas.ts`, `calificacion.ts`, `examen.ts`, `calificaciones.ts` (reporte y cierre), `bitacora.ts`, `participacion.ts`, `sorteo.ts`, `equipos.ts`, `resumen.ts`, `cumpleanos.ts`, `respaldo.ts` |
-| `services/` | `extraccion.ts` — única salida a red del cliente |
+| `application/` | `asistencia.ts`, `grupo.ts`, `importacion.ts`, `evaluacion.ts`, `entregas.ts`, `calificacion.ts`, `examen.ts`, `calificaciones.ts` (reporte y cierre), `bitacora.ts`, `participacion.ts`, `sorteo.ts`, `equipos.ts`, `resumen.ts`, `cumpleanos.ts`, `respaldo.ts`, `sincronia.ts` |
+| `services/` | `extraccion.ts` y `sincronia.ts` + `supabase.ts` — la única salida a red del cliente |
 | `ui/` | Cuatro pestañas, Asistencia completa (con la etiqueta del trimestre), Calificaciones con sus actividades, las tres capturas —entregas, rúbrica y examen, esta última con teclado propio— y el reporte del trimestre por alumno y por campo, Bitácora con el conteo por alumno y su historial, Ajustes, CargarLista, CicloEscolar, CriteriosYPesos (con el cierre del trimestre), Rubricas, Respaldo |
 | `tests/` | `arquitectura.test.ts` — verifica las reglas de dependencia en cada `npm test` |
-| Infra | PWA con `vite-plugin-pwa` y aviso de actualización; Edge Function `extraer-lista` desplegada |
+| Infra | PWA con `vite-plugin-pwa` y aviso de actualización; Edge Function `extraer-lista` desplegada; `supabase/migrations/` con el esquema de la nube, **sin aplicar** |
 
 Pantalla de asistencia: tira de días de tres meses que se desliza, calendario del
 mes como mosaico, contador de presentes, filas con ciclo de estados y barra
@@ -115,25 +110,30 @@ archivo dos veces no duplica nada. Queda **una verificación que necesita el
 dispositivo**: que la hoja de compartir del iPad ofrezca *Guardar en Archivos*. En
 el escritorio la exportación cae a una descarga normal, que es lo que se probó.
 
-**A la v1 le falta un solo commit: `C16`, el motor de sincronía.** Lee la `outbox` y
-sube; solo *subir pendientes* y *restaurar todo*, sin merge, y se ejecuta al abrir y
-al cerrar la app —iOS no tiene Background Sync—. Dos cosas que conviene tener a la
-vista al tomarlo:
+**Están escritos los treinta y un commits del plan.** `C16`, el motor de sincronía,
+cerró la lista: sube la `outbox` por lotes —vaciándola solo cuando el servidor
+confirma—, restaura todo por el mismo camino del respaldo en JSON, y se ejecuta al
+abrir y al cerrar la app, nunca en segundo plano. El acceso es una cuenta con sesión
+guardada, y el login se pide solo al subir o restaurar (D-023).
 
-- **Restaurar un respaldo no encola nada** (D-022), así que hoy un iPad restaurado
-  desde archivo no subiría nada solo. Esa decisión se dejó para este commit, que es
-  quien tiene su propio «restaurar todo».
-- El motor **no pasa por el repositorio**: lee la `outbox` y escribe en Supabase,
-  como dice `docs/ARCHITECTURE.md`. Un adaptador alternativo del puerto produciría
-  dos fuentes de verdad.
+Lo que queda **no es código**, y es lo único que separa esto de estar en uso:
 
-Lo demás de la Fase 3 ya está: `C13` —el resumen del grupo, dos cifras y la lista con
-barra roja para quien haya que mirar, y con él **ya no queda ningún placeholder en la
-app**— y `C15` —el aviso de cumpleaños en la pantalla de asistencia, que no es un
-modal y no se pinta las semanas sin cumpleaños—.
+1. **Los tres pasos de Supabase**, en [PWA-IOS.md](./PWA-IOS.md): aplicar
+   `supabase/migrations/20260821_esquema_sincronizable.sql`, crear su cuenta y apagar
+   los registros públicos. La migración se versionó **sin aplicar**, por decisión del
+   usuario, así que la sincronía está probada contra una nube simulada y no contra la
+   real.
+2. **Una pasada con el iPad en la mano.** De la Fase 2 en adelante —evaluación,
+   bitácora, respaldo, criterios automáticos, herramientas de aula, resumen,
+   cumpleaños y nube— **nada se ha usado en el dispositivo**: todo se ha visto en el
+   navegador de escritorio. La lista de verificación está en `PWA-IOS.md`, y lo que
+   más urge medir con cronómetro es la captura con rúbrica y la del examen.
+3. **Validar con la usuaria** los dos supuestos que siguen abiertos: el umbral de
+   riesgo del resumen —hoy 90 % y 6.0, escritos en la pantalla— y si la captura a
+   medias debería dar calificación, que se resolvió excluyéndola (D-019) sin
+   preguntárselo.
 
-Y sigue pendiente lo que no es un commit: **nada de lo construido después de la Fase
-2 se ha usado en el iPad.** Todo se ha visto solo en el navegador de escritorio.
+Después de eso, lo que venga sale del uso real, no de esta lista.
 
 Las dos herramientas de aula ya están: `C30` —el sorteo, en la pantalla de
 asistencia, que pondera a favor de quien menos ha pasado y no registra nada por sí
@@ -192,7 +192,8 @@ automáticos —`C12`, `C25b`, `C25`, `C26`—, que dejaron de estar pospuestos 
 La Fase 4 está cerrada, así que nada de lo que falta depende de ella. En orden de
 valor por unidad de trabajo:
 
-- **`C16` · el motor de sincronía**, el que cierra la v1.
+- **Nada de código.** Quedan los tres pasos de Supabase, la pasada con el iPad y las
+  dos validaciones con la usuaria, arriba.
 - **Las dos herramientas de aula:** `C30` (sortear quién participa, que escribe en
   `participaciones` y por eso va después de `C25`) y `C31` (formar equipos, que no
   depende de nada y no guarda nada). Son las dos únicas funciones del proyecto que se

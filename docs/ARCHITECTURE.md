@@ -212,6 +212,17 @@ Repositorio → Dexie (única fuente de verdad)
             Motor de sincronía → Supabase (respaldo remoto)
 ```
 
+Construido en `C16`, y está repartido en tres piezas para que ninguna sepa más de
+lo que le toca:
+
+- `data/ports/sincronia.ts` y su adaptador — la `outbox`: qué falta subir, con qué
+  filas, y sacar de la cola lo confirmado. Habla de filas y de tablas, no de
+  alumnos: el motor no vuelve a pasar por los casos de uso.
+- `services/sincronia.ts` — el cable: entrar, salir, subir filas, bajar filas. No
+  sabe qué es un trimestre.
+- `application/sincronia.ts` — el orden: subir el lote, esperar al servidor y
+  **entonces** vaciar la cola. Es el único archivo que junta las dos mitades.
+
 Reglas:
 
 - El repositorio **siempre** escribe en Dexie, con red o sin ella. Supabase

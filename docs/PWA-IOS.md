@@ -111,6 +111,23 @@ Si ella quita el ícono y lo vuelve a agregar, IndexedDB se va con él. Una raz�
 más para tener exportación de respaldo antes de que existan datos de un ciclo
 completo.
 
+## Antes de la primera sincronía (una vez, en Supabase)
+
+La copia en la nube (`C16`) necesita tres pasos manuales que no están en el
+repositorio, y el orden importa:
+
+1. **Aplicar la migración**: `supabase/migrations/20260821_esquema_sincronizable.sql`,
+   con `npx supabase db push` o pegándola en el editor SQL del proyecto. Crea las
+   dieciséis tablas con RLS y las políticas de «solo mis filas».
+2. **Crear su cuenta** en *Authentication → Users*, con correo y contraseña. Es la
+   que se teclea una vez en Ajustes → Copia en la nube.
+3. **Apagar los registros públicos** en *Authentication → Providers → Email*, quitando
+   *Enable signups*. Con `signup` abierto cualquiera puede crear un usuario; no vería
+   nada de ella —las políticas lo impiden— pero no hay razón para dejar la puerta.
+
+Sin esos pasos la app funciona igual: la nube es un respaldo, no una dependencia
+(docs/DECISIONES.md D-023).
+
 ## Lista de verificación antes de entregarle el iPad
 
 - [ ] Instalada desde el ícono de la pantalla de inicio, no en pestaña
@@ -125,3 +142,8 @@ completo.
 - [ ] Existe una forma de exportar respaldo — hay pantalla (*Grupo → Ajustes →
       Respaldo*); falta ver en el iPad que la hoja de compartir ofrezca *Guardar en
       Archivos* y que el selector de archivos abra Archivos al restaurar
+- [ ] La sesión de la nube sobrevive a cerrar y volver a abrir la PWA — se guarda en
+      `localStorage`, y en la PWA instalada eso hay que verlo, no suponerlo
+- [ ] Con el WiFi apagado, capturar y volver a abrir deja los cambios en la cola y la
+      subida ocurre al reconectar y volver a entrar
+- [ ] Restaurar en un iPad limpio reconstruye el ciclo completo

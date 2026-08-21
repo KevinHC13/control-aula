@@ -36,7 +36,10 @@ Existen y funcionan:
   `participacion.ts` y `respaldo.ts` —el archivo JSON con todo, C14—. `armarReporte` es la
   única función que decide entre recalcular y leer el snapshot: no duplicar esa
   decisión.
-- **`services/`**: `extraccion.ts`, la única salida a red del cliente.
+- **`services/`**: `extraccion.ts`, `supabase.ts` y `sincronia.ts` —la única salida
+  a red del cliente—. El motor de sincronía tiene además su propio puerto
+  (`data/ports/sincronia.ts`): habla de filas y de la `outbox`, no de alumnos, y no
+  vuelve a pasar por los casos de uso.
 - **`ui/`**: las cuatro pestañas, la de asistencia terminada (tira de días,
   calendario del mes, contador, filas, etiqueta del trimestre), Ajustes, la carga
   de lista con IA, la configuración del ciclo escolar, los criterios con sus pesos,
@@ -66,9 +69,9 @@ Las dos **herramientas de aula** (D-021) están hechas: `C30` —el sorteo de
 participación, en la pantalla de asistencia— y `C31` —formar equipos, en la pestaña
 Grupo, que no guarda nada—.
 
-De la Fase 3 ya están `C13` —el resumen del grupo— y `C15` —el aviso de cumpleaños
-en la pantalla de asistencia—. **Lo único que queda de la v1 es `C16`, el motor de
-sincronía.**
+**Los treinta y un commits del plan están escritos**: `C16`, el motor de sincronía,
+cerró la lista. Lo que queda no es código —los tres pasos de Supabase, una pasada con
+el iPad y dos validaciones con la usuaria—; está en `docs/ESTADO.md`.
 
 Encima entran dos **herramientas de aula** (D-021): `C30` —sortear quién participa,
 que escribe en `participaciones` y no registra nada por sí solo— y `C31` —formar
@@ -76,8 +79,8 @@ equipos, que no guarda nada porque los equipos son estado de interfaz—. Son la
 únicas funciones que se usan con los niños mirando la pantalla: se leen de lejos y no
 hacen esperar.
 
-De la Fase 3 queda **solo el motor de sincronía (`C16`)**; el resumen del grupo
-(`C13`) y los cumpleaños (`C15`) ya están.
+De la Fase 3 ya está todo: bitácora (`C12`), resumen (`C13`), respaldo (`C14`),
+cumpleaños (`C15`) y sincronía (`C16`).
 
 Ojo con algo que no es un commit: **la Fase 4 nunca se ha usado en el iPad**, solo en
 el navegador; falta medir con cronómetro la captura con rúbrica y la del examen.

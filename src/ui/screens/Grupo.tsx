@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 
 import { IconoEngrane } from '@/ui/components/iconos'
 import { Button } from '@/ui/components/ui/button'
@@ -10,6 +10,14 @@ import { Equipos } from '@/ui/screens/Equipos'
 import { ResumenDelGrupo } from '@/ui/screens/ResumenDelGrupo'
 import { Respaldo } from '@/ui/screens/Respaldo'
 import { Rubricas } from '@/ui/screens/Rubricas'
+
+/**
+ * La pantalla de la nube se carga cuando se abre, no antes: arrastra el cliente de
+ * Supabase, que son 240 kB que no hacen falta para pasar lista. Es la única
+ * pantalla de la app que se pide aparte, y se justifica sola —se usa dos veces al
+ * año—.
+ */
+const Nube = lazy(() => import('@/ui/screens/Nube').then((m) => ({ default: m.Nube })))
 
 /**
  * Subvista con estado local y no en el store, mismo criterio que el calendario
@@ -25,6 +33,7 @@ type Vista =
   | 'rubricas'
   | 'respaldo'
   | 'equipos'
+  | 'nube'
 
 export function Grupo() {
   const [vista, setVista] = useState<Vista>('resumen')
@@ -38,6 +47,7 @@ export function Grupo() {
         alConfigurarCriterios={() => setVista('criterios')}
         alConfigurarRubricas={() => setVista('rubricas')}
         alRespaldar={() => setVista('respaldo')}
+        alSincronizar={() => setVista('nube')}
       />
     )
   }
@@ -60,6 +70,20 @@ export function Grupo() {
 
   if (vista === 'respaldo') {
     return <Respaldo alVolver={() => setVista('ajustes')} />
+  }
+
+  if (vista === 'nube') {
+    return (
+      <Suspense
+        fallback={
+          <p className="text-base text-tinta-2" aria-live="polite">
+            Cargando…
+          </p>
+        }
+      >
+        <Nube alVolver={() => setVista('ajustes')} />
+      </Suspense>
+    )
   }
 
   // Los equipos vuelven al resumen y no a Ajustes: no son configuración, son una

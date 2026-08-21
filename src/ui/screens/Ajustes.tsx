@@ -16,6 +16,7 @@ export function Ajustes({
   alConfigurarCriterios,
   alConfigurarRubricas,
   alRespaldar,
+  alSincronizar,
 }: {
   alVolver: () => void
   alCargarLista: () => void
@@ -23,6 +24,7 @@ export function Ajustes({
   alConfigurarCriterios: () => void
   alConfigurarRubricas: () => void
   alRespaldar: () => void
+  alSincronizar: () => void
 }) {
   return (
     <section aria-labelledby="titulo-ajustes" className="flex flex-col gap-4">
@@ -93,6 +95,18 @@ export function Ajustes({
             <span className="text-base font-medium text-tinta">Respaldo</span>
             <span className="text-base text-tinta-2">
               Guardar una copia de todo en un archivo, o restaurarla
+            </span>
+          </button>
+        </li>
+        <li>
+          <button
+            type="button"
+            onClick={alSincronizar}
+            className="flex w-full flex-col items-start gap-0.5 px-4 py-3 text-left"
+          >
+            <span className="text-base font-medium text-tinta">Copia en la nube</span>
+            <span className="text-base text-tinta-2">
+              Subir lo capturado o traerlo a un iPad nuevo
             </span>
           </button>
         </li>

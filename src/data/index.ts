@@ -12,6 +12,7 @@ import { db } from './dexie/db'
 import { DexieEvaluacionRepo } from './dexie/evaluacion.adapter'
 import { DexieParticipacionesRepo } from './dexie/participaciones.adapter'
 import { DexieRespaldoRepo } from './dexie/respaldo.adapter'
+import { DexieSincroniaRepo } from './dexie/sincronia.adapter'
 
 export const repos = {
   alumnos: new DexieAlumnosRepo(),
@@ -20,6 +21,7 @@ export const repos = {
   evaluacion: new DexieEvaluacionRepo(),
   participaciones: new DexieParticipacionesRepo(),
   respaldo: new DexieRespaldoRepo(),
+  sincronia: new DexieSincroniaRepo(),
 } as const
 
 /**

@@ -440,14 +440,48 @@ Cómo quedó:
 - El aviso sigue **el día que se está viendo**, no `hoy`: hojear el jueves enseña los
   cumpleaños de ese jueves, que es coherente con el resto de la pantalla.
 
-### ⬜ C16 · `feat(sync): subir cambios pendientes a supabase`
+### ✅ C16 · `feat(sync): subir cambios pendientes a supabase`
 
 **Aceptación**
-- [ ] La `outbox` se vacía solo tras confirmación del servidor
-- [ ] Sin red, la app funciona idéntico y los cambios quedan encolados
-- [ ] Se sincroniza al abrir y al cerrar, nunca en segundo plano
-- [ ] Restaurar en un dispositivo limpio reconstruye todo
-- [ ] Nada del motor de sincronía atraviesa el repositorio
+- [x] La `outbox` se vacía solo tras confirmación del servidor
+- [x] Sin red, la app funciona idéntico y los cambios quedan encolados
+- [x] Se sincroniza al abrir y al cerrar, nunca en segundo plano
+- [~] Restaurar en un dispositivo limpio reconstruye todo
+- [x] Nada del motor de sincronía atraviesa el repositorio
+
+El de restaurar está **escrito y probado contra una nube simulada**, pero no se ha
+hecho contra Supabase de verdad: la migración se versionó sin aplicarla, por decisión
+del usuario. Lo que falta para cerrarlo son tres pasos manuales, en
+[PWA-IOS.md](./PWA-IOS.md): aplicar la migración, crear la cuenta y apagar los
+registros públicos.
+
+Cómo quedó:
+
+- **El acceso, en D-023**: una cuenta con correo y contraseña, sesión guardada en el
+  dispositivo, y el login se pide **solo al subir o restaurar**. Sin sesión la app
+  funciona idéntico; la nube es un respaldo, no una dependencia.
+- **La `outbox` se vacía después de que el servidor contesta**, nunca antes, y un
+  fallo propaga el error con la cola intacta: el siguiente intento empieza donde se
+  quedó y no duplica —todo es upsert por `id`, que es UUID del cliente—.
+- **Por lotes de 200.** Un trimestre entero son miles de filas y una sola petición
+  gigante es la que se cae a mitad con la red del salón.
+- **La fila se sube una vez aunque tenga cinco cambios encolados**: la `outbox`
+  encola un cambio por toque, y lo que el servidor necesita es el registro como está
+  ahora. Y un cambio cuya fila ya no existe sale de la cola igual, o la bloquearía
+  para siempre.
+- **Restaurar de la nube usa el mismo `restaurar` del respaldo en JSON** (D-022):
+  upsert por `id`, sin borrar lo que la nube no traiga y sin encolar nada. Dos
+  implementaciones serían dos formas de equivocarse.
+- **El motor tiene su propio puerto** (`data/ports/sincronia.ts`), que habla de filas
+  y de la `outbox` y no de alumnos: no vuelve a pasar por los casos de uso, que es lo
+  que pedía `docs/ARCHITECTURE.md`.
+- **El cliente de Supabase no está en el arranque.** Son 240 kB que no hacen falta
+  para capturar nada, así que la sincronía del arranque entra por `import()` y la
+  pantalla de la nube por `lazy`: el trozo principal quedó en 525 kB en vez de 740, y
+  lo demás se descarga después de pintar.
+- Las tablas son un **espejo**, no un almacén: fechas e instantes como `text` para
+  que el viaje de ida y vuelta devuelva exactamente lo que recibió, sin claves ajenas
+  —restaurar sube tabla por tabla— y sin índices más allá de la clave primaria.
 
 ### ✖ C17 · ~~`feat: cargar lista de alumnos desde imagen`~~ — ADELANTADO
 
