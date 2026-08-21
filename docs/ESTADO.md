@@ -106,9 +106,26 @@ hay respaldo y no hay copia. Todo lo demás que falta puede esperar; esto no.
 Ya se puede tomar sin volver a tocar nada: `version(2)` está en su lugar y
 `TABLAS_SINCRONIZABLES` enumera exactamente las quince tablas que hay que exportar.
 
-Después, en orden de utilidad para ella: `C13` (resumen del grupo, que ya tiene de
-dónde sacar el promedio), `C12` (anecdotario) y `C15` (cumpleaños). `C16` y `C17`
-—el motor de sincronía— son los que cierran la v1.
+Ojo con el orden: si se toma antes de `version(3)` —que traen `C12` y `C25`— hay que
+volver a él. Lo más limpio es hacer `version(3)` y el respaldo en el mismo tramo.
+
+Después, el **alcance nuevo del 2026-08-21** (D-020 y D-021), en este orden:
+
+1. `C12` · **bitácora** — la pestaña *Notas* pasa a llamarse así y cambia de
+   significado: todo lo que se anota es un reporte y de ahí sale conducta. Trae
+   `version(3)`.
+2. `C25b` · **configurar los criterios automáticos** — los tres tipos en el selector
+   de pesos, con `retardos_por_falta` y la meta de participación.
+3. `C25` · **captura de participación** — el modo en la pantalla de asistencia y la
+   tabla `participaciones`.
+4. `C26` · **cálculo** de puntualidad, conducta y participación. Al entrar, los tres
+   aparecen solos en el reporte de C29 y en el snapshot de C27.
+5. `C30` · **sortear quién participa** y `C31` · **formar equipos**. `C30` va después
+   de `C25` porque escribe en `participaciones`; `C31` no depende de nada.
+
+Y lo que queda de la Fase 3: `C13` (resumen del grupo, que ya tiene de dónde sacar el
+promedio), `C15` (cumpleaños) y `C16` (el motor de sincronía, el que cierra la v1).
+`C17` no existe como pendiente: se adelantó como C10c.
 
 Y una cosa que no es un commit: **la Fase 4 nunca se ha usado en el iPad.** Se
 construyó completa entre dos sesiones y solo se ha visto en el navegador. Antes de
@@ -124,8 +141,9 @@ C18 ─ C19 ─ C20 ─ C21 ─ C21b ─┬─ C22 ─┐
                               └─ C24 ─┘       └─ C27
 ```
 
-Todos hechos. `C25` y `C26` —los criterios automáticos— siguen pospuestos por
-decisión de la usuaria, no pendientes.
+Todos hechos. Lo que cuelga de esta fase y **no** está hecho son los criterios
+automáticos —`C12`, `C25b`, `C25`, `C26`—, que dejaron de estar pospuestos el
+2026-08-21, más las dos herramientas de aula de la Fase 6 —`C30`, `C31`—.
 
 ### Lo que queda, y de qué depende
 
