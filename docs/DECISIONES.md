@@ -661,3 +661,44 @@ que hay que cuidar al calcular (D-019):
   —ella no usó el criterio—, pero si alguien tiene marcas, quien no tiene ninguna
   saca 0. Esta última es la única de las tres que conviene confirmarle antes de que
   salga en una boleta.
+
+## D-021 · La meta de participación es 5, y entran dos herramientas de aula
+
+**Estado:** aceptada — 2026-08-21. Completa a [D-020](#d-020--los-tres-criterios-automáticos-se-retoman-con-reglas-de-ella)
+
+**La participación se califica proporcional con tope, y la meta nace en 5.** Cinco
+participaciones o más dan el 100 %; menos valen lo proporcional —una es 2.0, tres son
+6.0—. Con eso queda contestada la pregunta que estaba abierta desde D-020, y el
+criterio no premia volumen sin límite: el sexto turno no vale más que el quinto,
+porque si valiera, la participación se volvería una carrera entre los tres de
+siempre.
+
+**Sortear la participación.** Una función para elegir al azar quién pasa, en la
+pantalla de asistencia. Tres decisiones de diseño que no son de adorno:
+
+- **El sorteo no registra la participación por sí solo.** Sale un nombre y ella dice
+  si participó o no. Registrarlo automáticamente mediría *salir sorteado*, que no es
+  lo que la calificación dice medir.
+- **Sortea entre los que están**, y estar es `presente` o `retardo`. `justificada`
+  cuenta como asistencia para el porcentaje —ese es el trato con la escuela— pero el
+  niño no está en el salón. Es el único lugar de la app donde esos dos estados no son
+  lo mismo, y por eso queda escrito.
+- **Pondera a favor de quien menos ha participado**, con azar en los empates. Un
+  sorteo uniforme repite y los niños lo notan antes que nadie —«siempre le toca a
+  ella»—; ponderado, empuja hacia donde el criterio quiere llegar y se puede decir en
+  voz alta: *le toca a quien menos ha pasado*. Si ella prefiere azar puro, es un
+  cambio de una función.
+
+Y una advertencia de forma: la ruleta tiene que **poder saltarse**. Una animación de
+tres segundos es divertida la primera vez y un estorbo la décima, con treinta niños
+esperando.
+
+**Formar equipos.** Ella dice cuántos equipos o cuántos niños por equipo —el mismo
+dato visto al revés— y el sistema los arma con los presentes. El sobrante se reparte:
+con 30 alumnos y 4 equipos toca 8, 8, 7 y 7, nunca 8, 8, 8 y 6.
+
+**Los equipos no se guardan.** Viven en Zustand mientras la pantalla está abierta,
+como el calendario del mes o la pestaña activa: son estado de interfaz, no un dato
+del salón. Guardarlos significaría una tabla, una fecha y una pantalla de historial,
+y eso solo se paga si va a volver a verlos; para armar equipos en el momento, no.
+Es la decisión a revisar el día que pida «los equipos de ayer».

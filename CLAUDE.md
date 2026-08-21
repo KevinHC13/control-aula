@@ -56,6 +56,12 @@ a `bitacora`, entra `participaciones` y `criterios_trimestre` gana
 `retardos_por_falta`. Si `C14` se toma antes, hay que volver a él: exporta
 `TABLAS_SINCRONIZABLES`.
 
+Encima entran dos **herramientas de aula** (D-021): `C30` —sortear quién participa,
+que escribe en `participaciones` y no registra nada por sí solo— y `C31` —formar
+equipos, que no guarda nada porque los equipos son estado de interfaz—. Son las dos
+únicas funciones que se usan con los niños mirando la pantalla: se leen de lejos y no
+hacen esperar.
+
 Queda además de la Fase 3 el resumen del grupo (`C13`, que ya tiene de dónde sacar el
 promedio), los cumpleaños (`C15`) y el motor de sincronía (`C16`).
 
@@ -65,7 +71,7 @@ el navegador; falta medir con cronómetro la captura con rúbrica y la del exame
 Antes de afirmar que algo existe, verificarlo en `src/`.
 
 El plan de construcción con criterios de aceptación por commit está en
-`docs/COMMITS.md` (C1 … C29), con el estatus marcado commit por commit. Seguir
+`docs/COMMITS.md` (C1 … C31), con el estatus marcado commit por commit. Seguir
 ese orden.
 
 ## Comandos
@@ -219,9 +225,10 @@ y fórmulas en `docs/DATA-MODEL.md`; lo que no se negocia al escribir código:
   `retardos_por_falta: null` un retardo no penaliza. Conducta: sale de la
   **bitácora**, donde todo reporte es negativo —0 o 1 reportes valen 10, 2 vale 5, 3
   o más vale 0— y **sin reportes vale 10, no `—`**: no tener reportes es el dato.
-  Participación: se marca con un modo en la pantalla de asistencia y se normaliza
-  contra `meta_participacion`, con tope. Ninguno de los tres aporta a un campo
-  formativo, así que solo cuentan para el general.
+  Participación: se marca con un modo en la pantalla de asistencia y se califica
+  `mín(participaciones ÷ meta, 1)`, con la meta en **5** por omisión (D-021) —cinco
+  o más valen 10.0, una vale 2.0—. Ninguno de los tres aporta a un campo formativo,
+  así que solo cuentan para el general.
 - La atribución al trimestre es **por fecha y nunca manual**: no existe ni debe
   existir un selector de trimestre en el camino diario. Una fecha fuera de todo
   rango devuelve `null`, que es un resultado normal —vacaciones, puentes— y no un

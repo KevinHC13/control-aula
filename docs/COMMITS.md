@@ -816,7 +816,7 @@ migración.
 - [ ] Los tres tipos automáticos se pueden agregar al trimestre y quitar
 - [ ] Cada uno aparece **a lo más una vez** por trimestre
 - [ ] Puntualidad pide cuántos retardos hacen una falta, y admite «no cuentan»
-- [ ] Participación pide su meta; una meta en 0 no se acepta
+- [ ] Participación pide su meta, que **nace en 5**; una meta en 0 no se acepta
 - [ ] Conducta no pide nada: su escala es fija (0-1 → 10, 2 → 5, 3+ → 0)
 - [ ] La pantalla dice de dónde sale cada uno —asistencia, bitácora,
       participaciones— sin obligar a abrir otra pantalla para entenderlo
@@ -839,7 +839,8 @@ Depende de `C12` (bitácora), `C25` (participaciones) y `C25b` (parámetros).
 - [ ] Conducta: 0 o 1 reportes → 10.0, 2 → 5.0, 3 o más → 0.0
 - [ ] **Conducta sin reportes vale 10, no `—`**: no tener reportes es el dato
 - [ ] Puntualidad sin días capturados vale `—`, no 0
-- [ ] Participación se normaliza contra la meta, con tope en 10.0
+- [ ] Participación es **proporcional con tope**: `mín(participaciones ÷ meta, 1)`,
+      así que con la meta en 5 una participación vale 2.0 y cinco o más valen 10.0
 - [ ] Sin una sola participación en el trimestre, el criterio vale `—` para todos;
       con marcas de alguien, quien no tiene ninguna saca 0.0
 - [ ] Los tres cuentan para el general del trimestre y **no** para ningún campo
@@ -1003,3 +1004,63 @@ Decisiones que salieron de construirlo:
 El desglose no es un lujo: cuando un resultado no cuadre con su intuición —y va a
 pasar— es lo único que dice si el error está en la fórmula o en la expectativa.
 Sin él, el reporte que llega es «está mal» y no hay dónde buscar.
+
+---
+
+## Fase 6 — Herramientas de aula
+
+Dos funciones que no son evaluación pero viven pegadas a ella: sortear quién
+participa y formar equipos. Salieron de la usuaria el 2026-08-21
+(docs/DECISIONES.md D-021).
+
+Las dos son de **uso en clase, con los niños enfrente**, y eso manda en el diseño más
+que en cualquier otra pantalla: se usan de pie, se proyectan o se muestran, y una
+espera de tres segundos con treinta niños mirando no es lo mismo que una espera de
+tres segundos en una pantalla de configuración.
+
+`C30` necesita `C25` —escribe en `participaciones`—. `C31` no depende de nada.
+
+### ⬜ C30 · `feat(asistencia): sortear quién participa`
+
+La ruleta, en la pantalla de asistencia, junto al modo de participación: es donde
+está la lista y donde ya se sabe quién vino.
+
+**Aceptación**
+- [ ] Sortea solo entre los presentes, y presente es `presente` o `retardo`
+- [ ] **No registra nada por sí solo**: sale un nombre y ella dice si participó
+- [ ] «Participó» suma una participación del día; «no participó» no escribe nada
+- [ ] Se puede volver a sortear sin cerrar nada
+- [ ] Pondera a favor de quien menos ha participado en el trimestre, con azar en los
+      empates, y **dice que lo hace**
+- [ ] La animación **se puede saltar** y no pasa de un segundo y medio
+- [ ] El nombre sorteado se lee de lejos: es lo único que importa en la pantalla
+- [ ] Sin nadie presente —o sin lista cargada— lo dice en vez de sortear entre nadie
+
+El tercer punto es el que sostiene la calificación: un sorteo que registra la
+participación por haber salido sorteado mediría *salir sorteado*, y la participación
+dejaría de significar lo que dice.
+
+El de la ponderación es de aula, no de software: un sorteo uniforme repite —treinta
+tiros y alguien sale tres veces mientras otro no sale ninguna— y los niños lo notan
+antes que nadie. Ponderado se puede decir en voz alta: *le toca a quien menos ha
+pasado*.
+
+### ⬜ C31 · `feat(grupo): formar equipos`
+
+Ella dice cuántos equipos o cuántos niños por equipo, y el sistema los arma. Vive en
+la pestaña **Grupo**: es una herramienta sobre la composición del salón, no sobre el
+día.
+
+**Aceptación**
+- [ ] Se puede pedir por **número de equipos** o por **niños por equipo**
+- [ ] El sobrante se reparte: con 30 alumnos y 4 equipos toca 8, 8, 7 y 7
+- [ ] Se arma con los presentes, y se puede pedir con todo el grupo
+- [ ] «Volver a sortear» da un reparto distinto
+- [ ] Los equipos se leen de lejos, para mostrarlos al grupo
+- [ ] Pedir más equipos que alumnos no rompe nada: lo dice y no arma equipos vacíos
+- [ ] **No guarda nada**: los equipos viven mientras la pantalla está abierta
+
+El último no es pereza, es la regla de Zustand del proyecto: los equipos son estado
+de interfaz, no un dato del salón. Guardarlos significa una tabla, una fecha y una
+pantalla de historial, y eso solo se paga si va a volver a verlos. Si algún día pide
+«los equipos de ayer», ahí se paga.

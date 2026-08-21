@@ -36,6 +36,7 @@ ejemplar de los datos reales vive en un iPad**.
 | Hito | Entrega, pausa de una semana, validación | ✅ Cumplido |
 | 3 · Resto de la v1 | Bitácora, resumen, respaldo, cumpleaños, sincronía | ▶ Pendiente |
 | 5 · Criterios automáticos | Puntualidad, conducta y participación | ⬜ Alcance nuevo: C12, C25, C25b, C26 |
+| 6 · Herramientas de aula | Sorteo de participación y formar equipos | ⬜ Alcance nuevo: C30, C31 |
 | 4 · Evaluación | Ciclo, trimestres, criterios, rúbricas, cálculo | ✅ Terminada: C18–C24 y C27–C29 |
 
 ## Lo que existe y funciona
@@ -140,6 +141,11 @@ valor por unidad de trabajo:
   `C26` (cálculo). El cálculo va al final porque hasta entonces no tiene de dónde
   leer, y cuando entre aparece solo en el reporte de C29 y en el snapshot de C27,
   sin tocar ninguna de las dos pantallas.
+- **Las dos herramientas de aula:** `C30` (sortear quién participa, que escribe en
+  `participaciones` y por eso va después de `C25`) y `C31` (formar equipos, que no
+  depende de nada y no guarda nada). Son las dos únicas funciones del proyecto que se
+  usan **con los niños mirando la pantalla**, así que se diseñan para leerse de
+  lejos y para no hacer esperar.
 - **`C13` · resumen del grupo.** Ya se puede completo: la asistencia siempre fue
   posible y el promedio sale de `reporteDeTrimestre`.
 - **`C15` · cumpleaños.** Independiente por completo.
@@ -167,7 +173,8 @@ En corto, para no tener que abrir los otros dos documentos:
   Desaparece el `signo` que el diseño viejo iba a agregarle a cada nota.
 - **Participación.** Se marca desde la pantalla de asistencia con un **modo**: con el
   interruptor prendido, tocar a un alumno le suma una participación en vez de ciclar
-  su asistencia. Se normaliza contra la meta del trimestre, con tope.
+  su asistencia. Se califica **proporcional con tope contra una meta que nace en 5**
+  (D-021): cinco participaciones o más valen 10.0, una vale 2.0.
 
 Los tres se configuran como cualquier otro criterio: se usan si tienen fila en el
 trimestre y pesan lo que diga su peso. Y ninguno aporta a un campo formativo —un
@@ -187,16 +194,18 @@ Lo que todavía está marcado `[POR VALIDAR]` y qué bloquea cada uno:
 |---|---|
 | ¿Cuál es el umbral real de riesgo por asistencia? | Solo el color de alerta de C13 |
 | ¿Cuántos retardos hacen una falta, por omisión? | El valor de arranque de C25b. 3 es una convención, no un dato |
-| ¿Cuál es la meta de participación, por omisión? | Lo mismo, en C25b |
+| ¿El sorteo debe ser al azar puro en vez de ponderado? | C30. Hoy el plan pondera a favor de quien menos ha participado; cambiarlo es una función |
+| ¿Los equipos se guardan de un día para otro? | C31. Hoy el plan dice que no: viven mientras la pantalla está abierta |
 | ¿La conversión de retardos también cambia el **porcentaje de asistencia** del resumen? | C13. Recomendación: no —la escuela pide presencia, no puntualidad— |
 | Sin ninguna participación capturada, ¿un alumno callado saca 0 o `—`? | C26. Hoy el plan dice `—` para todos si nadie tiene marcas, y 0 en cuanto alguien las tiene |
 | ¿Una captura a medias debería dar calificación? | Se resolvió en C28 excluyéndola (D-019). Si ella espera lo contrario, es una línea de `valorDeEvaluacion` |
 | Si se retoma participación: ¿premiar volumen? | C25, que está pospuesto |
 
 Ya **no** están abiertos: la escala, la forma de evaluación y la utilidad de los
-campos formativos —resueltos en la validación—, ni cuántos exámenes hay por
-trimestre y con cuánta precisión se presenta una calificación, que se preguntaron
-antes de C24 y quedaron en D-018: **uno** y **un decimal**.
+campos formativos —resueltos en la validación—; cuántos exámenes hay por trimestre y
+con cuánta precisión se presenta una calificación, que quedaron en D-018 —**uno** y
+**un decimal**—; y la meta de participación, que quedó en **5** con reparto
+proporcional (D-021).
 
 ## Deuda conocida
 

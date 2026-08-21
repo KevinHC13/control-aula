@@ -675,22 +675,69 @@ esquema: marcar una participación no puede fabricar un registro de asistencia. 
 día sin lista pasada no tiene fila, y crearla para colgarle un contador inventaría
 presencia —lo contrario de D-013—.
 
-La normalización usa `meta_participacion` del trimestre, con tope:
+La normalización es **proporcional con tope**, contra `meta_participacion` del
+trimestre:
 
 ```
 valor = meta > 0 ? mín(participaciones ÷ meta, 1) : null
 ```
 
+**La meta por omisión es 5** (validado el 2026-08-21): cinco participaciones o más
+dan el 100 %, y menos de cinco valen lo proporcional —una participación es 2.0, tres
+son 6.0—. Sigue siendo configurable por trimestre; 5 es con lo que nace.
+
 Contra el máximo del grupo, un alumno muy participativo hundiría a todos los demás.
-Y con tope, porque premiar volumen sin límite convierte el criterio en una carrera.
+Y con tope, porque premiar volumen sin límite convierte el criterio en una carrera
+entre los tres de siempre.
 
 **Si nadie tiene una sola participación en el trimestre, el criterio vale `null`
 para todo el grupo** —ella no lo usó—. Pero en cuanto alguien tiene marcas, quien no
 tiene ninguna saca 0: participar es lo que el criterio mide.
 
-`[POR VALIDAR]` — el valor por omisión de `meta_participacion`, y confirmar esa
-última regla: es la única de las tres que puede dar un 0 a un alumno callado sin que
-nadie lo haya capturado alumno por alumno.
+`[POR VALIDAR]` — solo esa última regla: es la única de las tres que puede dar un 0 a
+un alumno callado sin que nadie lo haya capturado alumno por alumno.
+
+## Herramientas de aula
+
+Dos funciones que no son evaluación pero viven pegadas a ella: sortear quién
+participa y formar equipos (D-021).
+
+### Sorteo de participación
+
+No agrega ninguna entidad: **escribe en `participaciones`**, la misma tabla del
+criterio, y solo cuando ella dice que el alumno sí participó. Un sorteo que registra
+la participación por el mero hecho de haber salido sorteado mediría salir sorteado,
+no participar.
+
+Sortea entre los alumnos **presentes**, y presente significa `presente` o `retardo`:
+`justificada` cuenta como asistencia para el porcentaje —ese es el trato con la
+escuela— pero el niño no está en el salón, así que no puede pasar al pizarrón. Es la
+única parte de la app donde `justificada` y `presente` no son lo mismo.
+
+El sorteo **pondera a favor de quien menos ha participado en el trimestre**, con azar
+en los empates. Un sorteo uniforme repite —treinta tiros y alguien sale tres veces
+mientras otro no sale ninguna— y los niños lo notan antes que nadie. Ponderado, el
+sorteo empuja hacia donde el criterio quiere llegar y además se puede decir en voz
+alta: *le toca a quien menos ha pasado*.
+
+`[POR VALIDAR]` — si prefiere azar puro. Es un cambio de una función, no de modelo.
+
+### Equipos
+
+**No guarda nada.** Los equipos se generan, se muestran y se rehacen; viven en
+Zustand mientras la pantalla está abierta, como el calendario o la pestaña activa
+—estado de interfaz, no dato—.
+
+Es la decisión que hay que revisar si ella pide *«los equipos de ayer»*: guardarlos
+significa una tabla, una fecha y una pantalla de historial, y eso solo se paga si los
+va a volver a ver. Para armar equipos en el momento, no.
+
+El reparto se pide de las dos formas —cuántos equipos, o cuántos niños por equipo— y
+son el mismo dato visto al revés. Con 30 alumnos y 4 equipos toca 8, 8, 7 y 7: **el
+sobrante se reparte**, nunca se deja un equipo de dos.
+
+Se arma con los **presentes**, con la misma definición que el sorteo, y se puede
+pedir con todo el grupo para planear de un día para otro.
 
 ### Lo que hace falta en el esquema
 
