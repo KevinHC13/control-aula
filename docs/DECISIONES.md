@@ -590,3 +590,74 @@ no depende de esta decisión.
 Queda **por confirmar con la usuaria** el primer punto: si ella espera que tres de
 cuatro renglones ya den calificación, es una línea de `valorDeEvaluacion`. Nada de
 la boleta depende todavía de esto, porque la pantalla de consulta es C29.
+
+## D-020 · Los tres criterios automáticos se retoman, con reglas de ella
+
+**Estado:** aceptada — 2026-08-21. Revierte la postergación anunciada en
+[D-015](#d-015--la-evaluación-se-modela-con-rúbricas-trimestres-y-pesos)
+
+Puntualidad, conducta y participación estaban pospuestas por decisión de la usuaria
+y vuelven al alcance, ahora **con las reglas dictadas por ella** en vez del diseño
+de referencia que había en `DATA-MODEL.md`. Los tres siguen siendo configurables por
+lo que ya existe: un criterio se usa si tiene fila en el trimestre, y pesa lo que
+diga su peso.
+
+**Puntualidad: el retardo se convierte en falta, y cuántos lo decide ella.** Dos
+niveles de configuración, no uno: si el criterio existe, la puntualidad se califica;
+y `retardos_por_falta` dice cuántos retardos hacen una falta —`null` significa que un
+retardo no penaliza en absoluto—. Es lo que ella pidió literalmente: *si se debe
+tomar en cuenta un retardo o no, y si sí, cuántos retardos generan una falta.*
+
+Lo que se descartó: el `VALOR_PUNTUALIDAD` del diseño viejo, que le daba 0.5 a cada
+retardo. Es una regla inventada y además no se parece a cómo se lleva en el papel:
+en la libreta los retardos se acumulan hasta convertirse en una falta, no valen medio
+día cada uno.
+
+**Conducta: sale de la bitácora, y todos sus reportes son negativos.** La pantalla
+que se llamaba *Notas* pasa a llamarse **Bitácora**, y el cambio de nombre es la
+decisión: no es un anecdotario sin consecuencias, es un registro de reportes, y todo
+lo que se anota ahí cuenta. La escala la dio ella:
+
+| Reportes en el trimestre | Conducta |
+|---|---|
+| 0 o 1 | 1.0 → **10.0** |
+| 2 | 0.5 → **5.0** |
+| 3 o más | 0.0 → **0.0** |
+
+El primer reporte se deja pasar a propósito. Con eso desaparece el `signo` que el
+diseño viejo quería agregarle a cada nota: si todo lo de la bitácora es un reporte,
+marcar el signo sería marcar siempre lo mismo.
+
+**Lo que esta decisión sí cuesta**, y conviene tenerlo escrito: la bitácora deja de
+ser un lugar sin consecuencias para apuntar cosas. Anotar «se le olvidó el suéter»
+cuenta igual que un reporte de conducta. El riesgo real es que ella escriba menos, y
+la mitigación es que la pantalla lo diga sin rodeos —*un reporte aquí afecta la
+calificación de conducta*— en vez de esconderlo.
+
+**Participación: un modo, no un botón por fila.** Se marca desde la pantalla de
+asistencia con un interruptor que cambia lo que hace el toque: prendido, tocar a un
+alumno le suma una participación en vez de ciclar su asistencia. Es la propuesta de
+ella y es la correcta para este caso: la participación no ocurre de una en una, ocurre
+en rondas —«a ver, quién quiere pasar»— y un modo es exactamente la forma de hacer
+muchas veces la misma cosa sin un toque extra por vez.
+
+Lo que un modo cuesta es que el mismo gesto significa dos cosas, así que se paga con
+tres cosas obligatorias: **se ve imposible de ignorar** (la pantalla cambia de
+color y el contador cambia de significado), **se apaga solo** al salir de la
+pantalla o al cambiar de día, y **se puede deshacer** —sostener el dedo resta una—.
+Sin esas tres, un modo olvidado ensucia datos en silencio, que es el peor tipo de
+error en una app sin auditoría.
+
+Alternativas descartadas: un botón «+» por fila —un objetivo táctil más en la
+pantalla más apretada, y treinta oportunidades de tocarlo sin querer mientras se pasa
+lista— y deslizar la fila —gesto invisible, y en iOS compite con el de navegación—.
+
+**La ausencia de datos no significa lo mismo en los tres.** Es la parte del diseño
+que hay que cuidar al calcular (D-019):
+
+- **Conducta sin reportes es un 10**, no un hueco: no tener reportes es el dato.
+- **Puntualidad sin días capturados es `null`**: no hay de dónde sacarla.
+- **Participación sin una sola marca en el trimestre es `null`** para todo el grupo
+  —ella no usó el criterio—, pero si alguien tiene marcas, quien no tiene ninguna
+  saca 0. Esta última es la única de las tres que conviene confirmarle antes de que
+  salga en una boleta.

@@ -573,80 +573,140 @@ captura —sería dividir entre cero—. Corregir un total no borra los aciertos
 capturados, pero bajarlo por debajo de lo capturado se rechaza: dejaría una
 calificación por arriba de 10.
 
-## Criterios automáticos — POSPUESTOS
+## Criterios automáticos
 
-**No se desarrollan por ahora.** Puntualidad y asistencia, conducta y
-participación quedan fuera del alcance actual por decisión de la usuaria.
+Los tres se **derivan**: no se capturan como una calificación, se calculan de lo que
+ya está registrado —asistencia, bitácora, participaciones—. Las reglas salieron de
+la usuaria el 2026-08-21 (docs/DECISIONES.md D-020) y reemplazan al diseño de
+referencia que había aquí.
 
-El tipo `TipoCriterio` conserva sus valores (`auto_puntualidad`,
-`auto_conducta`, `auto_participacion`) para no migrar el esquema después, pero no
-hay pantallas ni cálculo. Los pesos del trimestre se reparten entre los criterios
-que sí existen y la validación de suma 100 sigue aplicando.
+Como cualquier otro criterio, se usan si tienen fila en el trimestre y pesan lo que
+diga su peso. Con dos diferencias que hay que tener presentes:
 
-Las notas mantienen su forma actual, **sin campo `signo`**. Se agrega solo si
-conducta se retoma.
+- **No aportan a ningún campo formativo.** Un retardo no es de Lenguajes. Su
+  `porCampo` queda vacío, así que la calificación por campo se normaliza sobre los
+  criterios que sí evalúan campos, y la general los incluye a todos.
+- **Un criterio automático aparece a lo más una vez por trimestre.** Dos filas de
+  puntualidad no significan nada: no hay dos puntualidades que medir.
 
-Lo que sigue es diseño de referencia para ese momento, no trabajo pendiente.
+### Puntualidad
 
-### Puntualidad y asistencia
-
-El retardo debe penalizar. Si contara como asistencia plena, el criterio sería
-idéntico al de asistencia:
+Configuración, en `CriterioTrimestre`:
 
 ```ts
-const VALOR_PUNTUALIDAD: Record<EstadoAsistencia, number> = {
-  presente: 1,
-  justificada: 1,
-  retardo: 0.5,      // [POR VALIDAR]
-  ausente: 0,
-}
+/** Cuántos retardos hacen una falta. `null`: un retardo no penaliza. */
+retardos_por_falta: number | null
 ```
 
-Se convierte a base 10 con la misma regla que el resto: `proporcion × 10`, sin
-piso. Un alumno con 0 % de asistencia obtiene 0.
+Son los dos niveles que pidió ella: si el criterio existe, la puntualidad se
+califica; `retardos_por_falta` dice si un retardo cuenta y cuánto.
+
+```
+dias    = registros de asistencia del alumno en el trimestre
+faltas  = los que están en 'ausente'
+extra   = retardos_por_falta === null ? 0 : ⌊retardos ÷ retardos_por_falta⌋
+valor   = dias === 0 ? null : máx(0, (dias − faltas − extra) ÷ dias)
+```
+
+`justificada` nunca penaliza —es la regla que ya usa la asistencia— y el `máx(0, …)`
+existe porque con muchos retardos la resta puede pasarse.
+
+Con `retardos_por_falta: 3`, un alumno con 40 días, 2 ausencias y 7 retardos tiene
+2 + ⌊7 ÷ 3⌋ = 4 faltas efectivas → 36 ÷ 40 = 0.9 → **9.0**.
+
+`[POR VALIDAR]` — el valor por omisión de `retardos_por_falta` (3 es una convención,
+no un dato) y si esa conversión debe cambiar también el **porcentaje de asistencia**
+del resumen del grupo. Recomendación: no. Lo que la escuela pide es presencia, y un
+alumno que llegó tarde estuvo ahí; la conversión es para calificar puntualidad, no
+para reportar asistencia.
 
 ### Conducta
 
-Requiere agregar un signo a las notas:
+Sale de la **bitácora**, que es la pantalla que antes se llamaba *Notas*. Todo lo que
+se anota ahí es un reporte, y todos los reportes son negativos:
 
 ```ts
-export interface Nota extends Sincronizable {
+/** Un reporte de la bitácora. Todos son negativos: anotarlo ya es el reporte. */
+export interface Reporte extends Sincronizable {
   alumno_id: Id
   fecha: Fecha
   texto: string
-  signo: 'positiva' | 'neutral' | 'negativa'   // por defecto neutral
 }
 ```
 
-**El signo es opcional y por defecto neutral.** Solo cuenta lo que ella marque
-explícitamente.
+Se cuentan los reportes **del trimestre**, atribuidos por fecha como todo lo demás
+—derivado al leer, nunca almacenado—:
 
-La razón no es técnica: si toda nota afectara una calificación, ella escribiría
-menos notas o las escribiría estratégicamente. El anecdotario vale justamente
-porque es un espacio sin consecuencias para recordar cosas. Evaluar conducta
-tiene que ser un acto deliberado, no un efecto secundario de escribir.
+| Reportes | Valor | Base 10 |
+|---|---|---|
+| 0 o 1 | 1.0 | 10.0 |
+| 2 | 0.5 | 5.0 |
+| 3 o más | 0.0 | 0.0 |
 
-`[POR VALIDAR]` — la fórmula. Punto de partida: arrancar en 10 y descontar por
-nota negativa.
+El primer reporte se deja pasar a propósito. **No hay `signo`**: con toda la
+bitácora contando, marcarlo sería marcar siempre lo mismo. Y por eso mismo la
+pantalla tiene que decir que un reporte afecta la calificación —esconderlo haría que
+ella descubra la consecuencia en la boleta—.
+
+**Conducta sin reportes vale 10, no `null`.** No tener reportes es el dato; es el
+único de los tres criterios automáticos que siempre tiene valor.
 
 ### Participación
 
+Se registra desde la pantalla de asistencia, con un **modo**: prendido el
+interruptor, tocar a un alumno le suma una participación del día en vez de ciclar su
+asistencia (D-020).
+
 ```ts
+/** Las participaciones de un alumno en un día. Una fila, no una por marca. */
 export interface Participacion extends Sincronizable {
   alumno_id: Id
   fecha: Fecha
+  cantidad: number
 }
 ```
 
-Se captura desde la **pantalla de asistencia**, no en una pantalla propia: ella
-ya está ahí todos los días con la lista enfrente.
+Un contador y no una fila por marca: deshacer es restar uno, el conteo del día es
+una lectura y la `outbox` no se llena con N filas por clase. Índice
+`[fecha+alumno_id]`, igual que asistencia, y por la misma razón.
 
-La normalización usa `meta_participacion` del trimestre —por ejemplo, 10
-participaciones equivalen a 10— y no el máximo del grupo. Contra el máximo, un
-alumno muy participativo hunde la calificación de todos los demás.
+**Tabla aparte y no un campo en `RegistroAsistencia`**, aunque eso costaría menos
+esquema: marcar una participación no puede fabricar un registro de asistencia. Un
+día sin lista pasada no tiene fila, y crearla para colgarle un contador inventaría
+presencia —lo contrario de D-013—.
 
-`[POR VALIDAR]` — Y una pregunta previa para ella: ¿quiere premiar volumen de
-participación, o su criterio es otro?
+La normalización usa `meta_participacion` del trimestre, con tope:
+
+```
+valor = meta > 0 ? mín(participaciones ÷ meta, 1) : null
+```
+
+Contra el máximo del grupo, un alumno muy participativo hundiría a todos los demás.
+Y con tope, porque premiar volumen sin límite convierte el criterio en una carrera.
+
+**Si nadie tiene una sola participación en el trimestre, el criterio vale `null`
+para todo el grupo** —ella no lo usó—. Pero en cuanto alguien tiene marcas, quien no
+tiene ninguna saca 0: participar es lo que el criterio mide.
+
+`[POR VALIDAR]` — el valor por omisión de `meta_participacion`, y confirmar esa
+última regla: es la única de las tres que puede dar un 0 a un alumno callado sin que
+nadie lo haya capturado alumno por alumno.
+
+### Lo que hace falta en el esquema
+
+Todo esto necesita **`db.version(3)`**, la primera migración desde la de evaluación:
+
+- `bitacora` en vez de `notas` —la tabla nunca tuvo pantalla, así que está vacía en
+  todas partes y renombrarla no migra datos, solo el nombre—, con `Nota` renombrada a
+  `Reporte`.
+- `participaciones`, con `[fecha+alumno_id]`.
+- `retardos_por_falta` en `criterios_trimestre`: es un campo, no un índice, así que
+  no cuesta migración —igual que `meta_participacion`, que ya existía y por fin se
+  usa—.
+
+Ojo con el orden: el respaldo (`C14`) exporta `TABLAS_SINCRONIZABLES`, así que si se
+toma antes de `version(3)` hay que volver a él —el mismo tropiezo que ya se anotó con
+`version(2)`—.
 
 ---
 

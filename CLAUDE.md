@@ -12,8 +12,8 @@ español también (`asistencia`, `calificaciones`, `alumnos`).
 **`docs/ESTADO.md` es la fuente de verdad del estatus.** Leerlo antes de decidir
 qué construir; el resumen de aquí abajo se queda viejo primero.
 
-**La Fase 4 está terminada**: hecho de C18 a C29 —salvo C25 y C26, pospuestos—,
-más los fixes C19b y C21c. Existen y funcionan:
+**La Fase 4 está terminada**: hecho de C18 a C29, más los fixes C19b y C21c.
+Existen y funcionan:
 
 - **`domain/`** completo: `entities.ts` con la jerarquía `Ciclo → … → Actividad`,
   `values.ts`, `fechas.ts`, `rules.ts`, `evaluacion.ts` —la estructura de la
@@ -38,22 +38,29 @@ más los fixes C19b y C21c. Existen y funcionan:
   trimestre, sus tres capturas —entregas, rúbrica alumno por alumno y el examen por
   aciertos con teclado numérico propio— y el reporte por alumno y por campo
   formativo.
-  `Notas` y el resumen de `Grupo` siguen siendo placeholders.
+  `Notas` —que pasa a llamarse **Bitácora**— y el resumen de `Grupo` siguen siendo
+  placeholders.
 - PWA con `vite-plugin-pwa`, Zustand y el aviso de actualización.
 - Una Edge Function desplegada en Supabase, `extraer-lista`, en
   `supabase/functions/`.
 
 **Lo que sigue es C14, el respaldo en JSON**, y no por vistoso: el iPad ya guarda un
 trimestre entero de asistencia y calificaciones y **no hay ninguna forma de
-recuperarlo si se pierde**. Después, `C13` (resumen del grupo, que ya tiene de dónde
-sacar el promedio), `C12`, `C15` y el motor de sincronía. Ojo con algo que no es un
-commit: **la Fase 4 nunca se ha usado en el iPad**, solo en el navegador; falta medir
-con cronómetro la captura con rúbrica y la del examen.
+recuperarlo si se pierde**.
 
-Falta la Fase 3: respaldo JSON —lo más urgente—, resumen del grupo, notas,
-cumpleaños y el motor de sincronía. `C25` y `C26` —criterios automáticos de puntualidad,
-conducta y participación— están **pospuestos por decisión de la usuaria**, no
-pendientes.
+Después entra el **alcance nuevo del 2026-08-21**: la usuaria retomó los tres
+criterios automáticos con reglas propias (D-020), en el orden `C12` —la bitácora, que
+ahora alimenta conducta— → `C25b` —configuración— → `C25` —captura de
+participación— → `C26` —cálculo—. Necesitan **`db.version(3)`**: `notas` se renombra
+a `bitacora`, entra `participaciones` y `criterios_trimestre` gana
+`retardos_por_falta`. Si `C14` se toma antes, hay que volver a él: exporta
+`TABLAS_SINCRONIZABLES`.
+
+Queda además de la Fase 3 el resumen del grupo (`C13`, que ya tiene de dónde sacar el
+promedio), los cumpleaños (`C15`) y el motor de sincronía (`C16`).
+
+Ojo con algo que no es un commit: **la Fase 4 nunca se ha usado en el iPad**, solo en
+el navegador; falta medir con cronómetro la captura con rúbrica y la del examen.
 
 Antes de afirmar que algo existe, verificarlo en `src/`.
 
@@ -207,6 +214,14 @@ y fórmulas en `docs/DATA-MODEL.md`; lo que no se negocia al escribir código:
   denominador. Un campo sin preguntas no se captura, y más aciertos que preguntas no
   es un dato improbable sino imposible. Todo se teclea con el **teclado de la app**:
   el nativo de iPadOS tapa media pantalla y hace zoom.
+- **Los tres criterios automáticos se derivan, nunca se capturan** (D-020).
+  Puntualidad: `(días − faltas − ⌊retardos ÷ retardos_por_falta⌋) ÷ días`, y con
+  `retardos_por_falta: null` un retardo no penaliza. Conducta: sale de la
+  **bitácora**, donde todo reporte es negativo —0 o 1 reportes valen 10, 2 vale 5, 3
+  o más vale 0— y **sin reportes vale 10, no `—`**: no tener reportes es el dato.
+  Participación: se marca con un modo en la pantalla de asistencia y se normaliza
+  contra `meta_participacion`, con tope. Ninguno de los tres aporta a un campo
+  formativo, así que solo cuentan para el general.
 - La atribución al trimestre es **por fecha y nunca manual**: no existe ni debe
   existir un selector de trimestre en el camino diario. Una fecha fuera de todo
   rango devuelve `null`, que es un resultado normal —vacaciones, puentes— y no un
@@ -252,8 +267,8 @@ Lista de verificación antes de entregar el iPad: `docs/PWA-IOS.md`.
 
 Conventional Commits, en español, imperativo, sin punto final.
 Tipos: `feat`, `fix`, `refactor`, `chore`, `docs`, `test`, `style`, `perf`.
-Alcances: `domain`, `data`, `app`, `ui`, `asistencia`, `calificaciones`, `notas`,
-`grupo`, `pwa`, `sync`, `evaluacion`.
+Alcances: `domain`, `data`, `app`, `ui`, `asistencia`, `calificaciones`, `bitacora`
+—antes `notas`—, `grupo`, `pwa`, `sync`, `evaluacion`.
 
 ```
 feat(asistencia): ciclar estado con un toque en la fila

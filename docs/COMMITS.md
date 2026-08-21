@@ -287,16 +287,29 @@ Escrito antes de la validación con la usuaria. Lo sustituye la Fase 4 completa.
 Se conserva solo como registro de lo que se suponía y no era: la escala 5–10 con
 seis botones no existe en ninguna parte del modelo nuevo.
 
-### ⬜ C12 · `feat(notas): agregar anecdotario por alumno`
+### ⬜ C12 · `feat(bitacora): registrar reportes por alumno`
 
-Independiente de la Fase 4 y de todo lo demás: no lee ni escribe nada de
-evaluación mientras conducta siga pospuesta. Se puede tomar en cualquier momento.
+Era «anecdotario por alumno» y **cambió de nombre y de significado** (D-020): la
+pestaña se llama **Bitácora**, todo lo que se anota ahí es un **reporte** y todos los
+reportes son negativos. Ya no es un espacio sin consecuencias: de aquí sale la
+calificación de conducta, así que este commit es prerrequisito de `C26`.
+
+Renombra la entidad `Nota` a `Reporte` y la tabla `notas` a `bitacora`. La tabla
+nunca tuvo pantalla, así que está vacía en todas partes: es un renombre, no una
+migración de datos. Va en `db.version(3)` junto con `participaciones` (C25).
 
 **Aceptación**
 - [ ] Guardar requiere alumno y texto no vacío
 - [ ] El historial se ordena por fecha, más reciente primero
 - [ ] El estado vacío invita a actuar en lugar de solo informar
 - [ ] El campo de texto tiene al menos 16 px
+- [ ] La pantalla dice que un reporte **afecta la calificación de conducta**
+- [ ] El conteo de reportes del trimestre es visible por alumno
+
+Los dos últimos no son adorno. Con toda la bitácora contando para conducta, esconder
+la consecuencia haría que ella la descubra en la boleta; y el conteo es lo que
+permite ver que un alumno ya va en dos —el umbral donde la conducta cae a la mitad—
+antes de escribir el tercero.
 
 ### ⬜ C13 · `feat(grupo): mostrar resumen de asistencia y promedio`
 
@@ -355,7 +368,13 @@ no de planeación previa. Ver [DECISIONES.md](./DECISIONES.md) D-015 y la
 
 **Orden y dependencias.** C18 es prerrequisito de todo. Después, la cadena dura
 es C19 → C20 → C21 → C21b → {C22, C23, C24} → C28 → C29. C27 (cierre) necesita
-C28 para escribir el snapshot. C25 y C26 están pospuestos y no bloquean nada.
+C28 para escribir el snapshot.
+
+C25, C25b y C26 —los criterios automáticos— estaban pospuestos y **volvieron al
+alcance el 2026-08-21 con las reglas de la usuaria** (D-020). Cuelgan de esta fase
+pero se toman después de que esté cerrada, y su orden es
+`C12 → C25b → C25 → C26`: la configuración antes de la captura, y el cálculo al
+final, cuando ya tiene de dónde leer.
 
 ```
 C18 ─ C19 ─ C20 ─ C21 ─ C21b ─┬─ C22 ─┐
@@ -759,27 +778,80 @@ Decisiones que salieron de construirlo:
   `calificarRenglon` con su renglón. Y `siguienteSinCapturar` vive en `domain/`,
   compartido con la captura de rúbrica: es el mismo recorrido, no dos parecidos.
 
-### ⏸ C25 · `feat(evaluacion): registrar participación` — POSPUESTO
+### ⬜ C25 · `feat(evaluacion): registrar participación desde la asistencia`
 
-Pospuesto por decisión de la usuaria. Requiere `db.version(3)` con la tabla
-`participaciones` y una respuesta a *¿premiar volumen de participación?*.
+**Ya no está pospuesto** (D-020). Se marca con un **modo**: un interruptor en la
+pantalla de asistencia que cambia lo que hace el toque —prendido, tocar a un alumno
+le suma una participación del día en vez de ciclar su asistencia—.
+
+Necesita `db.version(3)` con la tabla `participaciones` (`[fecha+alumno_id]`,
+contador `cantidad`), que sale junto con el renombre de la bitácora de `C12`.
+
+Un modo es lo correcto aquí —la participación ocurre en rondas, no de una en una— y
+lo que cuesta es que el mismo gesto signifique dos cosas. Eso se paga con las tres
+cosas de la lista de abajo; sin ellas, un modo olvidado ensucia datos en silencio.
 
 **Aceptación**
 - [ ] Se registra sin salir de la pantalla de asistencia
 - [ ] No agrega ningún toque al camino de pasar lista
 - [ ] El conteo del trimestre es visible por alumno
 - [ ] La normalización usa la meta configurada, no el máximo del grupo
+- [ ] Con el modo prendido, **la pantalla se ve distinta** y el contador cambia de
+      significado: es imposible confundirla con la de pasar lista
+- [ ] El modo **se apaga solo** al salir de la pantalla y al cambiar de día
+- [ ] **Se puede deshacer** sin salir del modo: sostener el dedo resta una
+- [ ] Con el modo prendido, un toque **nunca** cambia la asistencia
 
-### ⏸ C26 · `feat(evaluacion): calcular criterios automáticos` — POSPUESTO
+### ⬜ C25b · `feat(evaluacion): configurar los criterios automáticos`
 
-Pospuesto por decisión de la usuaria: puntualidad, conducta y participación no
-entran al alcance actual. Conducta además requiere agregar `signo` a `Nota`.
+Los tres criterios automáticos entran al selector de *Criterios y pesos* con sus
+parámetros. Sin esto, `C26` no tiene de dónde leer cuántos retardos hacen una falta
+ni cuál es la meta de participación.
+
+`retardos_por_falta` es un campo nuevo de `criterios_trimestre`; `meta_participacion`
+ya existía desde C18 y por fin se usa. Ninguno es índice, así que no cuestan
+migración.
+
+**Aceptación**
+- [ ] Los tres tipos automáticos se pueden agregar al trimestre y quitar
+- [ ] Cada uno aparece **a lo más una vez** por trimestre
+- [ ] Puntualidad pide cuántos retardos hacen una falta, y admite «no cuentan»
+- [ ] Participación pide su meta; una meta en 0 no se acepta
+- [ ] Conducta no pide nada: su escala es fija (0-1 → 10, 2 → 5, 3+ → 0)
+- [ ] La pantalla dice de dónde sale cada uno —asistencia, bitácora,
+      participaciones— sin obligar a abrir otra pantalla para entenderlo
+- [ ] Cambiar un parámetro **no** toca nada capturado: los tres se derivan
+
+### ⬜ C26 · `feat(evaluacion): calcular puntualidad, conducta y participación`
+
+Las tres fórmulas en `domain/calculo.ts` y su composición en
+`application/calificaciones.ts`, que hoy devuelve `null` para todo criterio
+`auto_*`. Con esto los tres entran solos al reporte de C29 y al snapshot de C27, sin
+tocar ninguna de las dos pantallas.
+
+Depende de `C12` (bitácora), `C25` (participaciones) y `C25b` (parámetros).
 
 **Aceptación**
 - [ ] Puntualidad, conducta y participación se derivan; no se almacenan
-- [ ] El retardo penaliza en puntualidad
-- [ ] Solo las notas marcadas como negativas afectan conducta
-- [ ] Una nota sin signo explícito no afecta nada
+- [ ] Los retardos se convierten en faltas según `retardos_por_falta`, y con `null`
+      un retardo no penaliza
+- [ ] `justificada` no penaliza nunca
+- [ ] Conducta: 0 o 1 reportes → 10.0, 2 → 5.0, 3 o más → 0.0
+- [ ] **Conducta sin reportes vale 10, no `—`**: no tener reportes es el dato
+- [ ] Puntualidad sin días capturados vale `—`, no 0
+- [ ] Participación se normaliza contra la meta, con tope en 10.0
+- [ ] Sin una sola participación en el trimestre, el criterio vale `—` para todos;
+      con marcas de alguien, quien no tiene ninguna saca 0.0
+- [ ] Los tres cuentan para el general del trimestre y **no** para ningún campo
+      formativo
+- [ ] Los reportes y las participaciones se atribuyen al trimestre **por fecha**,
+      derivado al leer
+
+Una consecuencia que conviene mirar en la pantalla antes de darla por buena: con
+conducta configurada, **todo el grupo tiene calificación desde el primer día** —10.0
+de conducta— así que el reporte del trimestre dejará de mostrar `—` y empezará a
+mostrar «10.0 sobre 15». Es correcto, pero es justo el caso donde el aviso de «sobre
+cuánto» de C29 pasa de ser útil a ser indispensable.
 
 ### ✅ C27 · `feat(evaluacion): cerrar trimestre con snapshot de calificaciones`
 

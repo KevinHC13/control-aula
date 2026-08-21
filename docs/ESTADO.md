@@ -1,7 +1,9 @@
 # Estado del proyecto
 
-Actualizado el **2026-08-21**, con la **Fase 4 terminada** —C18 a C29, salvo C25 y
-C26 que están pospuestos— más los fixes C19b y C21c. Este es el documento que se lee primero para saber
+Actualizado el **2026-08-21**, con la **Fase 4 terminada** —C18 a C29— más los
+fixes C19b y C21c. Ese mismo día la usuaria **retomó los tres criterios
+automáticos** con reglas propias (D-020): dejaron de estar pospuestos y son ahora
+`C12`, `C25`, `C25b` y `C26`. Este es el documento que se lee primero para saber
 dónde va el proyecto y qué sigue. El plan detallado, con criterios de aceptación
 por commit, está en [COMMITS.md](./COMMITS.md).
 
@@ -20,9 +22,10 @@ las rúbricas, las actividades, las dos capturas de entregable y el examen por
 aciertos—, con una corrección de modelo encima: la rúbrica cuelga de la actividad, no
 del criterio (D-016). **Toda la captura de la Fase 4 está construida, y también el
 cálculo** (C28), **el cierre con su snapshot** (C27) **y la pantalla donde ella lee
-los números** (C29). **La Fase 4 está terminada.** Lo que sigue es lo que quedó
-pendiente de la Fase 3, y el pendiente más urgente no es una función: es que **el
-único ejemplar de los datos reales vive en un iPad**.
+los números** (C29). **La Fase 4 está terminada.** Encima de eso entró alcance
+nuevo: puntualidad, conducta y participación vuelven, con las reglas que dictó ella.
+Aun así, el pendiente más urgente no es ninguna de esas tres: es que **el único
+ejemplar de los datos reales vive en un iPad**.
 
 ## Fases
 
@@ -31,8 +34,9 @@ pendiente de la Fase 3, y el pendiente más urgente no es una función: es que *
 | 1 · Cimientos | Scaffold, shadcn, dominio, Dexie, puertos | ✅ Terminada |
 | 2 · Asistencia | El vertical completo hasta el iPad | ✅ Terminada |
 | Hito | Entrega, pausa de una semana, validación | ✅ Cumplido |
-| 3 · Resto de la v1 | Notas, resumen, respaldo, cumpleaños, sincronía | ▶ Pendiente: es lo que queda |
-| 4 · Evaluación | Ciclo, trimestres, criterios, rúbricas, cálculo | ✅ Terminada: C18–C24 y C27–C29. C25 y C26 pospuestos |
+| 3 · Resto de la v1 | Bitácora, resumen, respaldo, cumpleaños, sincronía | ▶ Pendiente |
+| 5 · Criterios automáticos | Puntualidad, conducta y participación | ⬜ Alcance nuevo: C12, C25, C25b, C26 |
+| 4 · Evaluación | Ciclo, trimestres, criterios, rúbricas, cálculo | ✅ Terminada: C18–C24 y C27–C29 |
 
 ## Lo que existe y funciona
 
@@ -55,10 +59,11 @@ bicolor.
 
 ## Lo que es placeholder
 
-`ui/screens/Notas.tsx` y el resumen de `ui/screens/Grupo.tsx`. Existen, navegan y
-no hacen nada. Son los dos únicos placeholders que quedan: `Calificaciones` está
-completa —lista las actividades, las captura de las tres formas y muestra el reporte
-del trimestre por alumno y por campo—.
+`ui/screens/Notas.tsx` —que pasa a llamarse **Bitácora** (D-020)— y el resumen de
+`ui/screens/Grupo.tsx`. Existen, navegan y no hacen nada. Son los dos únicos
+placeholders que quedan: `Calificaciones` está completa —lista las actividades, las
+captura de las tres formas y muestra el reporte del trimestre por alumno y por
+campo—.
 
 ## Lo que cambió con la validación
 
@@ -123,25 +128,56 @@ decisión de la usuaria, no pendientes.
 
 ### Lo que queda, y de qué depende
 
-Nada de lo que falta depende de evaluación: la Fase 4 está cerrada.
+La Fase 4 está cerrada, así que nada de lo que falta depende de ella. En orden de
+valor por unidad de trabajo:
 
-- **`C14` · respaldo en JSON.** El mayor riesgo abierto del proyecto, y ahora más
-  que antes: el iPad guarda un trimestre entero de calificaciones y no hay copia.
+- **`C14` · respaldo en JSON.** El mayor riesgo abierto del proyecto: el iPad guarda
+  un trimestre entero de calificaciones y no hay copia. Ojo con el orden: exporta
+  `TABLAS_SINCRONIZABLES`, así que tomarlo antes de `version(3)` obliga a volver a
+  él —el mismo tropiezo que ya se anotó con `version(2)`—.
+- **Los tres criterios automáticos**, en este orden: `C12` (bitácora, que también
+  trae `version(3)`), `C25b` (configuración), `C25` (captura de participación) y
+  `C26` (cálculo). El cálculo va al final porque hasta entonces no tiene de dónde
+  leer, y cuando entre aparece solo en el reporte de C29 y en el snapshot de C27,
+  sin tocar ninguna de las dos pantallas.
 - **`C13` · resumen del grupo.** Ya se puede completo: la asistencia siempre fue
   posible y el promedio sale de `reporteDeTrimestre`.
-- **`C12` · anecdotario** y **`C15` · cumpleaños.** Independientes por completo.
-- **`C16` y `C17` · sincronía.** Los que cierran la v1.
+- **`C15` · cumpleaños.** Independiente por completo.
+- **`C16` · sincronía.** El que cierra la v1.
 
-## Pospuesto por decisión, no por falta de tiempo
+Si se toma `C14` primero —recomendado— conviene hacer `version(3)` en el mismo
+tramo, para no exportar un esquema que va a cambiar la semana siguiente.
 
-Los criterios automáticos —**puntualidad, conducta y participación**— quedan
-fuera del alcance actual por decisión de la usuaria. `TipoCriterio` conserva sus
-valores para no migrar el esquema después, pero no hay pantallas ni cálculo, y
-`Nota` sigue **sin campo `signo`**.
+## Alcance nuevo: los tres criterios automáticos
 
-Corresponde a `C25` y `C26`. El diseño de referencia está en
-[DATA-MODEL.md](./DATA-MODEL.md#criterios-automáticos--pospuestos) para cuando se
-retome; no es trabajo pendiente.
+Estuvieron pospuestos por decisión de la usuaria y **el 2026-08-21 los retomó ella
+misma, con reglas propias** (docs/DECISIONES.md D-020). Ya no son diseño de
+referencia: son trabajo pendiente, y el detalle está en
+[DATA-MODEL.md](./DATA-MODEL.md#criterios-automáticos) y en los commits `C12`,
+`C25`, `C25b` y `C26`.
+
+En corto, para no tener que abrir los otros dos documentos:
+
+- **Puntualidad.** Configurable en dos niveles: si el criterio existe, se califica; y
+  `retardos_por_falta` dice cuántos retardos hacen una falta, o que un retardo no
+  penaliza. La calificación es `(días − faltas − retardos convertidos) ÷ días`.
+- **Conducta.** Sale de la **bitácora** —la pantalla que se llamaba *Notas*—, donde
+  todo lo que se anota es un reporte y todos los reportes son negativos. 0 o 1
+  reportes → 10.0; 2 → 5.0; 3 o más → 0.0. El primero se deja pasar a propósito.
+  Desaparece el `signo` que el diseño viejo iba a agregarle a cada nota.
+- **Participación.** Se marca desde la pantalla de asistencia con un **modo**: con el
+  interruptor prendido, tocar a un alumno le suma una participación en vez de ciclar
+  su asistencia. Se normaliza contra la meta del trimestre, con tope.
+
+Los tres se configuran como cualquier otro criterio: se usan si tienen fila en el
+trimestre y pesan lo que diga su peso. Y ninguno aporta a un campo formativo —un
+retardo no es de Lenguajes—, así que solo cuentan para el general.
+
+**Lo que cuesta, escrito para no descubrirlo tarde:** la bitácora deja de ser un
+lugar sin consecuencias para apuntar cosas, así que la pantalla tiene que decir que un
+reporte afecta la conducta; y el modo de participación hace que el mismo toque
+signifique dos cosas, así que tiene que verse imposible de ignorar, apagarse solo y
+poder deshacerse.
 
 ## Supuestos que siguen abiertos
 
@@ -150,6 +186,10 @@ Lo que todavía está marcado `[POR VALIDAR]` y qué bloquea cada uno:
 | Pregunta | Bloquea |
 |---|---|
 | ¿Cuál es el umbral real de riesgo por asistencia? | Solo el color de alerta de C13 |
+| ¿Cuántos retardos hacen una falta, por omisión? | El valor de arranque de C25b. 3 es una convención, no un dato |
+| ¿Cuál es la meta de participación, por omisión? | Lo mismo, en C25b |
+| ¿La conversión de retardos también cambia el **porcentaje de asistencia** del resumen? | C13. Recomendación: no —la escuela pide presencia, no puntualidad— |
+| Sin ninguna participación capturada, ¿un alumno callado saca 0 o `—`? | C26. Hoy el plan dice `—` para todos si nadie tiene marcas, y 0 en cuanto alguien las tiene |
 | ¿Una captura a medias debería dar calificación? | Se resolvió en C28 excluyéndola (D-019). Si ella espera lo contrario, es una línea de `valorDeEvaluacion` |
 | Si se retoma participación: ¿premiar volumen? | C25, que está pospuesto |
 
