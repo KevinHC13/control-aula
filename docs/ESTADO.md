@@ -25,6 +25,35 @@ Lo que separa esto de estar en uso no es código: son los tres pasos de Supabase
 pasada con el iPad en la mano y dos preguntas a la usuaria. Están abajo, en «Con qué
 continuar».
 
+## Qué está verificado, y con qué
+
+Vale la pena separarlo, porque «tiene pruebas» y «alguien lo usó» no son lo mismo y
+este proyecto tiene mucho de lo primero.
+
+| Cómo | Qué cubre |
+|---|---|
+| **839 pruebas** (`npm test`) | El dominio y los casos de uso completos, los adaptadores sobre `fake-indexeddb`, y las reglas de dependencia de la arquitectura |
+| **Navegador de escritorio** | Todas las pantallas, incluidas las de esta sesión: el cálculo de los tres criterios automáticos con los números comprobados a mano, el sorteo, el modo participación con su pulsación larga, los equipos, el resumen, los cumpleaños, el respaldo y la pantalla de la nube |
+| **Supabase real** | Que las dieciséis tablas existen con RLS, que con la clave publicable no se lee ni se escribe nada, que los registros están cerrados y que el login funciona |
+| **Nada** | La **subida y la restauración contra Supabase** —falta hacerlas una vez—, y **todo el comportamiento en el iPad**: instalación, gestos con el dedo, teclado, tiempos |
+
+Del cálculo conviene saber con qué se comprobó, porque es la cadena más larga: con
+los pesos en 40/30/30 y un alumno con una falta y una participación, el desglose dio
+`10.0 · 0.0 · 2.0` y final `4.6`, que es exactamente
+`(40×1 + 30×0 + 30×0.2) ÷ 100`. Los tres criterios automáticos aparecieron en el
+reporte **sin tocar ninguna pantalla**, que era lo que `C26` tenía que demostrar.
+
+Una pasada de seguridad sobre lo que sale del dispositivo, hecha el 2026-08-21:
+`.env` nunca se commiteó y ninguna clave está en el historial; el front solo conoce la
+URL y la clave publicable —la de servicio no aparece en el repositorio—; no hay
+`innerHTML` ni `eval` en ninguna parte; ningún `console` imprime datos del salón; la
+contraseña vive en el estado del componente y se borra al entrar; y las políticas de
+RLS impiden insertar filas a nombre de otro o cambiarle el dueño a las propias.
+
+Dos riesgos **aceptados a sabiendas**, no hallazgos: la sesión se guarda en
+`localStorage` —es lo que evita el login diario (D-023)— y restaurar no tiene
+deshacer (D-022).
+
 ## Fases
 
 | Fase | Alcance | Estado |
@@ -123,11 +152,13 @@ Lo que queda **no es código**, y es lo único que separa esto de estar en uso:
    falta es entrar desde *Grupo → Ajustes → Copia en la nube*, subir, y ver las filas
    en las tablas. Hasta entonces subir y restaurar solo están probados contra una nube
    simulada. Detalle y verificaciones en [PWA-IOS.md](./PWA-IOS.md).
-2. **Una pasada con el iPad en la mano.** De la Fase 2 en adelante —evaluación,
-   bitácora, respaldo, criterios automáticos, herramientas de aula, resumen,
-   cumpleaños y nube— **nada se ha usado en el dispositivo**: todo se ha visto en el
-   navegador de escritorio. La lista de verificación está en `PWA-IOS.md`, y lo que
-   más urge medir con cronómetro es la captura con rúbrica y la del examen.
+2. **Una pasada con el iPad en la mano.** De la Fase 2 en adelante **nada se ha usado
+   en el dispositivo**: todo se ha visto en el navegador de escritorio, que no dice
+   nada de los gestos con el dedo, del teclado de Safari ni de los tiempos reales. La
+   lista está en `PWA-IOS.md`, y lo que más urge medir con cronómetro es la captura
+   con rúbrica y la del examen. Dos cosas que solo se comprueban ahí: que **sostener
+   el dedo** en el modo participación reste sin abrir el menú de selección de iPadOS,
+   y que la hoja de compartir del respaldo ofrezca *Guardar en Archivos*.
 3. **Validar con la usuaria** los dos supuestos que siguen abiertos: el umbral de
    riesgo del resumen —hoy 90 % y 6.0, escritos en la pantalla— y si la captura a
    medias debería dar calificación, que se resolvió excluyéndola (D-019) sin
