@@ -530,9 +530,17 @@ export interface ExamenConfig extends Sincronizable {
 }
 ```
 
-`[POR VALIDAR]` — ¿Hay un examen por trimestre o varios? El modelo actual asume
-uno: `ResultadoExamen` apunta a `CriterioTrimestre`, no a una actividad. Si son
-varios, el examen se vuelve una actividad más y cambia la referencia.
+**Validado el 2026-08-21: hay un examen por trimestre** (docs/DECISIONES.md
+D-018). `ResultadoExamen` y `ExamenConfig` apuntan al `CriterioTrimestre` y ahí se
+quedan. Un trimestre con dos exámenes de pesos distintos se modela con dos filas de
+`CriterioTrimestre` de tipo `examen`, no con actividades: por eso
+`examenesDeTrimestre` devuelve una lista.
+
+`preguntas` es un mapa parcial a propósito: un examen que no evaluó *De lo humano y
+lo comunitario* simplemente no trae ese campo, y un campo sin preguntas no se
+captura —sería dividir entre cero—. Corregir un total no borra los aciertos ya
+capturados, pero bajarlo por debajo de lo capturado se rechaza: dejaría una
+calificación por arriba de 10.
 
 ## Criterios automáticos — POSPUESTOS
 

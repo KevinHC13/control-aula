@@ -3,8 +3,13 @@ import { describe, expect, it } from 'vitest'
 import {
   aceptaEscrituras,
   contieneFecha,
+  aciertosCompletos,
+  aciertosEnRango,
+  camposConPreguntas,
   descriptoresCompletos,
+  examenConfigurado,
   nivelesCompletos,
+  siguienteSinCapturar,
   pesosSuman100,
   puedeCerrarse,
   rangoValido,
@@ -275,5 +280,117 @@ describe('nivelesCompletos', () => {
   it('una rúbrica sin renglones nunca está completa', () => {
     // Decir que sí declararía calificado a todo el grupo sin un solo toque.
     expect(nivelesCompletos({}, [])).toBe(false)
+  })
+})
+
+describe('siguienteSinCapturar', () => {
+  it('desde -1 devuelve el primero que falta', () => {
+    expect(siguienteSinCapturar([true, false, false], -1)).toBe(1)
+  })
+
+  it('salta a los que ya están capturados', () => {
+    expect(siguienteSinCapturar([false, true, true, false], 0)).toBe(3)
+  })
+
+  it('da la vuelta al llegar al final', () => {
+    expect(siguienteSinCapturar([false, true, true, true], 3)).toBe(0)
+  })
+
+  it('avanza aunque el actual sea el que falta', () => {
+    // Quedarse en el actual haría que el toque no hiciera nada.
+    expect(siguienteSinCapturar([true, false, true, false], 1)).toBe(3)
+  })
+
+  it('con uno solo pendiente vuelve a él, incluso desde él mismo', () => {
+    expect(siguienteSinCapturar([true, true, false, true], 2)).toBe(2)
+  })
+
+  it('cuando ya no falta ninguno devuelve null', () => {
+    expect(siguienteSinCapturar([true, true], 0)).toBe(null)
+  })
+
+  it('sin elementos devuelve null, no falla', () => {
+    expect(siguienteSinCapturar([], -1)).toBe(null)
+  })
+})
+
+describe('camposConPreguntas', () => {
+  it('devuelve solo los campos que el examen evalúa', () => {
+    expect(
+      camposConPreguntas({ lenguajes: 10, saberes_pensamiento_cientifico: 15 }),
+    ).toEqual(['lenguajes', 'saberes_pensamiento_cientifico'])
+  })
+
+  it('un campo en cero no cuenta: no hay denominador', () => {
+    expect(camposConPreguntas({ lenguajes: 10, humano_comunitario: 0 })).toEqual([
+      'lenguajes',
+    ])
+  })
+
+  it('sin preguntas devuelve la lista vacía', () => {
+    expect(camposConPreguntas({})).toEqual([])
+  })
+})
+
+describe('examenConfigurado', () => {
+  it('con al menos un campo con preguntas, se puede capturar', () => {
+    expect(examenConfigurado({ lenguajes: 20 })).toBe(true)
+  })
+
+  it('sin preguntas no se captura: sería dividir entre cero', () => {
+    expect(examenConfigurado({})).toBe(false)
+    expect(examenConfigurado({ lenguajes: 0 })).toBe(false)
+  })
+})
+
+describe('aciertosEnRango', () => {
+  it('acepta de cero al total de preguntas, extremos incluidos', () => {
+    expect(aciertosEnRango(0, 10)).toBe(true)
+    expect(aciertosEnRango(10, 10)).toBe(true)
+    expect(aciertosEnRango(7, 10)).toBe(true)
+  })
+
+  it('rechaza más aciertos que preguntas', () => {
+    // No es improbable, es imposible: daría una calificación por arriba de 10.
+    expect(aciertosEnRango(11, 10)).toBe(false)
+  })
+
+  it('rechaza negativos y fracciones', () => {
+    expect(aciertosEnRango(-1, 10)).toBe(false)
+    expect(aciertosEnRango(7.5, 10)).toBe(false)
+  })
+})
+
+describe('aciertosCompletos', () => {
+  it('con un número en cada campo con preguntas, está completo', () => {
+    expect(
+      aciertosCompletos({ lenguajes: 8, humano_comunitario: 5 }, [
+        'lenguajes',
+        'humano_comunitario',
+      ]),
+    ).toBe(true)
+  })
+
+  it('a medias cuenta como pendiente', () => {
+    expect(
+      aciertosCompletos({ lenguajes: 8 }, ['lenguajes', 'humano_comunitario']),
+    ).toBe(false)
+  })
+
+  it('cero aciertos es un dato capturado, no un hueco', () => {
+    expect(aciertosCompletos({ lenguajes: 0 }, ['lenguajes'])).toBe(true)
+  })
+
+  it('los aciertos de un campo que ya no trae preguntas no completan nada', () => {
+    expect(
+      aciertosCompletos({ lenguajes: 8, humano_comunitario: 3 }, [
+        'lenguajes',
+        'etica_naturaleza_sociedades',
+      ]),
+    ).toBe(false)
+  })
+
+  it('un examen sin campos nunca está completo', () => {
+    expect(aciertosCompletos({}, [])).toBe(false)
   })
 })

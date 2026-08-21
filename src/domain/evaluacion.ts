@@ -1,6 +1,6 @@
 import type { CriterioTrimestre, TipoCriterio, Trimestre } from './entities'
 import { NIVELES } from './values'
-import type { Fecha, Id, Nivel } from './values'
+import type { CampoFormativo, Fecha, Id, Nivel } from './values'
 
 /**
  * Reglas de estructura de la evaluación: qué trimestre le toca a una fecha, si
@@ -192,4 +192,90 @@ export function nivelesCompletos(
 ): boolean {
   if (renglones.length === 0) return false
   return renglones.every((id) => niveles[id] !== undefined)
+}
+
+/**
+ * El índice del siguiente elemento sin capturar, empezando después de `desde` y
+ * dando la vuelta al final de la lista. `null` cuando ya no falta ninguno.
+ *
+ * Da la vuelta a propósito: ella no recorre el grupo en un solo pase —se salta a
+ * quien no trajo el trabajo, atiende la puerta, vuelve—, así que «siguiente» tiene
+ * que significar «el que falta», no «el que sigue en la lista». Y **avanza**: si el
+ * actual es el que falta, no se queda ahí, porque entonces el toque no haría nada.
+ *
+ * Con `desde` en -1 devuelve el primero que falte, que es con lo que se entra desde
+ * la lista. Recibe los estados y no las filas para que sirva a las dos capturas que
+ * lo necesitan —rúbrica y examen— sin conocer ninguna de las dos.
+ */
+export function siguienteSinCapturar(
+  completas: readonly boolean[],
+  desde: number,
+): number | null {
+  const total = completas.length
+  if (total === 0) return null
+
+  for (let paso = 1; paso <= total; paso++) {
+    const i = (((desde + paso) % total) + total) % total
+    if (completas[i] === false) return i
+  }
+  return null
+}
+
+/*
+ * Examen
+ * ======
+ *
+ * Hay **un** examen por trimestre, no una actividad por examen: se captura por
+ * aciertos sobre el `CriterioTrimestre` (validado con la usuaria el 2026-08-20,
+ * docs/DECISIONES.md D-018).
+ */
+
+/** Los campos que el examen sí evalúa: los que traen preguntas. */
+export function camposConPreguntas(
+  preguntas: Partial<Record<CampoFormativo, number>>,
+): CampoFormativo[] {
+  return (Object.keys(preguntas) as CampoFormativo[]).filter(
+    (campo) => (preguntas[campo] ?? 0) > 0,
+  )
+}
+
+/**
+ * Si el examen ya se puede capturar: al menos un campo con preguntas.
+ *
+ * Sin preguntas no hay denominador, y `aciertos ÷ preguntas` sería una división
+ * entre cero disfrazada de calificación.
+ */
+export function examenConfigurado(
+  preguntas: Partial<Record<CampoFormativo, number>>,
+): boolean {
+  return camposConPreguntas(preguntas).length > 0
+}
+
+/**
+ * Si los aciertos caben en el examen: entero, no negativo y no mayor al total de
+ * preguntas de ese campo.
+ *
+ * Más aciertos que preguntas no es un dato improbable, es un dato imposible: daría
+ * una calificación por arriba de 10 y nadie sabría después si fue un dedazo o si
+ * el examen tenía otra cantidad de preguntas.
+ */
+export function aciertosEnRango(aciertos: number, preguntas: number): boolean {
+  if (!Number.isInteger(aciertos)) return false
+  return aciertos >= 0 && aciertos <= preguntas
+}
+
+/**
+ * Si el alumno ya tiene su examen capturado: un número en cada campo con
+ * preguntas.
+ *
+ * Igual que en la rúbrica, a medias cuenta como pendiente: el general del examen
+ * es aciertos totales sobre preguntas totales, así que un campo sin capturar no
+ * baja la calificación, la deja incomparable con la de los demás.
+ */
+export function aciertosCompletos(
+  aciertos: Partial<Record<CampoFormativo, number>>,
+  campos: readonly CampoFormativo[],
+): boolean {
+  if (campos.length === 0) return false
+  return campos.every((campo) => aciertos[campo] !== undefined)
 }

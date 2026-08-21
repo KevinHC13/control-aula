@@ -24,6 +24,8 @@ beforeEach(async () => {
   await db.actividades.clear()
   await db.entregas.clear()
   await db.eval_rubrica.clear()
+  await db.examen_config.clear()
+  await db.resultados_examen.clear()
   await db.rubricas.clear()
   await db.rubrica_criterios.clear()
   await db.outbox.clear()
@@ -1297,5 +1299,202 @@ describe('calificarRenglon', () => {
     await repo.editarActividad(id, datosDe(grupo, { nombre: 'Proyecto' }), true)
 
     expect(await repo.evaluacionesDeActividad(id)).toEqual([])
+  })
+})
+
+/** Un trimestre con un criterio de examen, que es de donde cuelga el examen. */
+async function unExamen() {
+  const [t1] = await conCiclo()
+  await repo.agregarCriterio(t1!.id, 'Examen', 'examen')
+  const examenes = await repo.examenesDeTrimestre(t1!.id)
+  return { trimestreId: t1!.id, criterioTrimestreId: examenes[0]!.ponderado.id }
+}
+
+describe('examenesDeTrimestre', () => {
+  it('devuelve los criterios de examen, no los entregables', async () => {
+    const [t1] = await conCiclo()
+    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
+    await repo.agregarCriterio(t1!.id, 'Examen', 'examen')
+
+    const examenes = await repo.examenesDeTrimestre(t1!.id)
+    expect(examenes).toHaveLength(1)
+    expect(examenes[0]?.criterio.nombre).toBe('Examen')
+  })
+
+  it('sin criterio de examen devuelve la lista vacía', async () => {
+    const [t1] = await conCiclo()
+    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
+    expect(await repo.examenesDeTrimestre(t1!.id)).toEqual([])
+  })
+
+  it('sin preguntas la configuración viene en null, no falla', async () => {
+    const { trimestreId } = await unExamen()
+    expect((await repo.examenesDeTrimestre(trimestreId))[0]?.config).toBeNull()
+  })
+
+  it('trae las preguntas ya guardadas', async () => {
+    const { trimestreId, criterioTrimestreId } = await unExamen()
+    await repo.guardarPreguntasExamen(criterioTrimestreId, { lenguajes: 20 })
+
+    expect((await repo.examenesDeTrimestre(trimestreId))[0]?.config?.preguntas).toEqual({
+      lenguajes: 20,
+    })
+  })
+
+  it('un trimestre que no existe devuelve la lista vacía', async () => {
+    expect(await repo.examenesDeTrimestre('no-existe')).toEqual([])
+  })
+})
+
+describe('guardarPreguntasExamen', () => {
+  it('es upsert: corregir el total no deja dos configuraciones', async () => {
+    const { trimestreId, criterioTrimestreId } = await unExamen()
+
+    await repo.guardarPreguntasExamen(criterioTrimestreId, { lenguajes: 20 })
+    await repo.guardarPreguntasExamen(criterioTrimestreId, { lenguajes: 18 })
+
+    expect(await db.examen_config.count()).toBe(1)
+    expect((await repo.examenesDeTrimestre(trimestreId))[0]?.config?.preguntas).toEqual({
+      lenguajes: 18,
+    })
+  })
+
+  it('usa UUID del cliente y encola el cambio', async () => {
+    const { criterioTrimestreId } = await unExamen()
+    await db.outbox.clear()
+
+    await repo.guardarPreguntasExamen(criterioTrimestreId, { lenguajes: 20 })
+
+    const config = (await db.examen_config.toArray())[0]!
+    expect(config.id).toMatch(/^[0-9a-f-]{36}$/)
+    expect(config.updated_at.endsWith('Z')).toBe(true)
+    const pendientes = await db.outbox.toArray()
+    expect(pendientes).toHaveLength(1)
+    expect(pendientes[0]?.tabla).toBe('examen_config')
+  })
+
+  it('corregir los totales no toca los aciertos capturados', async () => {
+    const { criterioTrimestreId } = await unExamen()
+    await repo.guardarPreguntasExamen(criterioTrimestreId, { lenguajes: 20 })
+    await repo.registrarAciertos(criterioTrimestreId, 'alumno-1', 'lenguajes', 15)
+
+    await repo.guardarPreguntasExamen(criterioTrimestreId, { lenguajes: 18 })
+
+    expect((await repo.resultadosDeExamen(criterioTrimestreId))[0]?.aciertos).toEqual({
+      lenguajes: 15,
+    })
+  })
+})
+
+describe('resultadosDeExamen', () => {
+  it('sin captura devuelve la lista vacía', async () => {
+    const { criterioTrimestreId } = await unExamen()
+    expect(await repo.resultadosDeExamen(criterioTrimestreId)).toEqual([])
+  })
+
+  it('no devuelve los borrados', async () => {
+    const { criterioTrimestreId } = await unExamen()
+    await repo.registrarAciertos(criterioTrimestreId, 'alumno-1', 'lenguajes', 8)
+    await repo.registrarAciertos(criterioTrimestreId, 'alumno-2', 'lenguajes', 9)
+    const primero = (await repo.resultadosDeExamen(criterioTrimestreId))[0]!
+    await db.resultados_examen.update(primero.id, { deleted_at: '2026-11-02T00:00:00.000Z' })
+
+    expect(await repo.resultadosDeExamen(criterioTrimestreId)).toHaveLength(1)
+  })
+})
+
+describe('registrarAciertos', () => {
+  it('los campos se van llenando sin borrarse entre sí', async () => {
+    const { criterioTrimestreId } = await unExamen()
+
+    await repo.registrarAciertos(criterioTrimestreId, 'alumno-1', 'lenguajes', 18)
+    await repo.registrarAciertos(
+      criterioTrimestreId,
+      'alumno-1',
+      'saberes_pensamiento_cientifico',
+      12,
+    )
+
+    const resultados = await repo.resultadosDeExamen(criterioTrimestreId)
+    expect(resultados).toHaveLength(1)
+    expect(resultados[0]?.aciertos).toEqual({
+      lenguajes: 18,
+      saberes_pensamiento_cientifico: 12,
+    })
+  })
+
+  it('es upsert por [criterio_trimestre_id+alumno_id]', async () => {
+    const { criterioTrimestreId } = await unExamen()
+
+    await repo.registrarAciertos(criterioTrimestreId, 'alumno-1', 'lenguajes', 1)
+    await repo.registrarAciertos(criterioTrimestreId, 'alumno-1', 'lenguajes', 12)
+
+    const resultados = await repo.resultadosDeExamen(criterioTrimestreId)
+    expect(resultados).toHaveLength(1)
+    expect(resultados[0]?.aciertos).toEqual({ lenguajes: 12 })
+  })
+
+  it('cero aciertos es un dato guardado, no un borrado', async () => {
+    const { criterioTrimestreId } = await unExamen()
+
+    await repo.registrarAciertos(criterioTrimestreId, 'alumno-1', 'lenguajes', 0)
+
+    expect((await repo.resultadosDeExamen(criterioTrimestreId))[0]?.aciertos).toEqual({
+      lenguajes: 0,
+    })
+  })
+
+  it('null borra ese campo y deja los demás', async () => {
+    const { criterioTrimestreId } = await unExamen()
+    await repo.registrarAciertos(criterioTrimestreId, 'alumno-1', 'lenguajes', 8)
+    await repo.registrarAciertos(criterioTrimestreId, 'alumno-1', 'humano_comunitario', 5)
+
+    await repo.registrarAciertos(criterioTrimestreId, 'alumno-1', 'lenguajes', null)
+
+    expect((await repo.resultadosDeExamen(criterioTrimestreId))[0]?.aciertos).toEqual({
+      humano_comunitario: 5,
+    })
+  })
+
+  it('el mismo alumno en otro examen es otro registro', async () => {
+    const [t1] = await conCiclo()
+    await repo.agregarCriterio(t1!.id, 'Examen escrito', 'examen')
+    await repo.agregarCriterio(t1!.id, 'Examen oral', 'examen')
+    const [uno, otro] = await repo.examenesDeTrimestre(t1!.id)
+
+    await repo.registrarAciertos(uno!.ponderado.id, 'alumno-1', 'lenguajes', 3)
+    await repo.registrarAciertos(otro!.ponderado.id, 'alumno-1', 'lenguajes', 7)
+
+    expect((await repo.resultadosDeExamen(uno!.ponderado.id))[0]?.aciertos).toEqual({
+      lenguajes: 3,
+    })
+    expect((await repo.resultadosDeExamen(otro!.ponderado.id))[0]?.aciertos).toEqual({
+      lenguajes: 7,
+    })
+  })
+
+  it('revive un registro borrado en vez de crear uno nuevo', async () => {
+    const { criterioTrimestreId } = await unExamen()
+    await repo.registrarAciertos(criterioTrimestreId, 'alumno-1', 'lenguajes', 8)
+    const primero = (await repo.resultadosDeExamen(criterioTrimestreId))[0]!
+    await db.resultados_examen.update(primero.id, { deleted_at: '2026-11-02T00:00:00.000Z' })
+
+    await repo.registrarAciertos(criterioTrimestreId, 'alumno-1', 'lenguajes', 9)
+
+    const resultados = await repo.resultadosDeExamen(criterioTrimestreId)
+    expect(resultados).toHaveLength(1)
+    expect(resultados[0]?.id).toBe(primero.id)
+  })
+
+  it('encola un pendiente por captura', async () => {
+    const { criterioTrimestreId } = await unExamen()
+    await db.outbox.clear()
+
+    await repo.registrarAciertos(criterioTrimestreId, 'alumno-1', 'lenguajes', 8)
+
+    const pendientes = await db.outbox.toArray()
+    expect(pendientes).toHaveLength(1)
+    expect(pendientes[0]?.tabla).toBe('resultados_examen')
+    expect(pendientes[0]?.op).toBe('upsert')
   })
 })

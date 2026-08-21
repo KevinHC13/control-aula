@@ -526,3 +526,32 @@ no está.
 sin traslape. El número es una etiqueta y desordenarlos no rompería el cálculo,
 pero una pantalla que ofrece «abrir el trimestre 3» con el 2 sin abrir no se
 entiende.
+
+## D-018 · Un examen por trimestre, y se presenta con un decimal
+
+**Estado:** aceptada — 2026-08-21. Cierra dos `[POR VALIDAR]` de
+[D-015](#d-015--la-evaluación-se-modela-con-rúbricas-trimestres-y-pesos)
+
+Las dos preguntas se le hicieron a la usuaria antes de escribir C24, porque las dos
+cambiaban código y una cambiaba el modelo.
+
+**Un examen por trimestre.** `ResultadoExamen` y `ExamenConfig` cuelgan del
+`CriterioTrimestre`, no de una actividad. Es lo que el modelo ya asumía, así que no
+hubo migración: se confirmó antes de construir encima, que era el punto de
+preguntar.
+
+Lo que se decidió **no** hacer: volver el examen una actividad más «por si acaso».
+Habría duplicado la captura —una pantalla de aciertos por actividad más el promedio
+del criterio— para un caso que no existe, y el examen no se parece a un entregable:
+no tiene rúbrica, tiene denominador.
+
+Si algún día hay dos, el criterio de examen admite dos filas de
+`CriterioTrimestre` con pesos distintos, que es como quedó resuelto en el código:
+`examenesDeTrimestre` devuelve una lista, no un objeto. No es la solución completa
+—serían dos criterios, no dos exámenes de uno— pero evita que la pantalla asuma
+que hay exactamente uno.
+
+**Se presenta con un decimal.** 8.3, no 8. El cálculo sigue sin redondeo intermedio
+y en base 1; el decimal es solo al mostrar. Un entero borraría la diferencia entre
+8.4 y 8.6, que es exactamente la comparación que ella hace al decidir una
+calificación de boleta.

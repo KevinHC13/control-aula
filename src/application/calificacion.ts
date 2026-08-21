@@ -1,7 +1,11 @@
 import { repos } from '@/data'
 import type { ActividadConEstado } from '@/data/ports/evaluacion'
 import type { Alumno, EvaluacionRubrica, RubricaCriterio, Trimestre } from '@/domain/entities'
-import { aceptaEscrituras, nivelesCompletos } from '@/domain/evaluacion'
+import {
+  aceptaEscrituras,
+  nivelesCompletos,
+  siguienteSinCapturar,
+} from '@/domain/evaluacion'
 import type { Id, Nivel } from '@/domain/values'
 
 /**
@@ -71,11 +75,10 @@ export function contarCalificados(filas: FilaCalificacion[]): {
  * El índice del siguiente alumno **sin calificar**, empezando después de `desde`
  * y dando la vuelta al final de la lista. `null` cuando ya no falta nadie.
  *
- * Da la vuelta a propósito: ella no recorre el grupo en un solo pase —se salta a
- * quien no trajo el trabajo, atiende la puerta, vuelve—, así que «siguiente» tiene
- * que significar «el que falta», no «el que sigue en la lista». Un alumno a medias
- * cuenta como pendiente: un promedio sacado de tres renglones de cuatro no se
- * compara con el de nadie.
+ * El recorrido lo decide `siguienteSinCapturar`, en `domain/`: la comparte con la
+ * captura del examen. Aquí solo se traduce qué cuenta como capturado —un alumno a
+ * medias cuenta como pendiente, porque un promedio sacado de tres renglones de
+ * cuatro no se compara con el de nadie—.
  *
  * Con `desde` en -1 devuelve el primero que falte, que es con lo que se entra
  * desde la lista.
@@ -84,14 +87,10 @@ export function siguienteSinCalificar(
   filas: FilaCalificacion[],
   desde: number,
 ): number | null {
-  const total = filas.length
-  if (total === 0) return null
-
-  for (let paso = 1; paso <= total; paso++) {
-    const i = (((desde + paso) % total) + total) % total
-    if (filas[i]?.completa === false) return i
-  }
-  return null
+  return siguienteSinCapturar(
+    filas.map((f) => f.completa),
+    desde,
+  )
 }
 
 /**

@@ -3,6 +3,8 @@ import type {
   Ciclo,
   Entrega,
   EvaluacionRubrica,
+  ExamenConfig,
+  ResultadoExamen,
   Criterio,
   CriterioTrimestre,
   Rubrica,
@@ -102,6 +104,22 @@ export interface DatosActividad {
   ejes: string[]
   fecha: Fecha
   rubrica_id: Id | null
+}
+
+/**
+ * El examen de un trimestre: su criterio y cuántas preguntas trae cada campo.
+ *
+ * `config` es `null` mientras nadie ha dicho cuántas preguntas hay. No es un error:
+ * el criterio existe desde que se le puso peso, y las preguntas se saben el día que
+ * se aplica el examen. Sin ellas no hay denominador y no se puede capturar.
+ *
+ * Hay **uno** por trimestre, no una actividad por examen (docs/DECISIONES.md
+ * D-018), así que esto cuelga del `CriterioTrimestre`.
+ */
+export interface ExamenDelTrimestre {
+  ponderado: CriterioTrimestre
+  criterio: Criterio
+  config: ExamenConfig | null
 }
 
 /** Un trimestre por crear: todavía no tiene `id` ni `ciclo_id`. */
@@ -313,5 +331,52 @@ export interface EvaluacionRepo {
     alumnoId: Id,
     rubricaCriterioId: Id,
     nivel: Nivel,
+  ): Promise<void>
+
+  /**
+   * Los exámenes del trimestre, con su configuración de preguntas.
+   *
+   * Son los criterios de tipo `examen`, los que **no** aparecen en la lista de
+   * actividades. Normalmente es uno; la lista existe porque nada impide que el
+   * trimestre tenga dos criterios de examen con pesos distintos.
+   */
+  examenesDeTrimestre(trimestreId: Id): Promise<ExamenDelTrimestre[]>
+
+  /** Lo mismo, reactivo: guardar las preguntas habilita la captura sin recargar. */
+  observarExamenesDeTrimestre(trimestreId: Id): Suscribible<ExamenDelTrimestre[]>
+
+  /**
+   * Fija cuántas preguntas trae cada campo. Upsert por `criterio_trimestre_id`:
+   * hay una sola configuración por examen.
+   *
+   * Corregir una cantidad **no** borra los aciertos ya capturados: si el examen
+   * traía 20 preguntas de Lenguajes y eran 18, lo que estaba capturado sigue
+   * valiendo. Quien llama ya se aseguró de que ningún acierto guardado quede por
+   * arriba del nuevo total: la regla vive en el caso de uso.
+   */
+  guardarPreguntasExamen(
+    criterioTrimestreId: Id,
+    preguntas: Partial<Record<CampoFormativo, number>>,
+  ): Promise<void>
+
+  /** Los resultados capturados de un examen, sin los borrados. */
+  resultadosDeExamen(criterioTrimestreId: Id): Promise<ResultadoExamen[]>
+
+  /** Lo mismo, reactivo: cada dígito capturado repinta la cifra y el contador. */
+  observarResultadosDeExamen(criterioTrimestreId: Id): Suscribible<ResultadoExamen[]>
+
+  /**
+   * Deja los aciertos de **un** campo para ese alumno, conservando los demás.
+   * `null` borra ese campo, que es lo que pasa al vaciar la cifra con el teclado.
+   *
+   * Upsert por `[criterio_trimestre_id+alumno_id]`, igual que `calificarRenglon`
+   * con su actividad: un registro por alumno por examen, y el mapa se llena campo
+   * por campo. Quien llama ya validó el rango: la regla vive en el caso de uso.
+   */
+  registrarAciertos(
+    criterioTrimestreId: Id,
+    alumnoId: Id,
+    campo: CampoFormativo,
+    aciertos: number | null,
   ): Promise<void>
 }

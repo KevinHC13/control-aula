@@ -69,3 +69,13 @@ export function IconoBasura({ className }: { className?: string }) {
     </svg>
   )
 }
+
+/** Retroceso: la tecla de borrar del teclado numérico. */
+export function IconoBorrar({ className }: { className?: string }) {
+  return (
+    <svg aria-hidden viewBox="0 0 24 24" className={className} {...trazo}>
+      <path d="M9 5h10a2 2 0 012 2v10a2 2 0 01-2 2H9L2 12l7-7z" />
+      <path d="M12 9l5 6M17 9l-5 6" />
+    </svg>
+  )
+}

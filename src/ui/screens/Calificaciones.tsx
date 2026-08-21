@@ -6,15 +6,22 @@ import {
   rubricaSugerida,
   trimestreDe,
 } from '@/application/evaluacion'
-import type { ActividadConEstado, ActividadesDelCriterio } from '@/data/ports/evaluacion'
+import { camposDelExamen, examenListo } from '@/application/examen'
+import type {
+  ActividadConEstado,
+  ActividadesDelCriterio,
+  ExamenDelTrimestre,
+} from '@/data/ports/evaluacion'
 import type { Trimestre } from '@/domain/entities'
 import { fechaLocal } from '@/domain/fechas'
 import { Button } from '@/ui/components/ui/button'
 import { useActividadesDelTrimestre } from '@/ui/hooks/useActividadesDelTrimestre'
 import { useCicloEnCurso } from '@/ui/hooks/useCicloEnCurso'
+import { useExamenesDelTrimestre } from '@/ui/hooks/useExamenesDelTrimestre'
 import { useRubricas } from '@/ui/hooks/useRubricas'
 import { cn } from '@/ui/lib/utils'
 import { CapturaEntregas } from '@/ui/screens/CapturaEntregas'
+import { CapturaExamen } from '@/ui/screens/CapturaExamen'
 import { CapturaRubrica } from '@/ui/screens/CapturaRubrica'
 import { FormaActividad } from '@/ui/screens/FormaActividad'
 
@@ -39,6 +46,9 @@ export function Calificaciones() {
   const trimestre = ciclo?.trimestres.find((t) => t.numero === numeroActivo) ?? null
 
   const { grupos } = useActividadesDelTrimestre(trimestre?.id ?? null)
+  // Los exámenes vienen aparte de las actividades porque no son actividades: se
+  // capturan por aciertos sobre el CriterioTrimestre (D-018).
+  const { examenes } = useExamenesDelTrimestre(trimestre?.id ?? null)
 
   // La subvista vive y muere aquí dentro, como el calendario en Asistencia: no
   // cruza pantallas, así que no va al store.
@@ -48,12 +58,27 @@ export function Calificaciones() {
     actividadId?: string
   } | null>(null)
 
+  // El examen abierto, por `criterio_trimestre_id`. Aparte de `subvista` porque no
+  // cuelga de un grupo de actividades: no tiene ninguna.
+  const [examenAbierto, setExamenAbierto] = useState<string | null>(null)
+  const examen = examenes.find((e) => e.ponderado.id === examenAbierto)
+
   const grupoAbierto = grupos.find((g) => g.ponderado.id === subvista?.grupoId)
   // Se busca por id y no se guarda la actividad: así la subvista siempre ve la
   // versión recién emitida por la suscripción, no una copia congelada al abrirla.
   const actividadAbierta = grupoAbierto?.actividades.find(
     (a) => a.actividad.id === subvista?.actividadId,
   )
+
+  if (examen && trimestre) {
+    return (
+      <CapturaExamen
+        trimestre={trimestre}
+        examen={examen}
+        alVolver={() => setExamenAbierto(null)}
+      />
+    )
+  }
 
   if (subvista && grupoAbierto && trimestre) {
     if (subvista.modo === 'captura' && actividadAbierta) {
@@ -133,9 +158,9 @@ export function Calificaciones() {
             ))}
           </nav>
 
-          {grupos.length === 0 ? (
+          {grupos.length === 0 && examenes.length === 0 ? (
             <p className="text-base text-tinta-2">
-              Este trimestre no tiene criterios que se llenen con actividades. Se configuran en
+              Este trimestre todavía no tiene criterios que se capturen aquí. Se configuran en
               Grupo → Ajustes → Criterios y pesos.
             </p>
           ) : (
@@ -158,6 +183,14 @@ export function Calificaciones() {
               />
             ))
           )}
+
+          {examenes.map((item) => (
+            <FilaDeExamen
+              key={item.ponderado.id}
+              examen={item}
+              alAbrir={() => setExamenAbierto(item.ponderado.id)}
+            />
+          ))}
         </>
       )}
     </section>
@@ -271,5 +304,67 @@ function FilaActividad({
         </span>
       </button>
     </li>
+  )
+}
+
+/**
+ * El examen del trimestre, en su propia sección.
+ *
+ * No entra en la lista de actividades porque no tiene ninguna: se captura por
+ * aciertos sobre el `CriterioTrimestre` (D-018). Se ve aparte a propósito —hay uno
+ * por trimestre y se captura un día, no todas las semanas— y dice si ya sabemos
+ * cuántas preguntas trae, que es lo que decide si se puede capturar.
+ */
+function FilaDeExamen({
+  examen,
+  alAbrir,
+}: {
+  examen: ExamenDelTrimestre
+  alAbrir: () => void
+}) {
+  const listo = examenListo(examen)
+  const campos = camposDelExamen(examen)
+  const preguntas = campos.reduce((acc, c) => acc + c.preguntas, 0)
+
+  return (
+    <section aria-labelledby={`examen-${examen.ponderado.id}`} className="flex flex-col">
+      <header className="flex items-baseline justify-between gap-2 border-b border-linea pb-1">
+        <h2 id={`examen-${examen.ponderado.id}`} className="text-base font-medium text-tinta">
+          {examen.criterio.nombre}{' '}
+          <span className="cifra font-normal text-tinta-2">{examen.ponderado.peso}%</span>
+        </h2>
+        <p className="text-[13px] text-tinta-2">
+          {listo ? `${campos.length} campos` : 'sin preguntas'}
+        </p>
+      </header>
+
+      <button
+        type="button"
+        onClick={alAbrir}
+        className="flex min-h-14 w-full items-center gap-2 border-b border-linea text-left"
+      >
+        <span
+          aria-hidden
+          className={cn(
+            'h-14 w-[7px] shrink-0',
+            listo ? 'bg-azul' : 'border-x border-linea bg-transparent',
+          )}
+        />
+        <span className="flex min-w-0 flex-1 flex-col py-2">
+          <span className="truncate text-base font-medium text-tinta">
+            {listo ? 'Capturar aciertos' : 'Decir cuántas preguntas trae'}
+          </span>
+          <span className="text-[13px] text-tinta-2">
+            {listo ? (
+              <>
+                <span className="cifra">{preguntas}</span> preguntas en total
+              </>
+            ) : (
+              'El examen se captura por aciertos, no por actividades'
+            )}
+          </span>
+        </span>
+      </button>
+    </section>
   )
 }

@@ -7,6 +7,7 @@ import type {
   DatosActividad,
   EsquemaTrimestre,
   EvaluacionRepo,
+  ExamenDelTrimestre,
   PeriodoNuevo,
   RenglonDeRubrica,
   RubricaConCriterios,
@@ -16,6 +17,8 @@ import type {
   Ciclo,
   Entrega,
   EvaluacionRubrica,
+  ExamenConfig,
+  ResultadoExamen,
   Criterio,
   CriterioTrimestre,
   Rubrica,
@@ -24,7 +27,15 @@ import type {
   Trimestre,
 } from '@/domain/entities'
 import { admiteActividades } from '@/domain/evaluacion'
-import type { Fecha, Id, Instante, Nivel, Sincronizable, Suscribible } from '@/domain/values'
+import type {
+  CampoFormativo,
+  Fecha,
+  Id,
+  Instante,
+  Nivel,
+  Sincronizable,
+  Suscribible,
+} from '@/domain/values'
 
 import { ahora, db, nuevoId } from './db'
 
@@ -686,6 +697,110 @@ export class DexieEvaluacionRepo implements EvaluacionRepo {
       await db.eval_rubrica.put(registro)
       await db.outbox.add({
         tabla: 'eval_rubrica',
+        registro_id: registro.id,
+        op: 'upsert',
+        at: momento,
+      })
+    })
+  }
+
+  async examenesDeTrimestre(trimestreId: Id): Promise<ExamenDelTrimestre[]> {
+    const esquema = await this.esquemaDeTrimestre(trimestreId)
+    if (!esquema) return []
+
+    const deExamen = esquema.criterios.filter((c) => c.criterio.tipo === 'examen')
+    if (deExamen.length === 0) return []
+
+    // Una sola pasada por la tabla y no una consulta por criterio: son a lo más
+    // dos filas y la tabla tiene una configuración por examen.
+    const configs = (await db.examen_config.toArray()).filter((c) => c.deleted_at === null)
+
+    return deExamen.map(({ ponderado, criterio }) => ({
+      ponderado,
+      criterio,
+      config: configs.find((c) => c.criterio_trimestre_id === ponderado.id) ?? null,
+    }))
+  }
+
+  observarExamenesDeTrimestre(trimestreId: Id): Suscribible<ExamenDelTrimestre[]> {
+    return liveQuery(() => this.examenesDeTrimestre(trimestreId))
+  }
+
+  async guardarPreguntasExamen(
+    criterioTrimestreId: Id,
+    preguntas: Partial<Record<CampoFormativo, number>>,
+  ): Promise<void> {
+    await db.transaction('rw', db.examen_config, db.outbox, async () => {
+      const existente = (
+        await db.examen_config.where('criterio_trimestre_id').equals(criterioTrimestreId).toArray()
+      ).find((c) => c.deleted_at === null)
+
+      const momento = ahora()
+      const registro: ExamenConfig = {
+        id: existente?.id ?? nuevoId(),
+        criterio_trimestre_id: criterioTrimestreId,
+        preguntas,
+        updated_at: momento,
+        deleted_at: null,
+      }
+
+      await db.examen_config.put(registro)
+      await db.outbox.add({
+        tabla: 'examen_config',
+        registro_id: registro.id,
+        op: 'upsert',
+        at: momento,
+      })
+    })
+  }
+
+  async resultadosDeExamen(criterioTrimestreId: Id): Promise<ResultadoExamen[]> {
+    const registros = await db.resultados_examen
+      .where('criterio_trimestre_id')
+      .equals(criterioTrimestreId)
+      .toArray()
+    // El filtro va en memoria: IndexedDB no indexa `null`. Ver la nota en
+    // alumnos.adapter.ts.
+    return registros.filter((r) => r.deleted_at === null)
+  }
+
+  observarResultadosDeExamen(criterioTrimestreId: Id): Suscribible<ResultadoExamen[]> {
+    return liveQuery(() => this.resultadosDeExamen(criterioTrimestreId))
+  }
+
+  async registrarAciertos(
+    criterioTrimestreId: Id,
+    alumnoId: Id,
+    campo: CampoFormativo,
+    aciertos: number | null,
+  ): Promise<void> {
+    await db.transaction('rw', db.resultados_examen, db.outbox, async () => {
+      const existente = await db.resultados_examen
+        .where('[criterio_trimestre_id+alumno_id]')
+        .equals([criterioTrimestreId, alumnoId])
+        .first()
+
+      // Se copia el mapa en vez de mutarlo: el objeto que devolvió Dexie puede ser
+      // el mismo que ya tiene una suscripción en la mano.
+      const mapa = { ...existente?.aciertos }
+      if (aciertos === null) delete mapa[campo]
+      else mapa[campo] = aciertos
+
+      const momento = ahora()
+      const registro: ResultadoExamen = {
+        id: existente?.id ?? nuevoId(),
+        criterio_trimestre_id: criterioTrimestreId,
+        alumno_id: alumnoId,
+        aciertos: mapa,
+        updated_at: momento,
+        // Volver a capturar revive un registro borrado: para la maestra es el
+        // mismo alumno en el mismo examen, no uno nuevo.
+        deleted_at: null,
+      }
+
+      await db.resultados_examen.put(registro)
+      await db.outbox.add({
+        tabla: 'resultados_examen',
         registro_id: registro.id,
         op: 'upsert',
         at: momento,

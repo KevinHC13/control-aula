@@ -711,13 +711,53 @@ Decisiones que salieron de construirlo:
   necesita los renglones de la rúbrica, que salen del selector de la actividad y
   no de la suscripción.
 
-### ⬜ C24 · `feat(evaluacion): registrar aciertos de examen por campo formativo`
+### ✅ C24 · `feat(evaluacion): registrar aciertos de examen por campo formativo`
+
+Se desbloqueó preguntando: **hay un examen por trimestre** y cuelga del
+`CriterioTrimestre` (docs/DECISIONES.md D-018). También quedó decidido el redondeo
+al presentar —un decimal—, que es de C28.
 
 **Aceptación**
-- [ ] La captura usa teclado numérico **dentro de la app**, no el nativo
-- [ ] Ningún control provoca zoom de Safari
-- [ ] No se aceptan aciertos mayores al total de preguntas del campo
-- [ ] «Siguiente» avanza al siguiente alumno sin resultado
+- [x] La captura usa teclado numérico **dentro de la app**, no el nativo
+- [x] Ningún control provoca zoom de Safari
+- [x] No se aceptan aciertos mayores al total de preguntas del campo
+- [x] «Siguiente» avanza al siguiente alumno sin resultado
+
+Verificado en el navegador: la sección del examen aparece con «sin preguntas» y
+lleva a decirlas; se teclean 20 de Lenguajes y 15 de Saberes con el teclado de la
+app y al guardar la pantalla pasa a la captura; en Bruno, teclear 1 y 9 deja 19 y
+el siguiente dígito **no entra** —195 no cabe en 20—; borrar deja el campo sin
+capturar y el contador vuelve a «0 de 30»; «Siguiente sin resultado» pasa al 2;
+recargar conserva a Bruno con resultado. Medido en la misma pantalla: los 33
+objetivos táctiles miden 44 px o más, la letra de todos es de 16 px, y no existe
+ni un `input`, `textarea` o `select` —que es la forma dura de garantizar que Safari
+no haga zoom ni levante el teclado nativo—.
+
+Decisiones que salieron de construirlo:
+
+- **El teclado es un componente que no escribe en ningún `input`.** Emite el
+  dígito y quien lo usa decide qué hacer con él. Por eso sirve igual para decir
+  cuántas preguntas trae el examen y para capturar aciertos, que escriben en
+  lugares distintos —estado local y base de datos—.
+- **El dígito que no cabe no entra.** `conDigito` devuelve `null` y el toque no
+  escribe nada, en vez de guardar y mostrar un error. Con teclado en pantalla, un
+  dígito rechazado se siente como no haberlo tocado; un error que hay que leer y
+  descartar cuesta bastante más.
+- **Decir las preguntas sí tiene botón de Guardar; capturar no.** Es la única
+  pantalla de evaluación donde conviven las dos reglas, y la diferencia es la
+  frecuencia: los totales se ponen una vez por trimestre y a medio teclear no
+  deben quedar guardados; los aciertos se capturan treinta veces seguidas.
+- **Bajar un total no borra lo capturado, pero no puede dejarlo fuera de rango.**
+  Corregir «20» por «18» es normal —el examen traía otra cantidad—. Si alguien ya
+  tenía 19, se rechaza y se dice por qué: conservarlo sería guardar una
+  calificación imposible.
+- **Cero aciertos es un dato, no una ausencia.** Por eso la caja vacía dice «—» y
+  no «0», y borrar la última cifra deja el campo *sin capturar* en vez de en cero.
+  El promedio los distingue: un campo sin capturar deja al alumno incomparable, un
+  cero lo califica.
+- **`registrarAciertos` escribe un campo y conserva los demás**, igual que
+  `calificarRenglon` con su renglón. Y `siguienteSinCapturar` vive en `domain/`,
+  compartido con la captura de rúbrica: es el mismo recorrido, no dos parecidos.
 
 ### ⏸ C25 · `feat(evaluacion): registrar participación` — POSPUESTO
 
