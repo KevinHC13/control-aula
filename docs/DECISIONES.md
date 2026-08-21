@@ -738,3 +738,44 @@ Y una de forma: exportar usa `navigator.share({ files })` cuando el navegador lo
 tiene, porque en iPadOS esa hoja es la que trae *Guardar en Archivos*; en el
 escritorio cae a una descarga por ancla. Es lo único de `C14` que no se puede
 verificar sin el dispositivo en la mano.
+
+---
+
+## D-023 · La sincronía entra con login, y la sesión se queda
+
+**Estado:** aceptada — 2026-08-21. Decisión del usuario al empezar `C16`.
+
+El proyecto dice «no hay login», y sigue siendo verdad para **usar la app**: pasar
+lista, calificar, anotar en la bitácora y armar equipos no piden nada a nadie. El
+login aparece solo cuando los datos van a **salir del iPad**.
+
+**Cómo queda:**
+
+- **Supabase Auth con correo y contraseña**, una cuenta, y la sesión guardada en el
+  dispositivo (`persistSession` + `autoRefreshToken`). Ella entra **una vez**; no hay
+  pantalla de login en el arranque ni cada mañana.
+- **Sin sesión la app funciona idéntico** contra los datos locales. La nube es un
+  respaldo, no una dependencia: un `.env` sin llenar, una sesión caducada o un iPad
+  sin red no cambian nada de lo que se hace en clase.
+- **El login se pide en el momento de subir o restaurar**, no antes, y solo en la
+  pantalla de la nube.
+
+**Por qué no las otras dos.** Con **RLS abierta a `anon`**, cualquiera que abra el
+bundle —la clave publicable viaja ahí por diseño— podría leer y borrar los nombres y
+las calificaciones de treinta menores; el proyecto ni siquiera permite esos nombres en
+el repositorio, así que no puede permitirlos en una tabla pública. Un **secreto de
+dispositivo pegado en Ajustes** protegía igual y evitaba el login, pero es
+criptografía casera: un secreto compartido que no caduca, no se puede revocar sin
+tocar el código y termina copiado en una nota. Auth es el camino aburrido y probado.
+
+**Lo que cuesta:** una pantalla de login que existe aunque casi nunca se vea, y
+`@supabase/supabase-js` en el bundle. Y una tarea que no es código: **apagar los
+registros públicos** en el proyecto de Supabase después de crear su cuenta. Con
+`signup` abierto, cualquiera puede crear un usuario; las políticas solo dejan ver las
+filas propias, así que no vería nada de ella, pero no hay razón para dejar la puerta.
+
+**Consecuencia sobre el respaldo:** restaurar de la nube usa el **mismo camino** que
+restaurar del archivo JSON (`RespaldoRepo.restaurar`, D-022): upsert por `id`, sin
+encolar en la `outbox`. Y con eso se cierra el pendiente que dejó `C14` — un iPad
+restaurado desde archivo no subía nada solo—: después de restaurar, la subida se pide
+a mano una vez.
