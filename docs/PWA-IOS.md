@@ -113,20 +113,25 @@ completo.
 
 ## Antes de la primera sincronía (una vez, en Supabase)
 
-La copia en la nube (`C16`) necesita tres pasos manuales que no están en el
-repositorio, y el orden importa:
-
-1. **Aplicar la migración**: `supabase/migrations/20260821_esquema_sincronizable.sql`,
-   con `npx supabase db push` o pegándola en el editor SQL del proyecto. Crea las
-   dieciséis tablas con RLS y las políticas de «solo mis filas».
-2. **Crear su cuenta** en *Authentication → Users*, con correo y contraseña. Es la
-   que se teclea una vez en Ajustes → Copia en la nube.
-3. **Apagar los registros públicos** en *Authentication → Providers → Email*, quitando
-   *Enable signups*. Con `signup` abierto cualquiera puede crear un usuario; no vería
-   nada de ella —las políticas lo impiden— pero no hay razón para dejar la puerta.
+- [x] **Aplicar la migración.** Hecha el 2026-08-21 en el proyecto
+      `mvqgzzngpdkhbdcsiaes`, que estaba vacío:
+      `supabase/migrations/20260821213419_esquema_sincronizable.sql`. Las dieciséis
+      tablas tienen RLS activo y cuatro políticas cada una, y los avisos de
+      seguridad y de rendimiento del proyecto salen limpios. Comprobado con la clave
+      publicable —la que viaja en el bundle— que un `select` devuelve cero filas y un
+      `insert` se rechaza con `42501`: sin sesión no se lee ni se escribe nada.
+- [ ] **Crear su cuenta** en *Authentication → Users*, con correo y contraseña. Es la
+      que se teclea una vez en Ajustes → Copia en la nube. Requiere el panel: no se
+      puede hacer desde el repositorio.
+- [ ] **Apagar los registros públicos** en *Authentication → Providers → Email*,
+      quitando *Enable signups*. Con `signup` abierto cualquiera puede crear un
+      usuario; no vería nada de ella —las políticas lo impiden— pero no hay razón
+      para dejar la puerta.
 
 Sin esos pasos la app funciona igual: la nube es un respaldo, no una dependencia
-(docs/DECISIONES.md D-023).
+(docs/DECISIONES.md D-023). Y hasta que exista la cuenta, la subida y la
+restauración **no se han probado contra Supabase de verdad**: lo que está probado es
+el motor, contra una nube simulada.
 
 ## Lista de verificación antes de entregarle el iPad
 

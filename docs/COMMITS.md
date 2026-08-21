@@ -449,11 +449,11 @@ Cómo quedó:
 - [~] Restaurar en un dispositivo limpio reconstruye todo
 - [x] Nada del motor de sincronía atraviesa el repositorio
 
-El de restaurar está **escrito y probado contra una nube simulada**, pero no se ha
-hecho contra Supabase de verdad: la migración se versionó sin aplicarla, por decisión
-del usuario. Lo que falta para cerrarlo son tres pasos manuales, en
-[PWA-IOS.md](./PWA-IOS.md): aplicar la migración, crear la cuenta y apagar los
-registros públicos.
+El de restaurar está **escrito y probado contra una nube simulada**, pero no contra
+Supabase de verdad: la migración ya está aplicada —las dieciséis tablas con RLS—, y lo
+que falta es la cuenta con la que entrar. Los dos pasos que quedan están en
+[PWA-IOS.md](./PWA-IOS.md), y son de panel: crear la cuenta y apagar los registros
+públicos.
 
 Cómo quedó:
 

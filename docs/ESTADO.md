@@ -50,7 +50,7 @@ Verificado en `src/` a esta fecha:
 | `services/` | `extraccion.ts` y `sincronia.ts` + `supabase.ts` — la única salida a red del cliente |
 | `ui/` | Cuatro pestañas, Asistencia completa (con la etiqueta del trimestre), Calificaciones con sus actividades, las tres capturas —entregas, rúbrica y examen, esta última con teclado propio— y el reporte del trimestre por alumno y por campo, Bitácora con el conteo por alumno y su historial, Ajustes, CargarLista, CicloEscolar, CriteriosYPesos (con el cierre del trimestre), Rubricas, Respaldo |
 | `tests/` | `arquitectura.test.ts` — verifica las reglas de dependencia en cada `npm test` |
-| Infra | PWA con `vite-plugin-pwa` y aviso de actualización; Edge Function `extraer-lista` desplegada; `supabase/migrations/` con el esquema de la nube, **sin aplicar** |
+| Infra | PWA con `vite-plugin-pwa` y aviso de actualización; Edge Function `extraer-lista` desplegada; las dieciséis tablas de la nube **aplicadas** en Supabase, con RLS y políticas |
 
 Pantalla de asistencia: tira de días de tres meses que se desliza, calendario del
 mes como mosaico, contador de presentes, filas con ciclo de estados y barra
@@ -118,11 +118,12 @@ guardada, y el login se pide solo al subir o restaurar (D-023).
 
 Lo que queda **no es código**, y es lo único que separa esto de estar en uso:
 
-1. **Los tres pasos de Supabase**, en [PWA-IOS.md](./PWA-IOS.md): aplicar
-   `supabase/migrations/20260821_esquema_sincronizable.sql`, crear su cuenta y apagar
-   los registros públicos. La migración se versionó **sin aplicar**, por decisión del
-   usuario, así que la sincronía está probada contra una nube simulada y no contra la
-   real.
+1. **Dos pasos en el panel de Supabase**, en [PWA-IOS.md](./PWA-IOS.md): **crear su
+   cuenta** y **apagar los registros públicos**. La migración ya está aplicada —las
+   dieciséis tablas con RLS y sus políticas, comprobado que con la clave publicable
+   no se lee ni se escribe nada—, pero hasta que exista la cuenta la subida y la
+   restauración **no se han probado contra Supabase de verdad**: lo probado es el
+   motor, contra una nube simulada.
 2. **Una pasada con el iPad en la mano.** De la Fase 2 en adelante —evaluación,
    bitácora, respaldo, criterios automáticos, herramientas de aula, resumen,
    cumpleaños y nube— **nada se ha usado en el dispositivo**: todo se ha visto en el

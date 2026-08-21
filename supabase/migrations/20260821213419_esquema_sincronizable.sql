@@ -208,6 +208,10 @@ create table if not exists public.cierres (
 
 -- RLS y políticas, iguales para las dieciséis: cada quien ve y escribe lo suyo.
 --
+-- `(select auth.uid())` y no `auth.uid()` a secas: envuelto en un subselect, el
+-- planificador lo evalúa una vez por consulta en vez de una vez por fila. Es la
+-- recomendación de Supabase y aquí no cuesta nada.
+--
 -- En un bucle y no escritas a mano sesenta y cuatro veces, porque son idénticas:
 -- una política copiada dieciséis veces es una que va a quedar distinta de las
 -- otras quince el día que alguien la corrija.
@@ -226,19 +230,19 @@ begin
 
     execute format('drop policy if exists %I on public.%I', t || '_propias_select', t);
     execute format(
-      'create policy %I on public.%I for select to authenticated using (owner = auth.uid())',
+      'create policy %I on public.%I for select to authenticated using (owner = (select auth.uid()))',
       t || '_propias_select', t
     );
 
     execute format('drop policy if exists %I on public.%I', t || '_propias_insert', t);
     execute format(
-      'create policy %I on public.%I for insert to authenticated with check (owner = auth.uid())',
+      'create policy %I on public.%I for insert to authenticated with check (owner = (select auth.uid()))',
       t || '_propias_insert', t
     );
 
     execute format('drop policy if exists %I on public.%I', t || '_propias_update', t);
     execute format(
-      'create policy %I on public.%I for update to authenticated using (owner = auth.uid()) with check (owner = auth.uid())',
+      'create policy %I on public.%I for update to authenticated using (owner = (select auth.uid())) with check (owner = (select auth.uid()))',
       t || '_propias_update', t
     );
 
@@ -246,7 +250,7 @@ begin
     -- usa: borra suave con `deleted_at`, y esa fila viaja como una más.
     execute format('drop policy if exists %I on public.%I', t || '_propias_delete', t);
     execute format(
-      'create policy %I on public.%I for delete to authenticated using (owner = auth.uid())',
+      'create policy %I on public.%I for delete to authenticated using (owner = (select auth.uid()))',
       t || '_propias_delete', t
     );
   end loop;
