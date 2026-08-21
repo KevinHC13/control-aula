@@ -4,6 +4,7 @@ import type { RegistroAsistencia } from './entities'
 import {
   cuentaComoAsistencia,
   enRiesgo,
+  estaEnElSalon,
   porcentajeAsistencia,
   promedioDe,
   siguienteEstado,
@@ -109,5 +110,21 @@ describe('enRiesgo', () => {
 
   it('un promedio null no es riesgo: es ausencia de datos, no un dato malo', () => {
     expect(enRiesgo(100, null)).toBe(false)
+  })
+})
+
+describe('estaEnElSalon', () => {
+  it('presente y retardo están; ausente no', () => {
+    expect(estaEnElSalon('presente')).toBe(true)
+    expect(estaEnElSalon('retardo')).toBe(true)
+    expect(estaEnElSalon('ausente')).toBe(false)
+  })
+
+  it('justificada no está, aunque cuente como asistencia', () => {
+    // Es el único lugar de la app donde estas dos reglas se separan: la falta
+    // justificada cuenta para el porcentaje —el trato con la escuela— pero el niño
+    // no está en el salón y no puede pasar al pizarrón (D-021).
+    expect(cuentaComoAsistencia('justificada')).toBe(true)
+    expect(estaEnElSalon('justificada')).toBe(false)
   })
 })

@@ -13,6 +13,7 @@ src/
 │   │                          jerarquía de evaluación (Ciclo … Actividad)
 │   ├─ values.ts               Fecha, Id, EstadoAsistencia, CampoFormativo, NIVELES
 │   ├─ fechas.ts               Aritmética de fechas sin librerías
+│   ├─ sorteo.ts               Sorteo ponderado, con el azar inyectado
 │   └─ rules.ts                porcentajeAsistencia(), valorCriterio(), aBase10()
 │
 ├─ data/
@@ -41,6 +42,7 @@ src/
 │   ├─ evaluacion.ts
 │   ├─ bitacora.ts
 │   ├─ participacion.ts
+│   ├─ sorteo.ts
 │   └─ respaldo.ts
 │
 ├─ services/                 Única salida a red del cliente

@@ -14,6 +14,19 @@ export function cuentaComoAsistencia(estado: EstadoAsistencia): boolean {
 }
 
 /**
+ * Si el alumno **está en el salón**: `presente` o `retardo`.
+ *
+ * Es el **único** lugar de la app donde `justificada` y `presente` no son lo
+ * mismo. `justificada` cuenta como asistencia para el porcentaje —ese es el trato
+ * con la escuela— pero el niño no está, así que no puede pasar al pizarrón ni
+ * entrar a un equipo (D-021). Existe como función con nombre, y no como una
+ * comparación suelta en la pantalla, justamente porque es la excepción.
+ */
+export function estaEnElSalon(estado: EstadoAsistencia): boolean {
+  return estado === 'presente' || estado === 'retardo'
+}
+
+/**
  * Siguiente estado del ciclo al tocar una fila:
  * presente → ausente → retardo → justificada → presente
  */

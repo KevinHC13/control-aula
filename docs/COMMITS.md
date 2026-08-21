@@ -1138,21 +1138,43 @@ tres segundos en una pantalla de configuración.
 
 `C30` necesita `C25` —escribe en `participaciones`—. `C31` no depende de nada.
 
-### ⬜ C30 · `feat(asistencia): sortear quién participa`
+### ✅ C30 · `feat(asistencia): sortear quién participa`
 
 La ruleta, en la pantalla de asistencia, junto al modo de participación: es donde
 está la lista y donde ya se sabe quién vino.
 
 **Aceptación**
-- [ ] Sortea solo entre los presentes, y presente es `presente` o `retardo`
-- [ ] **No registra nada por sí solo**: sale un nombre y ella dice si participó
-- [ ] «Participó» suma una participación del día; «no participó» no escribe nada
-- [ ] Se puede volver a sortear sin cerrar nada
-- [ ] Pondera a favor de quien menos ha participado en el trimestre, con azar en los
+- [x] Sortea solo entre los presentes, y presente es `presente` o `retardo`
+- [x] **No registra nada por sí solo**: sale un nombre y ella dice si participó
+- [x] «Participó» suma una participación del día; «no participó» no escribe nada
+- [x] Se puede volver a sortear sin cerrar nada
+- [x] Pondera a favor de quien menos ha participado en el trimestre, con azar en los
       empates, y **dice que lo hace**
-- [ ] La animación **se puede saltar** y no pasa de un segundo y medio
-- [ ] El nombre sorteado se lee de lejos: es lo único que importa en la pantalla
-- [ ] Sin nadie presente —o sin lista cargada— lo dice en vez de sortear entre nadie
+- [x] La animación **se puede saltar** y no pasa de un segundo y medio
+- [x] El nombre sorteado se lee de lejos: es lo único que importa en la pantalla
+- [x] Sin nadie presente —o sin lista cargada— lo dice en vez de sortear entre nadie
+
+Cómo quedó:
+
+- **El peso es `máximo + 1 − sus participaciones`.** El `+ 1` es lo que evita que
+  quien va a la cabeza quede en cero y no pueda salir nunca: el sorteo favorece, no
+  excluye. Con el grupo empatado todos pesan igual, que es el sorteo uniforme.
+- **El azar entra como argumento** hasta la pantalla: `domain/sorteo.ts` y
+  `application/sorteo.ts` son puros y se prueban con un número fijo, incluidos los
+  bordes de cada tramo.
+- **El sorteado se decide antes de la animación** y se deriva del número al azar
+  guardado en estado. Por eso saltar la ruleta no cambia a quién le tocó, y «volver a
+  sortear» es cambiar ese número.
+- **La ruleta dura 1 200 ms, se salta con un botón** y no existe si el dispositivo
+  pide menos movimiento (`prefers-reduced-motion`).
+- **`justificada` no entra**, aunque cuente como asistencia. Salió de aquí
+  `estaEnElSalon()` en `domain/rules.ts`, con nombre propio porque es la única
+  excepción de la app —y `C31` la va a volver a usar—.
+- Confirmar «sí» llama al **mismo caso de uso** que el modo de captura
+  (`sumarParticipacion`), así que una participación sorteada y una marcada a mano son
+  el mismo dato. Decir «no» no escribe nada.
+- El diálogo monta su contenido solo cuando está abierto: cerrado no deja ni una
+  suscripción de participaciones viva.
 
 El tercer punto es el que sostiene la calificación: un sorteo que registra la
 participación por haber salido sorteado mediría *salir sorteado*, y la participación

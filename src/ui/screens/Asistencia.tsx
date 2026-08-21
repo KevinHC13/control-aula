@@ -21,6 +21,7 @@ import { useAsistenciaDelMes } from '@/ui/hooks/useAsistenciaDelMes'
 import { useCicloEnCurso } from '@/ui/hooks/useCicloEnCurso'
 import { cn } from '@/ui/lib/utils'
 import { ModoParticipacion } from '@/ui/screens/ModoParticipacion'
+import { Sorteo } from '@/ui/screens/Sorteo'
 import { useInterfaz } from '@/ui/store/interfaz'
 
 export function Asistencia() {
@@ -56,6 +57,10 @@ export function Asistencia() {
    */
   const [modoDesde, setModoDesde] = useState<Fecha | null>(null)
   const participacion = modoDesde === diaSeleccionado
+
+  // El sorteo vive en un diálogo y su contenido se monta solo cuando está abierto:
+  // con el diálogo cerrado no hay ni una suscripción de participaciones abierta.
+  const [sorteoAbierto, setSorteoAbierto] = useState(false)
 
   function abrirCalendario() {
     setMesVisible(mesDe(diaSeleccionado))
@@ -112,23 +117,58 @@ export function Asistencia() {
         </DialogContent>
       </Dialog>
 
-      {/* El interruptor va antes del contador porque cambia lo que el contador
-          significa. Un solo control, y apagado no cuesta ni un toque a quien pasa
-          lista y se va. */}
-      <button
-        type="button"
-        aria-pressed={participacion}
-        onClick={() => setModoDesde(participacion ? null : diaSeleccionado)}
-        className={cn(
-          'flex min-h-11 items-center gap-2 self-start rounded-md border px-3 text-base',
-          'outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
-          participacion
-            ? 'border-verde bg-verde text-papel'
-            : 'border-linea text-tinta-2 hover:bg-cuadro',
-        )}
-      >
-        {participacion ? 'Marcando participación' : 'Marcar participación'}
-      </button>
+      {/* Los dos controles de participación, juntos: el interruptor va antes del
+          contador porque cambia lo que el contador significa, y el sorteo va al
+          lado porque es la otra forma de llegar a lo mismo. Apagados no cuestan
+          ni un toque a quien pasa lista y se va. */}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          aria-pressed={participacion}
+          onClick={() => setModoDesde(participacion ? null : diaSeleccionado)}
+          className={cn(
+            'flex min-h-11 items-center gap-2 rounded-md border px-3 text-base',
+            'outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+            participacion
+              ? 'border-verde bg-verde text-papel'
+              : 'border-linea text-tinta-2 hover:bg-cuadro',
+          )}
+        >
+          {participacion ? 'Marcando participación' : 'Marcar participación'}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setSorteoAbierto(true)}
+          className={cn(
+            'flex min-h-11 items-center gap-2 rounded-md border border-linea px-3 text-base',
+            'text-tinta-2 outline-none hover:bg-cuadro',
+            'focus-visible:ring-[3px] focus-visible:ring-ring/50',
+          )}
+        >
+          Sortear quién pasa
+        </button>
+      </div>
+
+      <Dialog open={sorteoAbierto} onOpenChange={setSorteoAbierto}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>¿Quién pasa?</DialogTitle>
+            <DialogDescription>
+              Sale un nombre y tú dices si participó. Salir sorteado no anota nada.
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* El contenido se monta con el diálogo: al cerrarlo se sueltan sus
+              suscripciones y el siguiente sorteo empieza limpio. */}
+          {sorteoAbierto && (
+            <Sorteo
+              fecha={diaSeleccionado}
+              trimestre={trimestreDe(diaSeleccionado, ciclo)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       {participacion ? (
         <ModoParticipacion
