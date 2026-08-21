@@ -1168,3 +1168,134 @@ describe('marcarEntrega', () => {
     ).toBe(2)
   })
 })
+
+describe('evaluacionesDeActividad', () => {
+  it('sin captura devuelve la lista vacía', async () => {
+    const grupo = await unGrupo()
+    const id = await repo.crearActividad(datosDe(grupo, { nombre: 'Proyecto' }))
+    expect(await repo.evaluacionesDeActividad(id)).toEqual([])
+  })
+
+  it('no devuelve las de otra actividad', async () => {
+    const grupo = await unGrupo()
+    const una = await repo.crearActividad(datosDe(grupo, { nombre: 'Una' }))
+    const otra = await repo.crearActividad(datosDe(grupo, { nombre: 'Otra' }))
+    await repo.calificarRenglon(una, 'alumno-1', 'renglon-1', 0)
+    await repo.calificarRenglon(otra, 'alumno-1', 'renglon-1', 3)
+
+    expect((await repo.evaluacionesDeActividad(una))[0]?.niveles).toEqual({ 'renglon-1': 0 })
+    expect((await repo.evaluacionesDeActividad(otra))[0]?.niveles).toEqual({ 'renglon-1': 3 })
+  })
+
+  it('no devuelve las borradas', async () => {
+    const grupo = await unGrupo()
+    const id = await repo.crearActividad(datosDe(grupo, { nombre: 'Proyecto' }))
+    await repo.calificarRenglon(id, 'alumno-1', 'renglon-1', 1)
+    await repo.calificarRenglon(id, 'alumno-2', 'renglon-1', 1)
+    const primera = (await repo.evaluacionesDeActividad(id))[0]!
+    await db.eval_rubrica.update(primera.id, { deleted_at: '2026-09-02T00:00:00.000Z' })
+
+    expect(await repo.evaluacionesDeActividad(id)).toHaveLength(1)
+  })
+})
+
+describe('calificarRenglon', () => {
+  it('el primer toque crea el registro, con UUID del cliente', async () => {
+    const grupo = await unGrupo()
+    const id = await repo.crearActividad(datosDe(grupo, { nombre: 'Proyecto' }))
+
+    await repo.calificarRenglon(id, 'alumno-1', 'renglon-1', 1)
+
+    const evaluaciones = await repo.evaluacionesDeActividad(id)
+    expect(evaluaciones).toHaveLength(1)
+    expect(evaluaciones[0]?.id).toMatch(/^[0-9a-f-]{36}$/)
+    expect(evaluaciones[0]?.deleted_at).toBe(null)
+    expect(evaluaciones[0]?.updated_at.endsWith('Z')).toBe(true)
+  })
+
+  it('guarda el índice del nivel, no su valor', async () => {
+    const grupo = await unGrupo()
+    const id = await repo.crearActividad(datosDe(grupo, { nombre: 'Proyecto' }))
+
+    // 'Mal' es el índice 3 y vale 0. Guardar el valor haría que cambiar
+    // VALOR_NIVEL migrara datos.
+    await repo.calificarRenglon(id, 'alumno-1', 'renglon-1', 3)
+
+    expect((await repo.evaluacionesDeActividad(id))[0]?.niveles).toEqual({ 'renglon-1': 3 })
+  })
+
+  it('los renglones se van llenando sin borrarse entre sí', async () => {
+    const grupo = await unGrupo()
+    const id = await repo.crearActividad(datosDe(grupo, { nombre: 'Proyecto' }))
+
+    await repo.calificarRenglon(id, 'alumno-1', 'renglon-1', 0)
+    await repo.calificarRenglon(id, 'alumno-1', 'renglon-2', 2)
+
+    const evaluaciones = await repo.evaluacionesDeActividad(id)
+    expect(evaluaciones).toHaveLength(1)
+    expect(evaluaciones[0]?.niveles).toEqual({ 'renglon-1': 0, 'renglon-2': 2 })
+  })
+
+  it('es upsert por [actividad_id+alumno_id]', async () => {
+    const grupo = await unGrupo()
+    const id = await repo.crearActividad(datosDe(grupo, { nombre: 'Proyecto' }))
+
+    await repo.calificarRenglon(id, 'alumno-1', 'renglon-1', 0)
+    await repo.calificarRenglon(id, 'alumno-1', 'renglon-1', 1)
+    await repo.calificarRenglon(id, 'alumno-1', 'renglon-1', 2)
+
+    // Un registro por alumno por actividad, nunca tres.
+    const evaluaciones = await repo.evaluacionesDeActividad(id)
+    expect(evaluaciones).toHaveLength(1)
+    expect(evaluaciones[0]?.niveles).toEqual({ 'renglon-1': 2 })
+  })
+
+  it('revive un registro borrado en vez de crear uno nuevo', async () => {
+    const grupo = await unGrupo()
+    const id = await repo.crearActividad(datosDe(grupo, { nombre: 'Proyecto' }))
+    await repo.calificarRenglon(id, 'alumno-1', 'renglon-1', 1)
+    const primera = (await repo.evaluacionesDeActividad(id))[0]!
+    await db.eval_rubrica.update(primera.id, { deleted_at: '2026-09-02T00:00:00.000Z' })
+
+    await repo.calificarRenglon(id, 'alumno-1', 'renglon-1', 2)
+
+    const evaluaciones = await repo.evaluacionesDeActividad(id)
+    expect(evaluaciones).toHaveLength(1)
+    expect(evaluaciones[0]?.id).toBe(primera.id)
+  })
+
+  it('encola un pendiente por toque', async () => {
+    const grupo = await unGrupo()
+    const id = await repo.crearActividad(datosDe(grupo, { nombre: 'Proyecto' }))
+    await db.outbox.clear()
+
+    await repo.calificarRenglon(id, 'alumno-1', 'renglon-1', 0)
+
+    const pendientes = await db.outbox.toArray()
+    expect(pendientes).toHaveLength(1)
+    expect(pendientes[0]?.tabla).toBe('eval_rubrica')
+    expect(pendientes[0]?.op).toBe('upsert')
+  })
+
+  it('la captura hace que la actividad cuente como calificada', async () => {
+    const grupo = await unGrupo()
+    const id = await repo.crearActividad(datosDe(grupo, { nombre: 'Proyecto' }))
+
+    await repo.calificarRenglon(id, 'alumno-1', 'renglon-1', 0)
+    await repo.calificarRenglon(id, 'alumno-2', 'renglon-1', 0)
+
+    expect(
+      (await repo.actividadesDeTrimestre(grupo.trimestreId))[0]?.actividades[0]?.registros,
+    ).toBe(2)
+  })
+
+  it('cambiar con qué se califica descarta la captura de rúbrica', async () => {
+    const grupo = await unGrupo()
+    const id = await repo.crearActividad(datosDe(grupo, { nombre: 'Proyecto' }))
+    await repo.calificarRenglon(id, 'alumno-1', 'renglon-1', 0)
+
+    await repo.editarActividad(id, datosDe(grupo, { nombre: 'Proyecto' }), true)
+
+    expect(await repo.evaluacionesDeActividad(id)).toEqual([])
+  })
+})

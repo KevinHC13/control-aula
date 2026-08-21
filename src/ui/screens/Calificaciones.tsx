@@ -15,6 +15,7 @@ import { useCicloEnCurso } from '@/ui/hooks/useCicloEnCurso'
 import { useRubricas } from '@/ui/hooks/useRubricas'
 import { cn } from '@/ui/lib/utils'
 import { CapturaEntregas } from '@/ui/screens/CapturaEntregas'
+import { CapturaRubrica } from '@/ui/screens/CapturaRubrica'
 import { FormaActividad } from '@/ui/screens/FormaActividad'
 
 /**
@@ -42,7 +43,7 @@ export function Calificaciones() {
   // La subvista vive y muere aquí dentro, como el calendario en Asistencia: no
   // cruza pantallas, así que no va al store.
   const [subvista, setSubvista] = useState<{
-    modo: 'forma' | 'captura'
+    modo: 'forma' | 'captura' | 'rubrica'
     grupoId: string
     actividadId?: string
   } | null>(null)
@@ -58,6 +59,17 @@ export function Calificaciones() {
     if (subvista.modo === 'captura' && actividadAbierta) {
       return (
         <CapturaEntregas
+          trimestre={trimestre}
+          actividad={actividadAbierta}
+          alVolver={() => setSubvista(null)}
+          alEditar={() => setSubvista({ ...subvista, modo: 'forma' })}
+        />
+      )
+    }
+
+    if (subvista.modo === 'rubrica' && actividadAbierta) {
+      return (
+        <CapturaRubrica
           trimestre={trimestre}
           actividad={actividadAbierta}
           alVolver={() => setSubvista(null)}
@@ -136,9 +148,9 @@ export function Calificaciones() {
                 alAbrir={(actividad) =>
                   setSubvista({
                     // La fila lleva a capturar, que es lo que se hace todos los
-                    // días; editarla es un toque más desde ahí. Las de rúbrica
-                    // llevan a la forma hasta que exista su captura (C23).
-                    modo: actividad.actividad.rubrica_id === null ? 'captura' : 'forma',
+                    // días; editarla es un toque más desde ahí. Con qué se
+                    // captura lo decide la rúbrica de la actividad.
+                    modo: actividad.actividad.rubrica_id === null ? 'captura' : 'rubrica',
                     grupoId: grupo.ponderado.id,
                     actividadId: actividad.actividad.id,
                   })

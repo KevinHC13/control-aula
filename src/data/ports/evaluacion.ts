@@ -2,6 +2,7 @@ import type {
   Actividad,
   Ciclo,
   Entrega,
+  EvaluacionRubrica,
   Criterio,
   CriterioTrimestre,
   Rubrica,
@@ -9,7 +10,7 @@ import type {
   TipoCriterio,
   Trimestre,
 } from '@/domain/entities'
-import type { CampoFormativo, Fecha, Id, Suscribible } from '@/domain/values'
+import type { CampoFormativo, Fecha, Id, Nivel, Suscribible } from '@/domain/values'
 
 /**
  * El ciclo escolar con sus trimestres, que es como se lee siempre: un ciclo sin
@@ -287,4 +288,30 @@ export interface EvaluacionRepo {
    * actividad.
    */
   marcarEntrega(actividadId: Id, alumnoId: Id, entregada: boolean): Promise<void>
+
+  /** Las evaluaciones con rúbrica de una actividad, sin las borradas. */
+  evaluacionesDeActividad(actividadId: Id): Promise<EvaluacionRubrica[]>
+
+  /**
+   * Lo mismo, reactivo. Sostiene que al elegir un nivel se marque el botón y
+   * avance el contador de calificados, sin botón de Guardar.
+   */
+  observarEvaluacionesDeActividad(actividadId: Id): Suscribible<EvaluacionRubrica[]>
+
+  /**
+   * Deja el nivel de **un** renglón para ese alumno, conservando los demás. Es un
+   * upsert: el índice `[actividad_id+alumno_id]` garantiza un registro por alumno
+   * por actividad, y `niveles` se va llenando renglón por renglón.
+   *
+   * No hay `materializarEvaluaciones` que le corresponda: aquí el registro nace
+   * con el primer toque. Escribir 30 registros vacíos al abrir —lo que sí hace la
+   * captura binaria, donde el valor por omisión es el probable— dejaría a la
+   * actividad contando 30 registros sin que nadie esté calificado.
+   */
+  calificarRenglon(
+    actividadId: Id,
+    alumnoId: Id,
+    rubricaCriterioId: Id,
+    nivel: Nivel,
+  ): Promise<void>
 }

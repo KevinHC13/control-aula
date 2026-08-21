@@ -1,6 +1,6 @@
 import type { CriterioTrimestre, TipoCriterio, Trimestre } from './entities'
 import { NIVELES } from './values'
-import type { Fecha } from './values'
+import type { Fecha, Id, Nivel } from './values'
 
 /**
  * Reglas de estructura de la evaluación: qué trimestre le toca a una fecha, si
@@ -173,4 +173,23 @@ export function rubricaCompleta(rubrica: {
   return rubrica.criterios.every(
     (c) => c.nombre.trim() !== '' && descriptoresCompletos(c.descriptores),
   )
+}
+
+/**
+ * Si la captura de una rúbrica está completa: un nivel elegido por cada renglón.
+ *
+ * Es lo que distingue «ya lo califiqué» de «lo dejé a medias», y con eso decide a
+ * quién salta «Siguiente». Un alumno con tres de cuatro renglones no está
+ * calificado: su promedio saldría de menos renglones que el de los demás, que es
+ * justo la comparación que la rúbrica existe para hacer legítima.
+ *
+ * Una rúbrica sin renglones nunca está completa: no hay nada que elegir, así que
+ * decir que sí sería declarar calificado a todo el grupo sin un solo toque.
+ */
+export function nivelesCompletos(
+  niveles: Readonly<Record<Id, Nivel>>,
+  renglones: readonly Id[],
+): boolean {
+  if (renglones.length === 0) return false
+  return renglones.every((id) => niveles[id] !== undefined)
 }

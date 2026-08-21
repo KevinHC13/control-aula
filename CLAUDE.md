@@ -12,7 +12,7 @@ español también (`asistencia`, `calificaciones`, `alumnos`).
 **`docs/ESTADO.md` es la fuente de verdad del estatus.** Leerlo antes de decidir
 qué construir; el resumen de aquí abajo se queda viejo primero.
 
-Hecho hasta C22, más los fixes C19b y C21c. Existen y funcionan:
+Hecho hasta C23, más los fixes C19b y C21c. Existen y funcionan:
 
 - **`domain/`** completo para asistencia y para la **estructura** de la
   evaluación: `entities.ts` con la jerarquía `Ciclo → … → Actividad`,
@@ -23,27 +23,26 @@ Hecho hasta C22, más los fixes C19b y C21c. Existen y funcionan:
   `outbox` y la semilla (`grupo.ts` ignorado, `grupo.example.ts` versionado).
   De las once tablas de evaluación tienen puerto y adaptador `ciclos`,
   `trimestres`, `criterios`, `criterios_trimestre`, `rubricas`,
-  `rubrica_criterios`, `actividades` y `entregas`; `eval_rubrica` solo se lee
-  —para saber si una actividad está calificada—, y `examen_config`,
-  `resultados_examen` y `cierres` no se tocan todavía.
+  `rubrica_criterios`, `actividades`, `entregas` y `eval_rubrica`;
+  `examen_config`, `resultados_examen` y `cierres` no se tocan todavía.
 - **`application/`**: `asistencia.ts`, `grupo.ts`, `importacion.ts`,
-  `evaluacion.ts`, `entregas.ts`.
+  `evaluacion.ts`, `entregas.ts`, `calificacion.ts`.
 - **`services/`**: `extraccion.ts`, la única salida a red del cliente.
 - **`ui/`**: las cuatro pestañas, la de asistencia terminada (tira de días,
   calendario del mes, contador, filas, etiqueta del trimestre), Ajustes, la carga
   de lista con IA, la configuración del ciclo escolar, los criterios con sus pesos,
-  las rúbricas, y `Calificaciones` con las actividades del trimestre y la captura de
-  entregas.
+  las rúbricas, y `Calificaciones` con las actividades del trimestre y sus dos
+  capturas: entregas y rúbrica alumno por alumno.
   `Notas` y el resumen de `Grupo` siguen siendo placeholders.
 - PWA con `vite-plugin-pwa`, Zustand y el aviso de actualización.
 - Una Edge Function desplegada en Supabase, `extraer-lista`, en
   `supabase/functions/`.
 
-**Lo que sigue es C23**: calificar con rúbrica, alumno por alumno. «Siguiente» salta
-al siguiente **sin calificar**, el descriptor de cada nivel se ve al calificar, y
-`EvaluacionRubrica.niveles` guarda el índice del nivel, nunca su valor. La migración
-a `version(2)` ya ocurrió y está probada en `src/data/dexie/migracion.test.ts`; no
-hay otra migración pendiente en la Fase 4.
+**Lo que sigue es C24** —el examen por aciertos—, y está **detenido** por una
+pregunta sin validar: ¿un examen por trimestre o varios? Sin esa respuesta, lo que
+sigue sin bloqueo es C28, la cadena de cálculo. La migración a `version(2)` ya
+ocurrió y está probada en `src/data/dexie/migracion.test.ts`; no hay otra migración
+pendiente en la Fase 4.
 
 Falta además de la Fase 3: notas, resumen del grupo, respaldo JSON, cumpleaños y
 el motor de sincronía. `C25` y `C26` —criterios automáticos de puntualidad,
@@ -268,5 +267,5 @@ reporte. Lo que queda abierto, con lo que bloquea cada uno, está listado en
 - ¿Un examen por trimestre o varios? Bloquea C24.
 - El umbral real de riesgo por asistencia. Bloquea solo el color de alerta de C13.
 
-Ninguno bloquea C18. Si aparece uno nuevo, se marca `[POR VALIDAR]` y se anota en
+Ninguno bloquea C28. Si aparece uno nuevo, se marca `[POR VALIDAR]` y se anota en
 `docs/ESTADO.md` qué commit detiene.

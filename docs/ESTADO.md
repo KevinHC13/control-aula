@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Actualizado el **2026-08-20**, con C18 a C22 terminados, más los fixes C19b y
+Actualizado el **2026-08-20**, con C18 a C23 terminados, más los fixes C19b y
 C21c. Este es el documento que se lee primero para saber
 dónde va el proyecto y qué sigue. El plan detallado, con criterios de aceptación
 por commit, está en [COMMITS.md](./COMMITS.md).
@@ -16,9 +16,10 @@ Asistencia está terminada y entregada en el iPad. La semana de uso real ya pas�
 la validación con la usuaria tiró el modelo de calificaciones que estaba planeado.
 La Fase 4 va en marcha: **C18 a C21 están hechos** —dominio de evaluación,
 `db.version(2)`, el ciclo escolar con sus trimestres, los criterios con sus pesos y
-las rúbricas, las actividades y la captura de entregas—, con una corrección de
-modelo encima: la rúbrica cuelga de la actividad, no del criterio (D-016). Lo que
-sigue es `C23`: calificar con rúbrica, alumno por alumno.
+las rúbricas, las actividades y las dos capturas de entregable, la binaria y la de
+rúbrica—, con una corrección de modelo encima: la rúbrica cuelga de la actividad, no
+del criterio (D-016). Lo que sigue es `C24`: el examen por aciertos, que está
+detenido por una pregunta sin validar.
 
 ## Fases
 
@@ -28,7 +29,7 @@ sigue es `C23`: calificar con rúbrica, alumno por alumno.
 | 2 · Asistencia | El vertical completo hasta el iPad | ✅ Terminada |
 | Hito | Entrega, pausa de una semana, validación | ✅ Cumplido |
 | 3 · Resto de la v1 | Notas, resumen, respaldo, cumpleaños, sincronía | ⬜ Sin empezar |
-| 4 · Evaluación | Ciclo, trimestres, criterios, rúbricas, cálculo | ▶ En curso: C18–C22 hechos, sigue C23 |
+| 4 · Evaluación | Ciclo, trimestres, criterios, rúbricas, cálculo | ▶ En curso: C18–C23 hechos, sigue C24 |
 
 ## Lo que existe y funciona
 
@@ -39,9 +40,9 @@ Verificado en `src/` a esta fecha:
 | `domain/` | `entities.ts` con la jerarquía de evaluación completa, `values.ts`, `fechas.ts`, `rules.ts`, `evaluacion.ts`, con pruebas |
 | `data/dexie/` | `db.ts` en `version(2)`, adaptadores de alumnos y asistencia, `outbox`, semilla |
 | `data/ports/` | `alumnos.ts`, `asistencia.ts`, `evaluacion.ts` (ciclo, trimestres, criterios, pesos, rúbricas y actividades) |
-| `application/` | `asistencia.ts`, `grupo.ts`, `importacion.ts`, `evaluacion.ts`, `entregas.ts` |
+| `application/` | `asistencia.ts`, `grupo.ts`, `importacion.ts`, `evaluacion.ts`, `entregas.ts`, `calificacion.ts` |
 | `services/` | `extraccion.ts` — única salida a red del cliente |
-| `ui/` | Cuatro pestañas, Asistencia completa (con la etiqueta del trimestre), Calificaciones con sus actividades y la captura de entregas, Ajustes, CargarLista, CicloEscolar, CriteriosYPesos, Rubricas |
+| `ui/` | Cuatro pestañas, Asistencia completa (con la etiqueta del trimestre), Calificaciones con sus actividades y las dos capturas —entregas y rúbrica—, Ajustes, CargarLista, CicloEscolar, CriteriosYPesos, Rubricas |
 | `tests/` | `arquitectura.test.ts` — verifica las reglas de dependencia en cada `npm test` |
 | Infra | PWA con `vite-plugin-pwa` y aviso de actualización; Edge Function `extraer-lista` desplegada |
 
@@ -53,8 +54,9 @@ bicolor.
 
 `ui/screens/Notas.tsx` y el resumen de `ui/screens/Grupo.tsx`. Existen, navegan y
 no hacen nada. `Calificaciones` ya no: lista las actividades del trimestre, las
-administra y captura las entregas de las que no usan rúbrica. Las de rúbrica se
-califican en C23.
+administra y las captura, con rúbrica o sin ella. Lo que falta ahí son los
+**números**: el promedio de un criterio y la calificación del trimestre llegan en
+C28.
 
 ## Lo que cambió con la validación
 
@@ -87,33 +89,36 @@ asistencia capturada.
 
 ## Con qué continuar
 
-**Siguiente commit: `C23 · feat(evaluacion): calificar con rúbrica, alumno por
-alumno`.** Es la otra mitad de la captura, y la más lenta de las dos: aquí no es un
-toque por alumno, son tantos como renglones tenga la rúbrica.
+**Siguiente commit: `C24 · feat(evaluacion): registrar aciertos de examen por campo
+formativo`,** que está **detenido por una pregunta sin validar**: ¿hay un examen por
+trimestre o varios? Si son varios, el examen deja de colgar del `CriterioTrimestre`
+y pasa a ser una actividad más, y `ResultadoExamen` cambia de referencia. Preguntarlo
+cuesta un mensaje; equivocarse cuesta una migración de datos reales.
 
-Lo que ya está decidido y hay que respetar:
+Si esa respuesta no llega, lo que sigue sin bloqueo es **`C28`, la cadena de
+cálculo**, con la salvedad de que sin C24 el criterio de examen queda fuera del
+promedio hasta que exista su captura. Ahí también hay que definir el redondeo al
+presentar —¿entero o un decimal?—, que no es estructural.
 
-- **«Siguiente» salta al siguiente alumno *sin calificar*,** no al de al lado. Con
-  30 alumnos, volver a pasar por los que ya están es lo que hace que nadie termine.
-- Se puede saltar a cualquier alumno fuera de orden, y el progreso se ve: «12 de
-  30».
-- Cada toque de nivel guarda, como todo lo demás.
-- `EvaluacionRubrica.niveles` guarda el **índice** del nivel, nunca su valor.
+Lo que ya está decidido y hay que respetar en C24:
 
-El descriptor de cada nivel tiene que estar a la vista al calificar: es la razón por
-la que las rúbricas existen, y esconderlo detrás de un toque las vuelve cuatro
-botones sin significado.
-
-Ojo con una asimetría que ya existe: la fila de una actividad **con** rúbrica todavía
-lleva a la forma de edición, no a calificar. C23 la conecta a su captura.
+- La captura usa un **teclado numérico dentro de la app**, no el nativo: en iPadOS
+  el nativo tapa media pantalla y hace zoom.
+- No se aceptan aciertos mayores al total de preguntas del campo, que viene de
+  `ExamenConfig`.
+- Todo el cálculo en base 1; la conversión a base 10 ocurre una sola vez, al
+  presentar, y sin piso de escala.
 
 El orden del resto de la Fase 4 es:
 
 ```
-C18 ─ C19 ─ C20 ─ C21 ─ C21b ─┬─ C22 ─┐  ✅
+C18 ─ C19 ─ C20 ─ C21 ─ C21b ─┬─ C22 ─┐
  ✅    ✅    ✅    ✅    ✅     ├─ C23 ─┼─ C28 ─┬─ C29
                               └─ C24 ─┘       └─ C27
 ```
+
+Hechos: C18, C19, C20, C21, C21b, C22 y C23. De la rama de captura solo falta C24,
+que es el que está detenido.
 
 C29 es el que cierra la fase: la pantalla donde ella saca los números para la
 boleta.
@@ -162,9 +167,14 @@ campos formativos. Los tres se resolvieron en la validación.
 
 - De las once tablas nuevas, tienen puerto y adaptador `ciclos`, `trimestres`,
   `criterios`, `criterios_trimestre`, `rubricas`, `rubrica_criterios`,
-  `actividades` y `entregas`. `eval_rubrica` solo se **lee** —para contar si una
-  actividad está calificada— y se borra al descartar una captura; escribirla es C23.
-  `examen_config`, `resultados_examen` y `cierres` no se tocan todavía.
+  `actividades`, `entregas` y `eval_rubrica`. `examen_config`, `resultados_examen`
+  y `cierres` no se tocan todavía.
+- La captura con rúbrica **no está medida con cronómetro**, ni en el navegador ni
+  en el iPad. No tiene el presupuesto de 15 segundos de la asistencia —son tantos
+  toques como renglones por alumno— pero cuánto cuesta de verdad un grupo de 30
+  solo se sabe con el iPad en la mano.
+- Un alumno a medias se ve como pendiente y nada avisa cuántos quedaron así al
+  salir: el contador dice «12 de 30», no «hay tres a medias».
 - El criterio de los 15 segundos de C22 está medido en el navegador (73 ms para
   cuatro toques, incluyendo el viaje a IndexedDB), **no en el iPad con cronómetro**.
   Falta confirmarlo en el dispositivo, como se hizo con C8.

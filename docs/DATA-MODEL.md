@@ -392,6 +392,13 @@ Los valores no son enteros, pero eso no afecta el almacenamiento:
 `EvaluacionRubrica.niveles` guarda el **índice** del nivel elegido (0–3), no su
 valor. Cambiar la tabla no requiere migrar datos.
 
+`niveles` puede quedar **incompleto**: la pantalla de captura escribe renglón por
+renglón, y salir a media rúbrica deja un mapa con menos entradas que renglones. La
+interfaz trata eso como *sin calificar* —`nivelesCompletos` en `domain/`— y no lo
+cuenta en el «12 de 30». Qué hace el cálculo con un mapa incompleto —promediar lo
+que hay o excluir al alumno de la actividad— se decide en C28, y hasta entonces no
+hay número que dependa de ello.
+
 ## Criterio
 
 Todas las actividades de un criterio valen lo mismo. El valor del criterio es el

@@ -4,6 +4,7 @@ import {
   aceptaEscrituras,
   contieneFecha,
   descriptoresCompletos,
+  nivelesCompletos,
   pesosSuman100,
   puedeCerrarse,
   rangoValido,
@@ -244,5 +245,35 @@ describe('rubricaCompleta', () => {
         criterios: [{ nombre: 'Claridad', descriptores: ['a', '', 'c', 'd'] }],
       }),
     ).toBe(false)
+  })
+})
+
+describe('nivelesCompletos', () => {
+  it('con un nivel por renglón, está completa', () => {
+    expect(nivelesCompletos({ a: 0, b: 3 }, ['a', 'b'])).toBe(true)
+  })
+
+  it('a medias no cuenta como calificado', () => {
+    // Un promedio sacado de un renglón de dos no se compara con el de nadie.
+    expect(nivelesCompletos({ a: 0 }, ['a', 'b'])).toBe(false)
+  })
+
+  it('sin ningún nivel, no está completa', () => {
+    expect(nivelesCompletos({}, ['a'])).toBe(false)
+  })
+
+  it('el nivel 0 cuenta: es «Excelente», no un hueco', () => {
+    expect(nivelesCompletos({ a: 0 }, ['a'])).toBe(true)
+  })
+
+  it('los niveles de renglones que ya no están no completan nada', () => {
+    // La rúbrica perdió el renglón `b` y ganó `c`: lo capturado en `b` sigue
+    // guardado, pero no califica `c`.
+    expect(nivelesCompletos({ a: 1, b: 2 }, ['a', 'c'])).toBe(false)
+  })
+
+  it('una rúbrica sin renglones nunca está completa', () => {
+    // Decir que sí declararía calificado a todo el grupo sin un solo toque.
+    expect(nivelesCompletos({}, [])).toBe(false)
   })
 })

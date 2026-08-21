@@ -662,15 +662,47 @@ La fila muestra **con qué se califica**, por nombre de rúbrica o «entregada /
 entregada». Sin eso hay que abrir la actividad para saber qué pantalla te va a
 tocar.
 
-### ▶ C23 · `feat(evaluacion): calificar con rúbrica, alumno por alumno`
+### ✅ C23 · `feat(evaluacion): calificar con rúbrica, alumno por alumno`
 
 **Aceptación**
-- [ ] La lista muestra quién ya está calificado
-- [ ] «Siguiente» salta al siguiente alumno **sin calificar**
-- [ ] Se puede saltar a cualquier alumno fuera de orden
-- [ ] Salir y volver conserva todo lo calificado
-- [ ] Cada toque de nivel guarda de inmediato
-- [ ] El progreso es visible: «12 de 30»
+- [x] La lista muestra quién ya está calificado
+- [x] «Siguiente» salta al siguiente alumno **sin calificar**
+- [x] Se puede saltar a cualquier alumno fuera de orden
+- [x] Salir y volver conserva todo lo calificado
+- [x] Cada toque de nivel guarda de inmediato
+- [x] El progreso es visible: «12 de 30»
+
+Verificado en el navegador con una rúbrica de dos renglones: los cuatro niveles
+salen con su descriptor; tocar uno marca el botón y sube el contador en el acto;
+calificar los dos renglones deja al alumno como «Calificado» y el contador en
+«1 de 30»; «Siguiente sin calificar» pasa del alumno 1 al 2 y del 2 al 3 aunque el
+2 quedara a medias; tocar la fila del 30 entra fuera de orden; y recargar conserva
+al 1 calificado y al 2 en «1 de 2 renglones».
+
+Decisiones que salieron de construirlo:
+
+- **Abrir no materializa nada**, al revés de C22. Allá el valor por omisión es el
+  probable —casi todos entregan— y escribir los 30 hace que «cero registros ⇒ sin
+  calificar» sea inequívoco. Aquí ningún nivel es el probable: 30 registros vacíos
+  dejarían la actividad contando 30 capturas sin un solo toque. El registro nace
+  con el primer nivel elegido.
+- **Calificado es tener nivel en todos los renglones.** Un alumno a medias cuenta
+  como pendiente y no entra en el «12 de 30»: su promedio saldría de menos
+  renglones que el de los demás. La regla es `nivelesCompletos` y vive en
+  `domain/`, no en la pantalla.
+- **«Siguiente» da la vuelta.** Ella no recorre el grupo en un solo pase —se salta
+  a quien no trajo el trabajo, atiende la puerta, vuelve— así que «siguiente»
+  significa «el que falta», no «el que sigue en la lista». Y **avanza**: si el
+  actual es el que falta, no se queda ahí.
+- **`calificarRenglon` escribe un renglón y conserva los demás.** El puerto no
+  recibe el mapa completo: recibirlo haría que dos toques rápidos se pisaran el
+  mapa que cada uno tenía en la mano.
+- **La captura vive en `application/calificacion.ts`**, aparte de `entregas.ts`.
+  Los dos son camino de captura, pero no comparten nada: allá una fila es un
+  toque, aquí un alumno son tantos toques como renglones.
+- El hook devuelve las dos listas **en crudo** y la pantalla las cruza. Cruzarlas
+  necesita los renglones de la rúbrica, que salen del selector de la actividad y
+  no de la suscripción.
 
 ### ⬜ C24 · `feat(evaluacion): registrar aciertos de examen por campo formativo`
 

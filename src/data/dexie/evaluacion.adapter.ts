@@ -15,6 +15,7 @@ import type {
   Actividad,
   Ciclo,
   Entrega,
+  EvaluacionRubrica,
   Criterio,
   CriterioTrimestre,
   Rubrica,
@@ -23,7 +24,7 @@ import type {
   Trimestre,
 } from '@/domain/entities'
 import { admiteActividades } from '@/domain/evaluacion'
-import type { Fecha, Id, Instante, Sincronizable, Suscribible } from '@/domain/values'
+import type { Fecha, Id, Instante, Nivel, Sincronizable, Suscribible } from '@/domain/values'
 
 import { ahora, db, nuevoId } from './db'
 
@@ -641,6 +642,53 @@ export class DexieEvaluacionRepo implements EvaluacionRepo {
         registro_id: registro.id,
         op: 'upsert',
         at: ahora(),
+      })
+    })
+  }
+
+  async evaluacionesDeActividad(actividadId: Id): Promise<EvaluacionRubrica[]> {
+    const registros = await db.eval_rubrica.where('actividad_id').equals(actividadId).toArray()
+    // El filtro va en memoria: IndexedDB no indexa `null`. Ver la nota en
+    // alumnos.adapter.ts.
+    return registros.filter((e) => e.deleted_at === null)
+  }
+
+  observarEvaluacionesDeActividad(actividadId: Id): Suscribible<EvaluacionRubrica[]> {
+    return liveQuery(() => this.evaluacionesDeActividad(actividadId))
+  }
+
+  async calificarRenglon(
+    actividadId: Id,
+    alumnoId: Id,
+    rubricaCriterioId: Id,
+    nivel: Nivel,
+  ): Promise<void> {
+    await db.transaction('rw', db.eval_rubrica, db.outbox, async () => {
+      const existente = await db.eval_rubrica
+        .where('[actividad_id+alumno_id]')
+        .equals([actividadId, alumnoId])
+        .first()
+
+      const momento = ahora()
+      const registro: EvaluacionRubrica = {
+        id: existente?.id ?? nuevoId(),
+        actividad_id: actividadId,
+        alumno_id: alumnoId,
+        // Se copia el mapa en vez de mutarlo: el objeto que devolvió Dexie puede
+        // ser el mismo que ya tiene una suscripción en la mano.
+        niveles: { ...existente?.niveles, [rubricaCriterioId]: nivel },
+        updated_at: momento,
+        // Volver a calificar revive un registro borrado: para la maestra es el
+        // mismo alumno en la misma actividad, no uno nuevo.
+        deleted_at: null,
+      }
+
+      await db.eval_rubrica.put(registro)
+      await db.outbox.add({
+        tabla: 'eval_rubrica',
+        registro_id: registro.id,
+        op: 'upsert',
+        at: momento,
       })
     })
   }
