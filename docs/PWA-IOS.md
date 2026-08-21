@@ -123,8 +123,8 @@ completo.
 - [ ] **Crear su cuenta** en *Authentication → Users*, con correo y contraseña. Es la
       que se teclea una vez en Ajustes → Copia en la nube. Requiere el panel: no se
       puede hacer desde el repositorio.
-- [ ] **Apagar los registros públicos** en *Authentication → Providers → Email*,
-      quitando *Enable signups*. Con `signup` abierto cualquiera puede crear un
+- [ ] **Apagar los registros públicos** en *Authentication → Sign In / Providers*,
+      en la tarjeta de **Email**: el interruptor *Allow new users to sign up*. Con `signup` abierto cualquiera puede crear un
       usuario; no vería nada de ella —las políticas lo impiden— pero no hay razón
       para dejar la puerta.
 
