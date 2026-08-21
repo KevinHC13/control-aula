@@ -120,9 +120,10 @@ export async function restaurarDeLaNube(): Promise<ConteoPorTabla> {
 }
 
 /**
- * Sube si hay sesión y hay algo que subir. Es la que se llama al abrir y al cerrar
- * la app, y por eso **no lanza**: un fallo de red en el arranque no puede ser un
- * error en la cara de nadie —los cambios se quedan en la cola, que es su trabajo—.
+ * Sube si hay sesión y hay algo que subir. Es la que se llama al abrir la app, al
+ * mandarla a segundo plano y al recuperar la red, y por eso **no lanza**: un fallo
+ * de red no puede ser un error en la cara de nadie cuando nadie pidió sincronizar
+ * —los cambios se quedan en la cola, que es su trabajo—.
  *
  * Devuelve `null` cuando no hizo nada: sin nube configurada, sin sesión o con la
  * cola vacía.

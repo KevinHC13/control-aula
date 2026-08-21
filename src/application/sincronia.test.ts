@@ -171,8 +171,8 @@ describe('restaurarDeLaNube', () => {
 
 describe('sincronizarSiSePuede', () => {
   it('sin sesión no sube nada y no falla', async () => {
-    // Es la que corre al abrir y al cerrar: sin sesión la app funciona igual
-    // contra los datos locales (D-023).
+    // Es la que corre al abrir, al cerrar y al volver la red: sin sesión la app
+    // funciona igual contra los datos locales (D-023).
     sesionFalsa = null
     await db.alumnos.put(alumno(1))
     await encolar('alumnos', 'alumno-1')

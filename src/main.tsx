@@ -16,8 +16,9 @@ void abrirBase()
   })
 
 /**
- * Sincronía al abrir y al cerrar, nunca en segundo plano: iOS no tiene Background
- * Sync, así que toda subida ocurre con la app abierta (docs/PWA-IOS.md).
+ * Sincronía al abrir, al cerrar y al recuperar la red, nunca en segundo plano: iOS
+ * no tiene Background Sync, así que toda subida ocurre con la app abierta
+ * (docs/PWA-IOS.md).
  *
  * **Con `import()` y no con un import normal**, y esa es la diferencia entre pasar
  * lista y esperar: el cliente de Supabase pesa 240 kB y no hace falta para capturar
@@ -32,6 +33,11 @@ void abrirBase()
  * `pagehide` y no `beforeunload`: en iOS es el único que se dispara de verdad al
  * cambiar de app o cerrar la pestaña. Se acompaña de `visibilitychange` porque en
  * la PWA instalada el paso a segundo plano suele llegar solo por ahí.
+ *
+ * Y `online`, que **no** es sincronía en segundo plano: sigue ocurriendo con la app
+ * abierta y a la vista. Sin él, quedarse sin red a media clase y recuperarla no
+ * subía nada hasta que ella cambiara de app o la volviera a abrir —un gesto que no
+ * tiene por qué hacer—, y lo capturado se quedaba esperando en la cola sin motivo.
  */
 function sincronizar() {
   void import('@/application/sincronia')
@@ -44,6 +50,7 @@ function sincronizar() {
 
 sincronizar()
 window.addEventListener('pagehide', sincronizar)
+window.addEventListener('online', sincronizar)
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') sincronizar()
 })

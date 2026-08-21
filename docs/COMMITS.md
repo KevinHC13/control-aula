@@ -445,7 +445,8 @@ Cómo quedó:
 **Aceptación**
 - [x] La `outbox` se vacía solo tras confirmación del servidor
 - [x] Sin red, la app funciona idéntico y los cambios quedan encolados
-- [x] Se sincroniza al abrir y al cerrar, nunca en segundo plano
+- [x] Se sincroniza al abrir, al cerrar y **al recuperar la red**, nunca en segundo
+      plano
 - [~] Restaurar en un dispositivo limpio reconstruye todo
 - [x] Nada del motor de sincronía atraviesa el repositorio
 

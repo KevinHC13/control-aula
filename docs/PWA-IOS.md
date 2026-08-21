@@ -79,7 +79,8 @@ VitePWA({
 | Fullscreen API | Limitada | No depender de ella |
 
 **Background Sync** es la más consecuente: el motor de sincronía se diseña como
-"al abrir y al cerrar", nunca como algo que pasa solo en segundo plano.
+"al abrir, al cerrar y al recuperar la red", nunca como algo que pasa solo con la app
+cerrada. Las tres ocurren con la app a la vista, que es lo único que iOS garantiza.
 
 ## Trampas concretas
 

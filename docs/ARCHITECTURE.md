@@ -231,7 +231,11 @@ Reglas:
 - Un usuario, un dispositivo ⇒ **no hay sincronía bidireccional**. Solo dos
   operaciones: *subir pendientes* y *restaurar todo*. Sin last-write-wins, sin
   vectores de versión, sin resolución de conflictos.
-- Se ejecuta al abrir y al cerrar la app. iOS no tiene Background Sync.
+- Se ejecuta al abrir la app, al mandarla a segundo plano y **al recuperar la red**.
+  Ninguna de las tres es sincronía en segundo plano —iOS no tiene Background Sync—:
+  todas ocurren con la app abierta. La de `online` existe porque sin ella, perder la
+  red a media clase y recuperarla dejaba lo capturado en la cola hasta que alguien
+  cambiara de app.
 
 ## Servicios externos
 
