@@ -122,4 +122,6 @@ completo.
 - [ ] La barra de pestañas no queda bajo el indicador de home
 - [ ] El ícono se ve nítido en la pantalla de inicio
 - [ ] Rotar el iPad no rompe el layout
-- [ ] Existe una forma de exportar respaldo
+- [ ] Existe una forma de exportar respaldo — hay pantalla (*Grupo → Ajustes →
+      Respaldo*); falta ver en el iPad que la hoja de compartir ofrezca *Guardar en
+      Archivos* y que el selector de archivos abra Archivos al restaurar

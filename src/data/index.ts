@@ -10,12 +10,14 @@ import { DexieAsistenciaRepo } from './dexie/asistencia.adapter'
 import { DexieBitacoraRepo } from './dexie/bitacora.adapter'
 import { db } from './dexie/db'
 import { DexieEvaluacionRepo } from './dexie/evaluacion.adapter'
+import { DexieRespaldoRepo } from './dexie/respaldo.adapter'
 
 export const repos = {
   alumnos: new DexieAlumnosRepo(),
   asistencia: new DexieAsistenciaRepo(),
   bitacora: new DexieBitacoraRepo(),
   evaluacion: new DexieEvaluacionRepo(),
+  respaldo: new DexieRespaldoRepo(),
 } as const
 
 /**

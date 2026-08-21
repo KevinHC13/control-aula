@@ -895,6 +895,29 @@ cerrado, así que un `tabla: 'califcaciones'` mal escrito sigue siendo un error 
 compilación. `outbox` no está en la lista: es local y nunca se sincroniza como
 contenido.
 
+## Respaldo en JSON
+
+```ts
+export interface ArchivoDeRespaldo {
+  app: 'palomita/respaldo'
+  esquema: number          // la version() de Dexie con la que se generó
+  generado_en: Instante
+  tablas: Record<string, unknown[]>   // una entrada por tabla sincronizable
+}
+```
+
+`esquema` es lo que permite **rechazar un respaldo más nuevo que la app** —sus filas
+pueden traer campos que esta versión no sabe leer— y aceptar uno más viejo, al que
+solo le faltan campos. Las filas van tal como están guardadas, **borrados
+incluidos**: filtrar `deleted_at` resucitaría al restaurar lo que se dio de baja.
+
+Restaurar es un `bulkPut` por tabla en una sola transacción: upsert por `id`, así que
+el mismo archivo dos veces no duplica, y no borra lo que el archivo no trae. Quién
+sabe qué tablas existen es el repositorio, no el caso de uso: el adaptador recorre
+`TABLAS_SINCRONIZABLES`, de modo que agregar una tabla al esquema la mete al respaldo
+sin tocar nada más. Detalle y lo que se pierde con cada decisión, en
+[DECISIONES.md](./DECISIONES.md) D-022.
+
 # Reglas de dominio
 
 Funciones puras, sin acceso a base de datos, testeables sin montar nada. Todas

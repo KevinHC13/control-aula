@@ -6,6 +6,7 @@ import { Ajustes } from '@/ui/screens/Ajustes'
 import { CargarLista } from '@/ui/screens/CargarLista'
 import { CicloEscolar } from '@/ui/screens/CicloEscolar'
 import { CriteriosYPesos } from '@/ui/screens/CriteriosYPesos'
+import { Respaldo } from '@/ui/screens/Respaldo'
 import { Rubricas } from '@/ui/screens/Rubricas'
 
 /**
@@ -13,7 +14,14 @@ import { Rubricas } from '@/ui/screens/Rubricas'
  * de `Asistencia.tsx`: ajustes vive y muere dentro de la pestaña Grupo, no cruza
  * pantallas, y el store guarda solo lo que sí (docs/ARCHITECTURE.md).
  */
-type Vista = 'resumen' | 'ajustes' | 'cargar' | 'ciclo' | 'criterios' | 'rubricas'
+type Vista =
+  | 'resumen'
+  | 'ajustes'
+  | 'cargar'
+  | 'ciclo'
+  | 'criterios'
+  | 'rubricas'
+  | 'respaldo'
 
 export function Grupo() {
   const [vista, setVista] = useState<Vista>('resumen')
@@ -26,6 +34,7 @@ export function Grupo() {
         alConfigurarCiclo={() => setVista('ciclo')}
         alConfigurarCriterios={() => setVista('criterios')}
         alConfigurarRubricas={() => setVista('rubricas')}
+        alRespaldar={() => setVista('respaldo')}
       />
     )
   }
@@ -44,6 +53,10 @@ export function Grupo() {
 
   if (vista === 'rubricas') {
     return <Rubricas alVolver={() => setVista('ajustes')} />
+  }
+
+  if (vista === 'respaldo') {
+    return <Respaldo alVolver={() => setVista('ajustes')} />
   }
 
   return (

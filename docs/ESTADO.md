@@ -25,9 +25,10 @@ del criterio (D-016). **Toda la captura de la Fase 4 está construida, y tambié
 cálculo** (C28), **el cierre con su snapshot** (C27) **y la pantalla donde ella lee
 los números** (C29). **La Fase 4 está terminada.** Encima de eso entró alcance
 nuevo: puntualidad, conducta y participación vuelven, con las reglas que dictó ella.
-De ese alcance ya entró la **bitácora** (`C12`), que trajo `db.version(3)`
-completa. Aun así, el pendiente más urgente no es ninguno de los tres criterios: es
-que **el único ejemplar de los datos reales vive en un iPad**.
+De ese alcance ya entró la **bitácora** (`C12`), que trajo `db.version(3)` completa,
+y encima el **respaldo en JSON** (`C14`): los datos reales ya no viven solo en un
+iPad, o al menos ya hay con qué sacarlos. Lo que falta de la Fase 3 es el resumen
+del grupo, los cumpleaños y la sincronía.
 
 ## Fases
 
@@ -36,7 +37,7 @@ que **el único ejemplar de los datos reales vive en un iPad**.
 | 1 · Cimientos | Scaffold, shadcn, dominio, Dexie, puertos | ✅ Terminada |
 | 2 · Asistencia | El vertical completo hasta el iPad | ✅ Terminada |
 | Hito | Entrega, pausa de una semana, validación | ✅ Cumplido |
-| 3 · Resto de la v1 | Bitácora, resumen, respaldo, cumpleaños, sincronía | ▶ Pendiente |
+| 3 · Resto de la v1 | Bitácora, resumen, respaldo, cumpleaños, sincronía | ▶ Bitácora y respaldo hechos; faltan C13, C15, C16 |
 | 5 · Criterios automáticos | Puntualidad, conducta y participación | ▶ C12 hecho; faltan C25b, C25, C26 |
 | 6 · Herramientas de aula | Sorteo de participación y formar equipos | ⬜ Alcance nuevo: C30, C31 |
 | 4 · Evaluación | Ciclo, trimestres, criterios, rúbricas, cálculo | ✅ Terminada: C18–C24 y C27–C29 |
@@ -48,11 +49,11 @@ Verificado en `src/` a esta fecha:
 | Capa | Contenido |
 |---|---|
 | `domain/` | `entities.ts` con la jerarquía de evaluación completa, `values.ts`, `fechas.ts`, `rules.ts`, `evaluacion.ts` (estructura) y `calculo.ts` (los números), con pruebas |
-| `data/dexie/` | `db.ts` en `version(3)`, adaptadores de alumnos, asistencia, evaluación y bitácora, `outbox`, semilla |
-| `data/ports/` | `alumnos.ts`, `asistencia.ts`, `evaluacion.ts` (ciclo, trimestres, criterios, pesos, rúbricas y actividades), `bitacora.ts` |
-| `application/` | `asistencia.ts`, `grupo.ts`, `importacion.ts`, `evaluacion.ts`, `entregas.ts`, `calificacion.ts`, `examen.ts`, `calificaciones.ts` (reporte y cierre), `bitacora.ts` |
+| `data/dexie/` | `db.ts` en `version(3)`, adaptadores de alumnos, asistencia, evaluación, bitácora y respaldo, `outbox`, semilla |
+| `data/ports/` | `alumnos.ts`, `asistencia.ts`, `evaluacion.ts` (ciclo, trimestres, criterios, pesos, rúbricas y actividades), `bitacora.ts`, `respaldo.ts` |
+| `application/` | `asistencia.ts`, `grupo.ts`, `importacion.ts`, `evaluacion.ts`, `entregas.ts`, `calificacion.ts`, `examen.ts`, `calificaciones.ts` (reporte y cierre), `bitacora.ts`, `respaldo.ts` |
 | `services/` | `extraccion.ts` — única salida a red del cliente |
-| `ui/` | Cuatro pestañas, Asistencia completa (con la etiqueta del trimestre), Calificaciones con sus actividades, las tres capturas —entregas, rúbrica y examen, esta última con teclado propio— y el reporte del trimestre por alumno y por campo, Bitácora con el conteo por alumno y su historial, Ajustes, CargarLista, CicloEscolar, CriteriosYPesos (con el cierre del trimestre), Rubricas |
+| `ui/` | Cuatro pestañas, Asistencia completa (con la etiqueta del trimestre), Calificaciones con sus actividades, las tres capturas —entregas, rúbrica y examen, esta última con teclado propio— y el reporte del trimestre por alumno y por campo, Bitácora con el conteo por alumno y su historial, Ajustes, CargarLista, CicloEscolar, CriteriosYPesos (con el cierre del trimestre), Rubricas, Respaldo |
 | `tests/` | `arquitectura.test.ts` — verifica las reglas de dependencia en cada `npm test` |
 | Infra | PWA con `vite-plugin-pwa` y aviso de actualización; Edge Function `extraer-lista` desplegada |
 
@@ -102,22 +103,20 @@ asistencia capturada.
 
 ## Con qué continuar
 
-**Siguiente commit: `C14 · feat: exportar e importar respaldo en json`.** No es lo
-más vistoso que queda, es lo más urgente: con la Fase 4 terminada, el iPad ya
-acumula asistencia, actividades, rúbricas, calificaciones y cortes de trimestre, y
-**no existe ninguna forma de recuperar el año si se pierde**. No hay sincronía, no
-hay respaldo y no hay copia. Todo lo demás que falta puede esperar; esto no.
+**El riesgo que dominaba esta sección ya está cubierto: `C14` está hecho.** Hay
+una pantalla en *Grupo → Ajustes → Respaldo* que escribe un archivo con las
+dieciséis tablas —borrados incluidos— y lo restaura por upsert, así que el mismo
+archivo dos veces no duplica nada. Queda **una verificación que necesita el
+dispositivo**: que la hoja de compartir del iPad ofrezca *Guardar en Archivos*. En
+el escritorio la exportación cae a una descarga normal, que es lo que se probó.
 
-Ya se puede tomar sin la reserva que tenía antes: **`version(3)` ya entró con
-`C12`**, así que `TABLAS_SINCRONIZABLES` enumera las dieciséis tablas definitivas y
-el respaldo no va a exportar un esquema que cambie la semana siguiente. `C25b` y
-`C25` ya no migran nada.
-
-Después, lo que queda del **alcance nuevo del 2026-08-21** (D-020 y D-021), en este
-orden:
+**Siguiente commit: `C25b · feat(evaluacion): configurar los criterios
+automáticos`.** Es el primero de lo que queda del **alcance nuevo del 2026-08-21**
+(D-020 y D-021), en este orden:
 
 1. ~~`C12` · bitácora~~ — **hecho**: la pestaña se llama *Bitácora*, todo lo que se
    anota es un reporte con su conteo por alumno, y trajo `version(3)` completa.
+   ~~`C14` · respaldo~~ — **hecho** también, y ya no condiciona a nadie.
 2. `C25b` · **configurar los criterios automáticos** — los tres tipos en el selector
    de pesos, con `retardos_por_falta` y la meta de participación.
 3. `C25` · **captura de participación** — el modo en la pantalla de asistencia, sobre
@@ -154,9 +153,6 @@ automáticos —`C12`, `C25b`, `C25`, `C26`—, que dejaron de estar pospuestos 
 La Fase 4 está cerrada, así que nada de lo que falta depende de ella. En orden de
 valor por unidad de trabajo:
 
-- **`C14` · respaldo en JSON.** El mayor riesgo abierto del proyecto: el iPad guarda
-  un trimestre entero de calificaciones y no hay copia. Exporta
-  `TABLAS_SINCRONIZABLES`, que con `version(3)` ya está en su forma definitiva.
 - **Los dos criterios automáticos que faltan por configurar y capturar**: `C25b`
   (configuración) y `C25` (captura de participación), y luego `C26`
   (cálculo). El cálculo va al final porque hasta entonces no tiene de dónde
@@ -172,7 +168,8 @@ valor por unidad de trabajo:
 - **`C15` · cumpleaños.** Independiente por completo.
 - **`C16` · sincronía.** El que cierra la v1.
 
-`version(3)` ya está, así que `C14` se puede tomar solo y sin condiciones.
+`version(3)` y `C14` ya están, así que nada de lo que queda depende del esquema ni
+del respaldo.
 
 ## Alcance nuevo: los tres criterios automáticos
 

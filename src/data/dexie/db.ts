@@ -49,6 +49,13 @@ export const TABLAS_SINCRONIZABLES = [
 export type TablaSincronizable = (typeof TABLAS_SINCRONIZABLES)[number]
 
 /**
+ * La versión del esquema local. Vive junto al esquema y no como un número
+ * escrito a mano en el respaldo: el archivo lo lleva dentro para poder rechazar
+ * uno hecho con una versión más nueva de la app (C14).
+ */
+export const VERSION_ESQUEMA = 3
+
+/**
  * Una fila de la bitácora de cambios por subir. Vive en la capa de datos y no
  * en `domain/`: es un detalle local del dispositivo, nunca se sincroniza como
  * contenido y desaparece cuando el motor de sincronía la sube.
@@ -163,7 +170,7 @@ db.version(2)
  * campo, no un índice: Dexie no lo declara y las filas viejas lo leen como
  * `undefined`, que el cálculo trata igual que `null` —un retardo no penaliza—.
  */
-db.version(3)
+db.version(VERSION_ESQUEMA)
   .stores({
     notas: null,
     bitacora: 'id, alumno_id, fecha, deleted_at',

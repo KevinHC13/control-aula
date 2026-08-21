@@ -702,3 +702,39 @@ como el calendario del mes o la pestaña activa: son estado de interfaz, no un d
 del salón. Guardarlos significaría una tabla, una fecha y una pantalla de historial,
 y eso solo se paga si va a volver a verlos; para armar equipos en el momento, no.
 Es la decisión a revisar el día que pida «los equipos de ayer».
+
+---
+
+## D-022 · El respaldo se restaura mezclando, y no encola en la outbox
+
+**Estado:** aceptada — 2026-08-21. Sale de construir `C14`.
+
+El respaldo en JSON es un archivo con las dieciséis tablas sincronizables y la
+versión del esquema dentro. Tres decisiones que no se ven en la pantalla y que
+conviene no volver a discutir:
+
+**Restaurar mezcla, no reemplaza.** Es un upsert por `id` y no borra lo que el
+archivo no trae. El caso que existe es *recuperar lo que se perdió*, no *dejar el
+iPad como estaba el 18 de diciembre*; y como los `id` son UUID del cliente, el
+mismo archivo dos veces actualiza las mismas filas en vez de duplicarlas. Quien
+quiera empezar de cero desinstala la app, que en iPadOS se lleva IndexedDB con
+ella. Lo que se pierde: no hay forma de deshacer una restauración de un archivo
+equivocado —solo de volver a restaurar el correcto—.
+
+**El respaldo lleva los registros borrados.** El borrado es suave: un archivo que
+filtrara `deleted_at` resucitaría al restaurar a un alumno dado de baja y a los
+reportes que ella quitó. El respaldo es la base tal como está, no la base como se
+ve.
+
+**Restaurar no encola en la `outbox`**, y es la única excepción a la regla de que
+toda escritura encola su cambio en la misma transacción. Restaurar no es una
+mutación del salón: es meter de vuelta lo que ya se había capturado. Qué debe pasar
+cuando un dispositivo restaurado se conecte por primera vez es una decisión del
+motor de sincronía —`C16`, que tiene su propio «restaurar todo»— y resolverla aquí
+sería inventar la semántica de un servidor que todavía no existe. La consecuencia a
+tener presente: hoy, un iPad nuevo restaurado desde archivo **no** sube nada solo.
+
+Y una de forma: exportar usa `navigator.share({ files })` cuando el navegador lo
+tiene, porque en iPadOS esa hoja es la que trae *Guardar en Archivos*; en el
+escritorio cae a una descarga por ancla. Es lo único de `C14` que no se puede
+verificar sin el dispositivo en la mano.

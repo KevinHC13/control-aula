@@ -343,19 +343,43 @@ no. Si se toma antes, se toma solo con asistencia.
 - [ ] Sin calificaciones, el promedio muestra `—`, no `0.0`
 - [ ] El color de alerta usa el umbral validado con ella
 
-### ⬜ C14 · `feat: exportar e importar respaldo en json`
+### ✅ C14 · `feat: exportar e importar respaldo en json`
 
 Cubre el riesgo de pérdida de datos antes de que exista el motor de sincronía.
-Con la app ya en el iPad y datos reales dentro, **este es el commit de mayor
-valor por unidad de trabajo que queda pendiente.**
-
-Ojo: el respaldo tiene que exportar las tablas de `version(2)`, así que conviene
-tomarlo después de C18 o aceptar que hay que volver a él.
+Con la app ya en el iPad y datos reales dentro, era **el commit de mayor valor por
+unidad de trabajo que quedaba pendiente**. Se tomó después de `C12`, así que
+exporta el esquema definitivo —las dieciséis tablas de `version(3)`— y no hay que
+volver a él.
 
 **Aceptación**
-- [ ] La exportación abre el diálogo de *Guardar en Archivos* en iPad
-- [ ] Importar en una base vacía reconstruye todo, IDs incluidos
-- [ ] Importar dos veces el mismo archivo no duplica registros
+- [~] La exportación abre el diálogo de *Guardar en Archivos* en iPad
+- [x] Importar en una base vacía reconstruye todo, IDs incluidos
+- [x] Importar dos veces el mismo archivo no duplica registros
+
+El primero queda a medias **por falta de dispositivo, no de código**: la
+exportación usa `navigator.share({ files })` cuando existe —en iPadOS eso es la
+hoja de compartir, con *Guardar en Archivos* dentro— y cae a una descarga por
+ancla en el escritorio, que es donde se probó. Falta verlo en el iPad; está anotado
+en [PWA-IOS.md](./PWA-IOS.md).
+
+Cómo quedó:
+
+- **El repositorio es quien sabe qué tablas hay.** El puerto declara
+  `volcar()`/`restaurar()` sobre un `Record<tabla, filas>` y el adaptador recorre
+  `TABLAS_SINCRONIZABLES`: agregar una tabla al esquema la mete al respaldo sin
+  tocar el caso de uso. Si hubiera que acordarse de agregarla en dos lugares, el
+  respaldo saldría incompleto y nadie lo notaría hasta el día que hiciera falta.
+- **El respaldo incluye los registros borrados.** El borrado es suave; un archivo
+  que se comiera los `deleted_at` resucitaría al restaurar lo que ella dio de baja.
+- **Restaurar es un upsert por `id` en una sola transacción**, así que el mismo
+  archivo dos veces no duplica, y **no borra lo que el archivo no trae**: restaurar
+  es recuperar, no reemplazar el dispositivo.
+- **El archivo lleva la versión del esquema** y uno más nuevo se rechaza con un
+  mensaje que se puede leer en pantalla; uno más viejo se acepta, porque le faltan
+  campos y eso ya lo sabe manejar la app.
+- **Restaurar no encola en la `outbox`**, y es la única excepción a «toda escritura
+  encola». No es una mutación del salón: qué hace la sincronía con un dispositivo
+  restaurado lo decide `C16`, que tiene su propio «restaurar todo».
 
 ### ⬜ C15 · `feat: avisar cumpleaños del día y de la semana`
 

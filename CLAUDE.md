@@ -31,7 +31,8 @@ Existen y funcionan:
   la que falta es `participaciones`.
 - **`application/`**: `asistencia.ts`, `grupo.ts`, `importacion.ts`,
   `evaluacion.ts`, `entregas.ts`, `calificacion.ts`, `examen.ts`,
-  `calificaciones.ts` —el reporte del trimestre y su cierre— y `bitacora.ts`. `armarReporte` es la
+  `calificaciones.ts` —el reporte del trimestre y su cierre—, `bitacora.ts` y
+  `respaldo.ts` —el archivo JSON con todo, C14—. `armarReporte` es la
   única función que decide entre recalcular y leer el snapshot: no duplicar esa
   decisión.
 - **`services/`**: `extraccion.ts`, la única salida a red del cliente.
@@ -48,13 +49,13 @@ Existen y funcionan:
 - Una Edge Function desplegada en Supabase, `extraer-lista`, en
   `supabase/functions/`.
 
-**Lo que sigue es C14, el respaldo en JSON**, y no por vistoso: el iPad ya guarda un
-trimestre entero de asistencia y calificaciones y **no hay ninguna forma de
-recuperarlo si se pierde**. Ya se puede tomar sin condiciones: `version(3)` entró con
-`C12`, así que `TABLAS_SINCRONIZABLES` ya está en su forma definitiva.
+**`C14`, el respaldo en JSON, ya está**: *Grupo → Ajustes → Respaldo* exporta las
+dieciséis tablas a un archivo y lo restaura por upsert. Falta una sola cosa y es de
+dispositivo, no de código: ver en el iPad que la hoja de compartir ofrezca *Guardar
+en Archivos*.
 
-Del **alcance nuevo del 2026-08-21** —la usuaria retomó los tres criterios
-automáticos con reglas propias (D-020)— falta `C25b` —configuración— → `C25`
+**Lo que sigue es el alcance nuevo del 2026-08-21** —la usuaria retomó los tres
+criterios automáticos con reglas propias (D-020)—: `C25b` —configuración— → `C25`
 —captura de participación— → `C26` —cálculo—. Ninguno vuelve a tocar el esquema.
 
 Encima entran dos **herramientas de aula** (D-021): `C30` —sortear quién participa,
