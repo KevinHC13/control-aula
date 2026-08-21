@@ -138,6 +138,90 @@ export function admiteActividades(tipo: TipoCriterio): boolean {
 }
 
 /*
+ * Criterios automáticos
+ * =====================
+ *
+ * Los tres se **derivan** de lo que ya está capturado —asistencia, bitácora,
+ * participaciones— y nunca se capturan (docs/DECISIONES.md D-020). Aquí vive lo
+ * que hace falta para *configurarlos*; las fórmulas llegan en C26 y van en
+ * `calculo.ts`.
+ */
+
+/** Si el criterio se calcula solo. Ninguno se captura ni admite actividades. */
+export function esAutomatico(tipo: TipoCriterio): boolean {
+  return tipo === 'auto_puntualidad' || tipo === 'auto_conducta' || tipo === 'auto_participacion'
+}
+
+/**
+ * La meta con la que nace la participación: **5** (D-021). Cinco participaciones
+ * o más valen 10.0 y una vale 2.0.
+ *
+ * Es un valor validado con la usuaria, no una convención inventada, y por eso
+ * está aquí y no adivinado en el adaptador.
+ */
+export const META_PARTICIPACION_POR_OMISION = 5
+
+/**
+ * Una meta de participación válida: entero de 1 para arriba.
+ *
+ * Cero no se acepta —dividir entre cero no es una configuración, es un error— y
+ * un decimal tampoco: se cuentan participaciones, que son cosas enteras.
+ */
+export function metaParticipacionValida(meta: number): boolean {
+  return Number.isInteger(meta) && meta >= 1
+}
+
+/**
+ * Cuántos retardos hacen una falta: entero de 1 para arriba, o `null` para que un
+ * retardo no penalice.
+ *
+ * `1` es válido y significa que un retardo cuenta como falta completa. Es duro,
+ * pero es la política de algunas escuelas y no le toca al código decidirlo.
+ */
+export function retardosPorFaltaValido(valor: number | null): boolean {
+  return valor === null || (Number.isInteger(valor) && valor >= 1)
+}
+
+/** Los parámetros de un `CriterioTrimestre`, que solo usan los automáticos. */
+export type ParametrosAutomaticos = Pick<
+  CriterioTrimestre,
+  'meta_participacion' | 'retardos_por_falta'
+>
+
+/**
+ * Con qué parámetros nace un criterio recién agregado.
+ *
+ * La participación nace con su meta puesta, porque **5 está validado** y pedirla
+ * antes de poder agregar el criterio sería preguntar algo que ya se sabe. La
+ * puntualidad nace en `null` —un retardo no penaliza— y no en 3: «tres retardos
+ * hacen una falta» es una convención que nadie ha validado, y de las dos formas
+ * de equivocarse, la que no castiga a nadie sin que ella lo pida es esta.
+ * Conducta no tiene parámetros: su escala es fija.
+ */
+export function parametrosPorOmision(tipo: TipoCriterio): ParametrosAutomaticos {
+  return {
+    meta_participacion: tipo === 'auto_participacion' ? META_PARTICIPACION_POR_OMISION : null,
+    retardos_por_falta: null,
+  }
+}
+
+/**
+ * Si al criterio automático le falta algo para poder calificar.
+ *
+ * Solo la participación puede quedar incompleta —sin meta no hay con qué
+ * normalizar—; la puntualidad sin `retardos_por_falta` está completa, significa
+ * que los retardos no penalizan, y la conducta nunca necesita nada.
+ */
+export function parametrosCompletos(
+  tipo: TipoCriterio,
+  parametros: ParametrosAutomaticos,
+): boolean {
+  if (tipo !== 'auto_participacion') return true
+  return parametros.meta_participacion !== null &&
+    metaParticipacionValida(parametros.meta_participacion)
+}
+
+/*
  * Rúbricas
  * ========
  */

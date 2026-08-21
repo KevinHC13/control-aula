@@ -13,6 +13,7 @@ import type {
   TipoCriterio,
   Trimestre,
 } from '@/domain/entities'
+import type { ParametrosAutomaticos } from '@/domain/evaluacion'
 import type { CampoFormativo, Fecha, Id, Nivel, Suscribible } from '@/domain/values'
 
 /**
@@ -234,10 +235,29 @@ export interface EvaluacionRepo {
    * El peso nace en 0. Poner un valor de arranque obligaría a adivinar el reparto
    * y a que ella corrija una cifra inventada.
    */
-  agregarCriterio(trimestreId: Id, nombre: string, tipo: TipoCriterio): Promise<void>
+  agregarCriterio(
+    trimestreId: Id,
+    nombre: string,
+    tipo: TipoCriterio,
+    parametros: ParametrosAutomaticos,
+  ): Promise<void>
 
   /** Cambia el peso de una fila. */
   ajustarPeso(criterioTrimestreId: Id, peso: number): Promise<void>
+
+  /**
+   * Cambia los parámetros de un criterio automático: la meta de participación y
+   * cuántos retardos hacen una falta.
+   *
+   * **No toca nada capturado**, porque no hay nada que tocar: los tres criterios
+   * automáticos se derivan al leer de la asistencia, la bitácora y las
+   * participaciones. Cambiar la meta a mitad del trimestre recalcula, no migra
+   * (docs/DECISIONES.md D-020).
+   */
+  ajustarParametros(
+    criterioTrimestreId: Id,
+    parametros: ParametrosAutomaticos,
+  ): Promise<void>
 
   /**
    * Saca el criterio del trimestre. Borrado suave, y **solo** de la fila del

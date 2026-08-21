@@ -9,6 +9,12 @@ import { DexieEvaluacionRepo } from './evaluacion.adapter'
 
 const repo = new DexieEvaluacionRepo()
 
+/**
+ * Un criterio sin parámetros automáticos. Los parámetros llegan resueltos desde
+ * el caso de uso (C25b), así que aquí se pasan explícitos.
+ */
+const SIN_PARAMETROS = { meta_participacion: null, retardos_por_falta: null }
+
 const PERIODOS = [
   { numero: 1 as const, inicio: '2026-08-24', fin: '2026-11-27' },
   { numero: 2 as const, inicio: '2026-11-30', fin: '2027-03-19' },
@@ -53,7 +59,7 @@ function unaActividad(criterioTrimestreId: string, rubricaId: string | null) {
 /** Un criterio entregable en T1, listo para colgarle actividades. */
 async function unGrupo() {
   const [t1] = await conCiclo()
-  await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
+  await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable', SIN_PARAMETROS)
   const grupos = await repo.actividadesDeTrimestre(t1!.id)
   return { trimestreId: t1!.id, criterioTrimestreId: grupos[0]!.ponderado.id }
 }
@@ -250,7 +256,7 @@ describe('esquemaDeTrimestre', () => {
 
   it('trae el nombre y el tipo del catálogo junto con el peso', async () => {
     const [t1] = await conCiclo()
-    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
+    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable', SIN_PARAMETROS)
 
     const esquema = await repo.esquemaDeTrimestre(t1!.id)
     expect(esquema?.criterios).toHaveLength(1)
@@ -261,9 +267,9 @@ describe('esquemaDeTrimestre', () => {
 
   it('respeta el orden de alta', async () => {
     const [t1] = await conCiclo()
-    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
-    await repo.agregarCriterio(t1!.id, 'Examen', 'examen')
-    await repo.agregarCriterio(t1!.id, 'Portafolio', 'entregable')
+    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable', SIN_PARAMETROS)
+    await repo.agregarCriterio(t1!.id, 'Examen', 'examen', SIN_PARAMETROS)
+    await repo.agregarCriterio(t1!.id, 'Portafolio', 'entregable', SIN_PARAMETROS)
 
     const esquema = await repo.esquemaDeTrimestre(t1!.id)
     expect(esquema?.criterios.map((c) => c.criterio.nombre)).toEqual([
@@ -275,8 +281,8 @@ describe('esquemaDeTrimestre', () => {
 
   it('no devuelve los criterios quitados', async () => {
     const [t1] = await conCiclo()
-    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
-    await repo.agregarCriterio(t1!.id, 'Examen', 'examen')
+    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable', SIN_PARAMETROS)
+    await repo.agregarCriterio(t1!.id, 'Examen', 'examen', SIN_PARAMETROS)
     const esquema = await repo.esquemaDeTrimestre(t1!.id)
 
     await repo.quitarCriterio(esquema!.criterios[0]!.ponderado.id)
@@ -289,15 +295,15 @@ describe('esquemaDeTrimestre', () => {
 describe('agregarCriterio', () => {
   it('el peso nace en 0: no se adivina el reparto', async () => {
     const [t1] = await conCiclo()
-    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
+    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable', SIN_PARAMETROS)
     const esquema = await repo.esquemaDeTrimestre(t1!.id)
     expect(esquema?.criterios[0]?.ponderado.peso).toBe(0)
   })
 
   it('reutiliza la entrada del catálogo entre trimestres', async () => {
     const [t1, t2] = await conCiclo()
-    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
-    await repo.agregarCriterio(t2!.id, 'Tareas', 'entregable')
+    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable', SIN_PARAMETROS)
+    await repo.agregarCriterio(t2!.id, 'Tareas', 'entregable', SIN_PARAMETROS)
 
     // «Tareas» tiene que ser el mismo criterio en los tres trimestres para que
     // copiar el esquema y comparar entre periodos signifique algo.
@@ -311,22 +317,22 @@ describe('agregarCriterio', () => {
 
   it('reutiliza el catálogo sin importar acentos ni mayúsculas', async () => {
     const [t1, t2] = await conCiclo()
-    await repo.agregarCriterio(t1!.id, 'Exámen', 'examen')
-    await repo.agregarCriterio(t2!.id, 'EXAMEN', 'examen')
+    await repo.agregarCriterio(t1!.id, 'Exámen', 'examen', SIN_PARAMETROS)
+    await repo.agregarCriterio(t2!.id, 'EXAMEN', 'examen', SIN_PARAMETROS)
     expect(await db.criterios.count()).toBe(1)
   })
 
   it('el mismo nombre con otro tipo es otro criterio', async () => {
     const [t1] = await conCiclo()
-    await repo.agregarCriterio(t1!.id, 'Proyecto', 'entregable')
-    await repo.agregarCriterio(t1!.id, 'Proyecto', 'examen')
+    await repo.agregarCriterio(t1!.id, 'Proyecto', 'entregable', SIN_PARAMETROS)
+    await repo.agregarCriterio(t1!.id, 'Proyecto', 'examen', SIN_PARAMETROS)
     expect(await db.criterios.count()).toBe(2)
   })
 
   it('agregar dos veces el mismo criterio al mismo trimestre no lo duplica', async () => {
     const [t1] = await conCiclo()
-    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
-    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
+    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable', SIN_PARAMETROS)
+    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable', SIN_PARAMETROS)
 
     const esquema = await repo.esquemaDeTrimestre(t1!.id)
     expect(esquema?.criterios).toHaveLength(1)
@@ -335,7 +341,7 @@ describe('agregarCriterio', () => {
   it('encola el criterio y su fila del trimestre', async () => {
     const [t1] = await conCiclo()
     await db.outbox.clear()
-    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
+    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable', SIN_PARAMETROS)
 
     const pendientes = await db.outbox.toArray()
     expect(pendientes.filter((c) => c.tabla === 'criterios')).toHaveLength(1)
@@ -346,7 +352,7 @@ describe('agregarCriterio', () => {
 describe('ajustarPeso', () => {
   it('deja el peso y refresca updated_at', async () => {
     const [t1] = await conCiclo()
-    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
+    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable', SIN_PARAMETROS)
     const antes = (await repo.esquemaDeTrimestre(t1!.id))!.criterios[0]!.ponderado
 
     await repo.ajustarPeso(antes.id, 40)
@@ -358,8 +364,8 @@ describe('ajustarPeso', () => {
 
   it('cambiar un peso en T2 no altera la fila de T1', async () => {
     const [t1, t2] = await conCiclo()
-    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
-    await repo.agregarCriterio(t2!.id, 'Tareas', 'entregable')
+    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable', SIN_PARAMETROS)
+    await repo.agregarCriterio(t2!.id, 'Tareas', 'entregable', SIN_PARAMETROS)
     const enT1 = (await repo.esquemaDeTrimestre(t1!.id))!.criterios[0]!.ponderado
     await repo.ajustarPeso(enT1.id, 30)
     const enT2 = (await repo.esquemaDeTrimestre(t2!.id))!.criterios[0]!.ponderado
@@ -379,7 +385,7 @@ describe('ajustarPeso', () => {
 describe('quitarCriterio', () => {
   it('es borrado suave y deja la entrada del catálogo en pie', async () => {
     const [t1] = await conCiclo()
-    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
+    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable', SIN_PARAMETROS)
     const ponderado = (await repo.esquemaDeTrimestre(t1!.id))!.criterios[0]!.ponderado
 
     await repo.quitarCriterio(ponderado.id)
@@ -391,7 +397,7 @@ describe('quitarCriterio', () => {
 
   it('encola un delete, no un upsert', async () => {
     const [t1] = await conCiclo()
-    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
+    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable', SIN_PARAMETROS)
     const ponderado = (await repo.esquemaDeTrimestre(t1!.id))!.criterios[0]!.ponderado
     await db.outbox.clear()
 
@@ -405,11 +411,64 @@ describe('quitarCriterio', () => {
   })
 })
 
+describe('ajustarParametros', () => {
+  it('escribe los dos parámetros y encola el cambio', async () => {
+    const [t1] = await conCiclo()
+    await repo.agregarCriterio(t1!.id, 'Participación', 'auto_participacion', SIN_PARAMETROS)
+    const ponderado = (await repo.esquemaDeTrimestre(t1!.id))!.criterios[0]!.ponderado
+    await db.outbox.clear()
+
+    await repo.ajustarParametros(ponderado.id, {
+      meta_participacion: 7,
+      retardos_por_falta: 2,
+    })
+
+    const guardado = (await repo.esquemaDeTrimestre(t1!.id))!.criterios[0]!.ponderado
+    expect(guardado.meta_participacion).toBe(7)
+    expect(guardado.retardos_por_falta).toBe(2)
+    // No `not.toBe`: las dos escrituras pueden caer en el mismo milisegundo y la
+    // prueba sería intermitente. Lo que importa es que no retroceda.
+    expect(guardado.updated_at >= ponderado.updated_at).toBe(true)
+
+    const pendientes = await db.outbox.toArray()
+    expect(pendientes).toHaveLength(1)
+    expect(pendientes[0]?.tabla).toBe('criterios_trimestre')
+    expect(pendientes[0]?.registro_id).toBe(ponderado.id)
+  })
+
+  it('no toca el peso ni nada capturado', async () => {
+    // Los tres criterios automáticos se derivan al leer: cambiar un parámetro
+    // recalcula, no migra (D-020).
+    const [t1] = await conCiclo()
+    await repo.agregarCriterio(t1!.id, 'Puntualidad', 'auto_puntualidad', SIN_PARAMETROS)
+    const ponderado = (await repo.esquemaDeTrimestre(t1!.id))!.criterios[0]!.ponderado
+    await repo.ajustarPeso(ponderado.id, 15)
+
+    await repo.ajustarParametros(ponderado.id, {
+      meta_participacion: null,
+      retardos_por_falta: 4,
+    })
+
+    const guardado = (await repo.esquemaDeTrimestre(t1!.id))!.criterios[0]!.ponderado
+    expect(guardado.peso).toBe(15)
+  })
+
+  it('una fila que no existe no encola nada', async () => {
+    await conCiclo()
+    await db.outbox.clear()
+    await repo.ajustarParametros('no-existe', {
+      meta_participacion: 5,
+      retardos_por_falta: null,
+    })
+    expect(await db.outbox.count()).toBe(0)
+  })
+})
+
 describe('copiarEsquema', () => {
   it('trae criterios y pesos', async () => {
     const [t1, t2] = await conCiclo()
-    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
-    await repo.agregarCriterio(t1!.id, 'Examen', 'examen')
+    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable', SIN_PARAMETROS)
+    await repo.agregarCriterio(t1!.id, 'Examen', 'examen', SIN_PARAMETROS)
     const origen = (await repo.esquemaDeTrimestre(t1!.id))!.criterios
     await repo.ajustarPeso(origen[0]!.ponderado.id, 60)
     await repo.ajustarPeso(origen[1]!.ponderado.id, 40)
@@ -421,21 +480,25 @@ describe('copiarEsquema', () => {
     expect(copia.map((c) => c.ponderado.peso)).toEqual([60, 40])
   })
 
-  it('trae la meta de participación', async () => {
+  it('trae los parámetros de los criterios automáticos', async () => {
+    // Copiar el esquema y perder cuántos retardos hacen una falta obligaría a
+    // volver a decirlo en cada trimestre.
     const [t1, t2] = await conCiclo()
-    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
-    const origen = (await repo.esquemaDeTrimestre(t1!.id))!.criterios[0]!.ponderado
-    await db.criterios_trimestre.update(origen.id, { meta_participacion: 10 })
+    await repo.agregarCriterio(t1!.id, 'Puntualidad', 'auto_puntualidad', {
+      meta_participacion: 10,
+      retardos_por_falta: 3,
+    })
 
     await repo.copiarEsquema(t1!.id, t2!.id)
 
     const copia = (await repo.esquemaDeTrimestre(t2!.id))!.criterios[0]!.ponderado
     expect(copia.meta_participacion).toBe(10)
+    expect(copia.retardos_por_falta).toBe(3)
   })
 
   it('son filas nuevas, no las mismas', async () => {
     const [t1, t2] = await conCiclo()
-    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
+    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable', SIN_PARAMETROS)
     const origen = (await repo.esquemaDeTrimestre(t1!.id))!.criterios[0]!.ponderado
 
     await repo.copiarEsquema(t1!.id, t2!.id)
@@ -450,7 +513,7 @@ describe('copiarEsquema', () => {
 
   it('cambiar el peso de la copia no toca el original', async () => {
     const [t1, t2] = await conCiclo()
-    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
+    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable', SIN_PARAMETROS)
     const origen = (await repo.esquemaDeTrimestre(t1!.id))!.criterios[0]!.ponderado
     await repo.ajustarPeso(origen.id, 60)
     await repo.copiarEsquema(t1!.id, t2!.id)
@@ -463,7 +526,7 @@ describe('copiarEsquema', () => {
 
   it('no copia actividades ni calificaciones', async () => {
     const [t1, t2] = await conCiclo()
-    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
+    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable', SIN_PARAMETROS)
     const origen = (await repo.esquemaDeTrimestre(t1!.id))!.criterios[0]!.ponderado
 
     // Una actividad con su entrega, colgando del criterio de T1.
@@ -500,9 +563,9 @@ describe('copiarEsquema', () => {
 
   it('no duplica lo que el destino ya tiene', async () => {
     const [t1, t2] = await conCiclo()
-    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
-    await repo.agregarCriterio(t1!.id, 'Examen', 'examen')
-    await repo.agregarCriterio(t2!.id, 'Tareas', 'entregable')
+    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable', SIN_PARAMETROS)
+    await repo.agregarCriterio(t1!.id, 'Examen', 'examen', SIN_PARAMETROS)
+    await repo.agregarCriterio(t2!.id, 'Tareas', 'entregable', SIN_PARAMETROS)
 
     await repo.copiarEsquema(t1!.id, t2!.id)
 
@@ -512,7 +575,7 @@ describe('copiarEsquema', () => {
 
   it('copiar dos veces no duplica', async () => {
     const [t1, t2] = await conCiclo()
-    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
+    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable', SIN_PARAMETROS)
 
     await repo.copiarEsquema(t1!.id, t2!.id)
     await repo.copiarEsquema(t1!.id, t2!.id)
@@ -565,7 +628,7 @@ describe('rubricas', () => {
     const rubricaId = await repo.guardarRubrica({ nombre: 'Trabajo escrito' }, [
       RENGLON('Ortografía'),
     ])
-    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
+    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable', SIN_PARAMETROS)
     const ponderado = (await repo.esquemaDeTrimestre(t1!.id))!.criterios[0]!.ponderado
 
     expect((await repo.rubricas())[0]?.enUso).toBe(false)
@@ -580,7 +643,7 @@ describe('rubricas', () => {
     const rubricaId = await repo.guardarRubrica({ nombre: 'Trabajo escrito' }, [
       RENGLON('Ortografía'),
     ])
-    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
+    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable', SIN_PARAMETROS)
     const ponderado = (await repo.esquemaDeTrimestre(t1!.id))!.criterios[0]!.ponderado
     const actividad = unaActividad(ponderado.id, rubricaId)
     await db.actividades.add(actividad)
@@ -593,7 +656,7 @@ describe('rubricas', () => {
   it('una actividad sin rúbrica no marca nada en uso', async () => {
     const [t1] = await conCiclo()
     await repo.guardarRubrica({ nombre: 'Trabajo escrito' }, [RENGLON('Ortografía')])
-    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
+    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable', SIN_PARAMETROS)
     const ponderado = (await repo.esquemaDeTrimestre(t1!.id))!.criterios[0]!.ponderado
 
     // Sin rúbrica no es un estado incompleto: es captura binaria.
@@ -754,8 +817,8 @@ describe('actividadesDeTrimestre', () => {
 
   it('agrupa por criterio y deja el examen fuera', async () => {
     const [t1] = await conCiclo()
-    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
-    await repo.agregarCriterio(t1!.id, 'Examen final', 'examen')
+    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable', SIN_PARAMETROS)
+    await repo.agregarCriterio(t1!.id, 'Examen final', 'examen', SIN_PARAMETROS)
 
     // El examen se captura por aciertos sobre el CriterioTrimestre, no por
     // actividades, así que no tiene por qué aparecer aquí.
@@ -780,8 +843,8 @@ describe('actividadesDeTrimestre', () => {
 
   it('no devuelve las actividades de otro criterio', async () => {
     const [t1] = await conCiclo()
-    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
-    await repo.agregarCriterio(t1!.id, 'Portafolio', 'entregable')
+    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable', SIN_PARAMETROS)
+    await repo.agregarCriterio(t1!.id, 'Portafolio', 'entregable', SIN_PARAMETROS)
     const grupos = await repo.actividadesDeTrimestre(t1!.id)
     const tareas = grupos[0]!.ponderado.id
     const portafolio = grupos[1]!.ponderado.id
@@ -1305,7 +1368,7 @@ describe('calificarRenglon', () => {
 /** Un trimestre con un criterio de examen, que es de donde cuelga el examen. */
 async function unExamen() {
   const [t1] = await conCiclo()
-  await repo.agregarCriterio(t1!.id, 'Examen', 'examen')
+  await repo.agregarCriterio(t1!.id, 'Examen', 'examen', SIN_PARAMETROS)
   const examenes = await repo.examenesDeTrimestre(t1!.id)
   return { trimestreId: t1!.id, criterioTrimestreId: examenes[0]!.ponderado.id }
 }
@@ -1313,8 +1376,8 @@ async function unExamen() {
 describe('examenesDeTrimestre', () => {
   it('devuelve los criterios de examen, no los entregables', async () => {
     const [t1] = await conCiclo()
-    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
-    await repo.agregarCriterio(t1!.id, 'Examen', 'examen')
+    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable', SIN_PARAMETROS)
+    await repo.agregarCriterio(t1!.id, 'Examen', 'examen', SIN_PARAMETROS)
 
     const examenes = await repo.examenesDeTrimestre(t1!.id)
     expect(examenes).toHaveLength(1)
@@ -1323,7 +1386,7 @@ describe('examenesDeTrimestre', () => {
 
   it('sin criterio de examen devuelve la lista vacía', async () => {
     const [t1] = await conCiclo()
-    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable')
+    await repo.agregarCriterio(t1!.id, 'Tareas', 'entregable', SIN_PARAMETROS)
     expect(await repo.examenesDeTrimestre(t1!.id)).toEqual([])
   })
 
@@ -1458,8 +1521,8 @@ describe('registrarAciertos', () => {
 
   it('el mismo alumno en otro examen es otro registro', async () => {
     const [t1] = await conCiclo()
-    await repo.agregarCriterio(t1!.id, 'Examen escrito', 'examen')
-    await repo.agregarCriterio(t1!.id, 'Examen oral', 'examen')
+    await repo.agregarCriterio(t1!.id, 'Examen escrito', 'examen', SIN_PARAMETROS)
+    await repo.agregarCriterio(t1!.id, 'Examen oral', 'examen', SIN_PARAMETROS)
     const [uno, otro] = await repo.examenesDeTrimestre(t1!.id)
 
     await repo.registrarAciertos(uno!.ponderado.id, 'alumno-1', 'lenguajes', 3)

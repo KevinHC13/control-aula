@@ -54,9 +54,12 @@ dieciséis tablas a un archivo y lo restaura por upsert. Falta una sola cosa y e
 dispositivo, no de código: ver en el iPad que la hoja de compartir ofrezca *Guardar
 en Archivos*.
 
-**Lo que sigue es el alcance nuevo del 2026-08-21** —la usuaria retomó los tres
-criterios automáticos con reglas propias (D-020)—: `C25b` —configuración— → `C25`
-—captura de participación— → `C26` —cálculo—. Ninguno vuelve a tocar el esquema.
+Del **alcance nuevo del 2026-08-21** —la usuaria retomó los tres criterios
+automáticos con reglas propias (D-020)— ya está `C25b`: los tres tipos se agregan al
+trimestre en *Criterios y pesos*, con sus parámetros debajo de la fila. **Lo que
+sigue es `C25`** —el modo de participación en la pantalla de asistencia— y luego
+`C26` —el cálculo, que hasta entonces devuelve `null` para los tres—. Ninguno vuelve
+a tocar el esquema.
 
 Encima entran dos **herramientas de aula** (D-021): `C30` —sortear quién participa,
 que escribe en `participaciones` y no registra nada por sí solo— y `C31` —formar

@@ -848,7 +848,7 @@ cosas de la lista de abajo; sin ellas, un modo olvidado ensucia datos en silenci
 - [ ] **Se puede deshacer** sin salir del modo: sostener el dedo resta una
 - [ ] Con el modo prendido, un toque **nunca** cambia la asistencia
 
-### ⬜ C25b · `feat(evaluacion): configurar los criterios automáticos`
+### ✅ C25b · `feat(evaluacion): configurar los criterios automáticos`
 
 Los tres criterios automáticos entran al selector de *Criterios y pesos* con sus
 parámetros. Sin esto, `C26` no tiene de dónde leer cuántos retardos hacen una falta
@@ -859,14 +859,37 @@ ya existía desde C18 y por fin se usa. Ninguno es índice, así que no cuestan
 migración.
 
 **Aceptación**
-- [ ] Los tres tipos automáticos se pueden agregar al trimestre y quitar
-- [ ] Cada uno aparece **a lo más una vez** por trimestre
-- [ ] Puntualidad pide cuántos retardos hacen una falta, y admite «no cuentan»
-- [ ] Participación pide su meta, que **nace en 5**; una meta en 0 no se acepta
-- [ ] Conducta no pide nada: su escala es fija (0-1 → 10, 2 → 5, 3+ → 0)
-- [ ] La pantalla dice de dónde sale cada uno —asistencia, bitácora,
+- [x] Los tres tipos automáticos se pueden agregar al trimestre y quitar
+- [x] Cada uno aparece **a lo más una vez** por trimestre
+- [x] Puntualidad pide cuántos retardos hacen una falta, y admite «no cuentan»
+- [x] Participación pide su meta, que **nace en 5**; una meta en 0 no se acepta
+- [x] Conducta no pide nada: su escala es fija (0-1 → 10, 2 → 5, 3+ → 0)
+- [x] La pantalla dice de dónde sale cada uno —asistencia, bitácora,
       participaciones— sin obligar a abrir otra pantalla para entenderlo
-- [ ] Cambiar un parámetro **no** toca nada capturado: los tres se derivan
+- [x] Cambiar un parámetro **no** toca nada capturado: los tres se derivan
+
+Cómo quedó:
+
+- **Los parámetros van debajo de la fila del criterio**, en *Criterios y pesos*, no
+  en una pantalla aparte: son dos datos, y mandarla a otro lado para poner un número
+  sería cobrarle un viaje por criterio.
+- **Puntualidad se elige con botones** —*No cuentan · 1 · 2 · 3 · 4*— y no con un
+  campo de texto: son cinco opciones, se leen sin teclado y `1` es válido a
+  propósito, porque «un retardo es una falta» es la política de algunas escuelas.
+- **Puntualidad nace en «no cuentan»**, no en 3. La convención de tres retardos por
+  falta no está validada con nadie, y entre las dos formas de equivocarse, la que no
+  castiga a un alumno sin que ella lo haya pedido es esta.
+- **Participación nace con la meta en 5** —eso sí está validado (D-021)— y el campo
+  no acepta 0: sería dividir entre cero. Sin meta, la fila lo dice en rojo: *la
+  participación no califica*.
+- **Los dos parámetros se escriben leyendo la fila completa**, así que fijar la meta
+  no apaga la conversión de retardos ni al revés. Copiar el esquema al trimestre
+  siguiente se los lleva.
+- **El repetido se rechaza por tipo, no por nombre**: «Puntualidad» y «Asistencia
+  puntual» serían el mismo cálculo dos veces.
+- Ojo con lo que **todavía no pasa**: los tres siguen calificando `null` hasta `C26`,
+  así que aparecen en el reparto con su peso y el reporte los excluye del promedio,
+  igual que un criterio sin captura (D-019). El cálculo es el commit siguiente.
 
 ### ⬜ C26 · `feat(evaluacion): calcular puntualidad, conducta y participación`
 

@@ -141,8 +141,10 @@ function criterioExamen(
  * Qué calificación produce un criterio para un alumno, según su tipo.
  *
  * Los criterios automáticos —puntualidad, conducta, participación— y el
- * `personalizado` devuelven `null`: están pospuestos y no tienen captura, así que
- * no aportan. Devolver 0 los haría reprobar a todos.
+ * `personalizado` devuelven `null`. Los tres automáticos ya se **configuran**
+ * (C25b), pero su cálculo llega en `C26`; hasta entonces se excluyen del promedio
+ * igual que un criterio sin captura, y el trimestre se normaliza sobre los pesos
+ * que sí aportan (D-019). Devolver 0 los haría reprobar a todos.
  */
 function calificarCriterio(
   capturas: CapturasDelTrimestre,

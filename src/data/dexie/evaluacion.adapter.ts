@@ -30,6 +30,7 @@ import type {
   Trimestre,
 } from '@/domain/entities'
 import { admiteActividades } from '@/domain/evaluacion'
+import type { ParametrosAutomaticos } from '@/domain/evaluacion'
 import type {
   CampoFormativo,
   Fecha,
@@ -178,7 +179,12 @@ export class DexieEvaluacionRepo implements EvaluacionRepo {
     return liveQuery(() => this.esquemaDeTrimestre(trimestreId))
   }
 
-  async agregarCriterio(trimestreId: Id, nombre: string, tipo: TipoCriterio): Promise<void> {
+  async agregarCriterio(
+    trimestreId: Id,
+    nombre: string,
+    tipo: TipoCriterio,
+    parametros: ParametrosAutomaticos,
+  ): Promise<void> {
     await db.transaction(
       'rw',
       db.criterios,
@@ -226,11 +232,11 @@ export class DexieEvaluacionRepo implements EvaluacionRepo {
           // Nace en 0: un valor de arranque obligaría a adivinar el reparto.
           peso: 0,
           orden: yaEsta.length,
-          // Los parámetros de los criterios automáticos nacen vacíos y los llena
-          // su pantalla (C25b): un valor por omisión aquí sería una regla de
-          // evaluación escondida en el adaptador.
-          meta_participacion: null,
-          retardos_por_falta: null,
+          // Los parámetros llegan resueltos desde el caso de uso: con qué nace la
+          // meta de participación es una regla de evaluación validada con la
+          // usuaria (D-021) y vive en `domain/`, no escondida en el adaptador.
+          meta_participacion: parametros.meta_participacion,
+          retardos_por_falta: parametros.retardos_por_falta,
           updated_at: momento,
           deleted_at: null,
         }
@@ -244,6 +250,33 @@ export class DexieEvaluacionRepo implements EvaluacionRepo {
         })
       },
     )
+  }
+
+  /**
+   * Escribe los dos parámetros juntos aunque cada criterio use uno: son los
+   * campos de la misma fila y partirlos en dos métodos obligaría a dos
+   * transacciones para lo que la pantalla ve como una configuración.
+   */
+  async ajustarParametros(
+    criterioTrimestreId: Id,
+    parametros: ParametrosAutomaticos,
+  ): Promise<void> {
+    await db.transaction('rw', db.criterios_trimestre, db.outbox, async () => {
+      const momento = ahora()
+      const cambiados = await db.criterios_trimestre.update(criterioTrimestreId, {
+        meta_participacion: parametros.meta_participacion,
+        retardos_por_falta: parametros.retardos_por_falta,
+        updated_at: momento,
+      })
+      if (cambiados === 0) return
+
+      await db.outbox.add({
+        tabla: 'criterios_trimestre',
+        registro_id: criterioTrimestreId,
+        op: 'upsert',
+        at: momento,
+      })
+    })
   }
 
   async ajustarPeso(criterioTrimestreId: Id, peso: number): Promise<void> {

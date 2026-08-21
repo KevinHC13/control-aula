@@ -623,11 +623,16 @@ existe porque con muchos retardos la resta puede pasarse.
 Con `retardos_por_falta: 3`, un alumno con 40 días, 2 ausencias y 7 retardos tiene
 2 + ⌊7 ÷ 3⌋ = 4 faltas efectivas → 36 ÷ 40 = 0.9 → **9.0**.
 
-`[POR VALIDAR]` — el valor por omisión de `retardos_por_falta` (3 es una convención,
-no un dato) y si esa conversión debe cambiar también el **porcentaje de asistencia**
-del resumen del grupo. Recomendación: no. Lo que la escuela pide es presencia, y un
-alumno que llegó tarde estuvo ahí; la conversión es para calificar puntualidad, no
-para reportar asistencia.
+Con qué nace: **`null`, o sea «no cuentan»** (C25b). No con 3: esa es una
+convención que nadie validó, y de las dos formas de equivocarse, la que no castiga a
+un alumno sin que ella lo pida es esta. La pantalla ofrece *No cuentan · 1 · 2 · 3 ·
+4*, y `1` es válido —«un retardo es una falta» es política real de algunas escuelas—.
+
+`[POR VALIDAR]` — si ella espera que 3 sea el sugerido, y si esa conversión debe
+cambiar también el **porcentaje de asistencia** del resumen del grupo.
+Recomendación: no. Lo que la escuela pide es presencia, y un alumno que llegó tarde
+estuvo ahí; la conversión es para calificar puntualidad, no para reportar
+asistencia.
 
 ### Conducta
 

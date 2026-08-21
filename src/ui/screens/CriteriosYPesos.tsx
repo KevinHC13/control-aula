@@ -6,13 +6,17 @@ import {
   ajustarPeso,
   copiarEsquemaDe,
   estadoDelReparto,
+  fijarMetaParticipacion,
+  fijarRetardosPorFalta,
+  nombreSugerido,
   quitarCriterio,
   TIPOS_OFRECIDOS,
   trimestreDe,
   trimestreParaCopiar,
 } from '@/application/evaluacion'
 import type { CriterioDelTrimestre } from '@/data/ports/evaluacion'
-import type { TipoCriterio, Trimestre } from '@/domain/entities'
+import type { CriterioTrimestre, TipoCriterio, Trimestre } from '@/domain/entities'
+import { esAutomatico, parametrosCompletos } from '@/domain/evaluacion'
 import { fechaLocal } from '@/domain/fechas'
 import { IconoAtras, IconoBasura } from '@/ui/components/iconos'
 import { Button } from '@/ui/components/ui/button'
@@ -256,7 +260,148 @@ function FilaCriterio({
         </button>
       </div>
 
+      {esAutomatico(catalogo.tipo) && (
+        <ParametrosAutomaticos
+          tipo={catalogo.tipo}
+          ponderado={ponderado}
+          trimestre={trimestre}
+        />
+      )}
     </li>
+  )
+}
+
+/**
+ * Lo que hay que configurarle a un criterio automático, y de dónde sale.
+ *
+ * Va debajo de su fila y no en una pantalla aparte: son dos datos, y mandarla a
+ * otro lado para poner un número sería cobrarle un viaje por cada criterio.
+ *
+ * Los tres dicen de dónde salen. Con toda la asistencia y toda la bitácora
+ * contando para una calificación, esconder el origen haría que lo descubra en la
+ * boleta (D-020).
+ */
+function ParametrosAutomaticos({
+  tipo,
+  ponderado,
+  trimestre,
+}: {
+  tipo: TipoCriterio
+  ponderado: CriterioTrimestre
+  trimestre: Trimestre
+}) {
+  const abierto = trimestre.estado === 'abierto'
+
+  if (tipo === 'auto_conducta') {
+    // Conducta no pide nada: su escala es fija. Se dice para que no parezca que
+    // falta configurarla.
+    return (
+      <p className="pb-3 pl-[15px] text-[13px] text-tinta-2">
+        Sale de los reportes de la bitácora. Uno no baja nada, dos valen la mitad y tres o
+        más la anulan. No hay nada que configurar.
+      </p>
+    )
+  }
+
+  if (tipo === 'auto_puntualidad') {
+    return (
+      <div className="flex flex-col gap-1 pb-3 pl-[15px]">
+        <p className="text-[13px] text-tinta-2">
+          Sale de la asistencia del trimestre. ¿Cuántos retardos hacen una falta?
+        </p>
+        <div role="group" aria-label="Retardos por falta" className="flex flex-wrap gap-2">
+          {([null, 1, 2, 3, 4] as const).map((opcion) => (
+            <button
+              key={opcion ?? 'ninguno'}
+              type="button"
+              disabled={!abierto}
+              aria-pressed={ponderado.retardos_por_falta === opcion}
+              onClick={() => void fijarRetardosPorFalta(trimestre, ponderado, opcion)}
+              className={cn(
+                'h-11 min-w-11 rounded-md border px-3 text-base outline-none',
+                'focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                'disabled:pointer-events-none disabled:opacity-50',
+                ponderado.retardos_por_falta === opcion
+                  ? 'border-azul bg-azul/10 text-tinta'
+                  : 'border-linea text-tinta-2 hover:bg-cuadro',
+              )}
+            >
+              {opcion === null ? 'No cuentan' : <span className="cifra">{opcion}</span>}
+            </button>
+          ))}
+        </div>
+        <p className="text-[13px] text-tinta-2">
+          Una falta justificada nunca penaliza. Cambiar esto no toca nada capturado: la
+          puntualidad se calcula de la asistencia cada vez que se lee.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <MetaDeParticipacion ponderado={ponderado} trimestre={trimestre} />
+  )
+}
+
+/**
+ * La meta de participación: cuántas participaciones valen el 100 %.
+ *
+ * Nace en 5 (D-021) y el campo se maneja como texto por lo mismo que el peso: en
+ * iPad, `type="number"` arriesga el zoom de Safari y convierte los estados
+ * intermedios en NaN. Un valor inválido —vacío, cero— no se guarda; se deja
+ * escribir y no se manda.
+ */
+function MetaDeParticipacion({
+  ponderado,
+  trimestre,
+}: {
+  ponderado: CriterioTrimestre
+  trimestre: Trimestre
+}) {
+  const abierto = trimestre.estado === 'abierto'
+  const [texto, setTexto] = useState(String(ponderado.meta_participacion ?? ''))
+  const [editando, setEditando] = useState(false)
+
+  function escribir(valor: string) {
+    setEditando(true)
+    setTexto(valor)
+    const limpio = valor.replace(/[^\d]/g, '')
+    if (limpio === '') return
+    const meta = Number(limpio)
+    // Cero no se guarda: sería dividir entre cero. Se queda en el campo mientras
+    // ella teclea el 5 de «50», que es justo por qué esto no corrige el texto.
+    if (meta < 1) return
+    void fijarMetaParticipacion(trimestre, ponderado, meta)
+  }
+
+  const incompleto = !parametrosCompletos('auto_participacion', ponderado)
+
+  return (
+    <div className="flex flex-col gap-1 pb-3 pl-[15px]">
+      <p className="text-[13px] text-tinta-2">
+        Sale de las participaciones marcadas en la pantalla de asistencia.
+      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <label htmlFor={`meta-${ponderado.id}`} className="text-base text-tinta">
+          Participaciones para el diez
+        </label>
+        <Input
+          id={`meta-${ponderado.id}`}
+          type="text"
+          inputMode="numeric"
+          value={editando ? texto : String(ponderado.meta_participacion ?? '')}
+          disabled={!abierto}
+          onChange={(e) => escribir(e.target.value)}
+          onBlur={() => setEditando(false)}
+          className="cifra w-16 shrink-0 text-center"
+        />
+      </div>
+      <p className={cn('text-[13px]', incompleto ? 'text-rojo' : 'text-tinta-2')}>
+        {incompleto
+          ? 'Sin meta, la participación no califica.'
+          : 'Menos que la meta vale lo proporcional, y de la meta para arriba vale diez.'}
+      </p>
+    </div>
   )
 }
 
@@ -306,7 +451,14 @@ function Alta({ trimestre }: { trimestre: Trimestre }) {
             key={opcion.tipo}
             type="button"
             aria-pressed={tipo === opcion.tipo}
-            onClick={() => setTipo(opcion.tipo)}
+            onClick={() => {
+              setTipo(opcion.tipo)
+              // Un automático llega con su nombre puesto: «Puntualidad» no es una
+              // decisión que valga preguntarle, y sin nombre no se puede agregar.
+              // Se respeta lo que ella haya escrito.
+              const sugerido = nombreSugerido(opcion.tipo)
+              if (sugerido !== '' && nombre.trim() === '') setNombre(sugerido)
+            }}
             className={cn(
               'flex h-11 flex-col items-start justify-center rounded-md border px-3 outline-none',
               'focus-visible:ring-[3px] focus-visible:ring-ring/50',

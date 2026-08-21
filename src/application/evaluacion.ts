@@ -7,18 +7,28 @@ import type {
   EsquemaTrimestre,
   RubricaConCriterios,
 } from '@/data/ports/evaluacion'
-import type { Criterio, TipoCriterio, Trimestre } from '@/domain/entities'
+import type {
+  Criterio,
+  CriterioTrimestre,
+  TipoCriterio,
+  Trimestre,
+} from '@/domain/entities'
 import {
   aceptaEscrituras,
   admiteActividades,
   descriptoresCompletos,
+  esAutomatico,
+  metaParticipacionValida,
+  parametrosPorOmision,
   pesosSuman100,
   rangoValido,
+  retardosPorFaltaValido,
   rubricaCompleta,
   seTraslapan,
   sumaDePesos,
   trimestreDeFecha,
 } from '@/domain/evaluacion'
+import type { ParametrosAutomaticos } from '@/domain/evaluacion'
 import { fechaValida } from '@/domain/fechas'
 import { NIVELES } from '@/domain/values'
 import type { CampoFormativo, Fecha, Id } from '@/domain/values'
@@ -299,10 +309,51 @@ export async function guardarFechas(
  * después no tiene pantalla donde llenarse. Los `auto_*` están pospuestos por
  * decisión suya (docs/DECISIONES.md D-015).
  */
+/**
+ * Los tipos que se ofrecen al agregar un criterio, con lo que hay que saber para
+ * elegir.
+ *
+ * `ayuda` dice **de dónde sale** cada uno, y en los automáticos eso no es adorno:
+ * es la diferencia entre configurar un criterio y descubrir en diciembre que
+ * calificaba algo que ella no sabía que se estaba midiendo (D-020).
+ *
+ * `nombreSugerido` existe solo para los automáticos: «Puntualidad» no es una
+ * decisión que valga preguntarle, y un criterio automático sin nombre no se puede
+ * agregar. Lo puede cambiar después de todos modos.
+ */
 export const TIPOS_OFRECIDOS = [
   { tipo: 'entregable', etiqueta: 'Entregable', ayuda: 'Tareas, trabajos, portafolio' },
   { tipo: 'examen', etiqueta: 'Examen', ayuda: 'Aciertos por campo formativo' },
-] as const satisfies readonly { tipo: TipoCriterio; etiqueta: string; ayuda: string }[]
+  {
+    tipo: 'auto_puntualidad',
+    etiqueta: 'Puntualidad',
+    ayuda: 'Se calcula de la asistencia',
+    nombreSugerido: 'Puntualidad',
+  },
+  {
+    tipo: 'auto_conducta',
+    etiqueta: 'Conducta',
+    ayuda: 'Se calcula de los reportes de la bitácora',
+    nombreSugerido: 'Conducta',
+  },
+  {
+    tipo: 'auto_participacion',
+    etiqueta: 'Participación',
+    ayuda: 'Se calcula de las participaciones marcadas en la asistencia',
+    nombreSugerido: 'Participación',
+  },
+] as const satisfies readonly {
+  tipo: TipoCriterio
+  etiqueta: string
+  ayuda: string
+  nombreSugerido?: string
+}[]
+
+/** El nombre con el que se propone agregar un tipo, si tiene uno. */
+export function nombreSugerido(tipo: TipoCriterio): string {
+  const opcion = TIPOS_OFRECIDOS.find((t) => t.tipo === tipo)
+  return opcion && 'nombreSugerido' in opcion ? opcion.nombreSugerido : ''
+}
 
 export async function esquemaDelTrimestre(trimestreId: Id): Promise<EsquemaTrimestre | null> {
   return repos.evaluacion.esquemaDeTrimestre(trimestreId)
@@ -345,7 +396,81 @@ export async function agregarCriterio(
   const limpio = nombre.trim().replace(/\s+/g, ' ')
   if (limpio === '') throw new Error('El criterio necesita un nombre')
 
-  await repos.evaluacion.agregarCriterio(trimestre.id, limpio, tipo)
+  if (esAutomatico(tipo)) {
+    // Un criterio automático aparece **a lo más una vez por trimestre**: dos
+    // puntualidades no significan nada, no hay dos puntualidades que medir. Se
+    // revisa por tipo y no por nombre, porque «Puntualidad» y «Asistencia
+    // puntual» serían el mismo cálculo dos veces (D-020).
+    const esquema = await repos.evaluacion.esquemaDeTrimestre(trimestre.id)
+    const repetido = esquema?.criterios.some((c) => c.criterio.tipo === tipo)
+    if (repetido) {
+      const como = TIPOS_OFRECIDOS.find((t) => t.tipo === tipo)?.etiqueta ?? tipo
+      throw new Error(`Este trimestre ya tiene ${como}, y se calcula una sola vez`)
+    }
+  }
+
+  await repos.evaluacion.agregarCriterio(
+    trimestre.id,
+    limpio,
+    tipo,
+    parametrosPorOmision(tipo),
+  )
+}
+
+/**
+ * Deja la meta de participación del trimestre. Nace en 5 (D-021) y se puede
+ * mover; lo que no se acepta es 0, que sería dividir entre cero.
+ *
+ * Cambiarla **no toca nada capturado**: la participación se deriva de las marcas
+ * de la pantalla de asistencia, así que mover la meta recalcula y no migra.
+ */
+export async function fijarMetaParticipacion(
+  trimestre: Trimestre,
+  ponderado: CriterioTrimestre,
+  meta: number,
+): Promise<void> {
+  if (!aceptaEscrituras(trimestre)) {
+    throw new Error('Un trimestre cerrado no admite cambios de configuración')
+  }
+  if (!metaParticipacionValida(meta)) {
+    throw new Error('La meta es un número entero de 1 para arriba')
+  }
+
+  await repos.evaluacion.ajustarParametros(ponderado.id, {
+    ...parametrosDe(ponderado),
+    meta_participacion: meta,
+  })
+}
+
+/**
+ * Deja cuántos retardos hacen una falta, o `null` para que un retardo no
+ * penalice. Son los dos niveles que pidió la usuaria: que el criterio exista ya
+ * decide que la puntualidad se califica; esto decide si el retardo cuenta.
+ */
+export async function fijarRetardosPorFalta(
+  trimestre: Trimestre,
+  ponderado: CriterioTrimestre,
+  valor: number | null,
+): Promise<void> {
+  if (!aceptaEscrituras(trimestre)) {
+    throw new Error('Un trimestre cerrado no admite cambios de configuración')
+  }
+  if (!retardosPorFaltaValido(valor)) {
+    throw new Error('Los retardos por falta son un entero de 1 para arriba, o ninguno')
+  }
+
+  await repos.evaluacion.ajustarParametros(ponderado.id, {
+    ...parametrosDe(ponderado),
+    retardos_por_falta: valor,
+  })
+}
+
+/** Los dos parámetros de una fila, para escribir uno sin borrar el otro. */
+function parametrosDe(ponderado: CriterioTrimestre): ParametrosAutomaticos {
+  return {
+    meta_participacion: ponderado.meta_participacion,
+    retardos_por_falta: ponderado.retardos_por_falta,
+  }
 }
 
 /**

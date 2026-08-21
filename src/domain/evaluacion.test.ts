@@ -2,19 +2,26 @@ import { describe, expect, it } from 'vitest'
 
 import {
   aceptaEscrituras,
-  contieneFecha,
   aciertosCompletos,
   aciertosEnRango,
+  admiteActividades,
   camposConPreguntas,
+  contieneFecha,
   descriptoresCompletos,
+  esAutomatico,
   examenConfigurado,
+  META_PARTICIPACION_POR_OMISION,
+  metaParticipacionValida,
   nivelesCompletos,
-  siguienteSinCapturar,
+  parametrosCompletos,
+  parametrosPorOmision,
   pesosSuman100,
   puedeCerrarse,
   rangoValido,
+  retardosPorFaltaValido,
   rubricaCompleta,
   seTraslapan,
+  siguienteSinCapturar,
   sumaDePesos,
   traslapes,
   trimestreDeFecha,
@@ -392,5 +399,80 @@ describe('aciertosCompletos', () => {
 
   it('un examen sin campos nunca está completo', () => {
     expect(aciertosCompletos({}, [])).toBe(false)
+  })
+})
+
+describe('criterios automáticos', () => {
+  it('los tres auto_* son automáticos y los demás no', () => {
+    expect(esAutomatico('auto_puntualidad')).toBe(true)
+    expect(esAutomatico('auto_conducta')).toBe(true)
+    expect(esAutomatico('auto_participacion')).toBe(true)
+    expect(esAutomatico('entregable')).toBe(false)
+    expect(esAutomatico('examen')).toBe(false)
+    expect(esAutomatico('personalizado')).toBe(false)
+  })
+
+  it('ninguno admite actividades: se derivan, no se capturan', () => {
+    expect(admiteActividades('auto_puntualidad')).toBe(false)
+    expect(admiteActividades('auto_conducta')).toBe(false)
+    expect(admiteActividades('auto_participacion')).toBe(false)
+  })
+
+  it('la participación nace con la meta en 5, que está validada', () => {
+    // D-021. Cinco participaciones o más valen 10.0 y una vale 2.0.
+    expect(parametrosPorOmision('auto_participacion')).toEqual({
+      meta_participacion: 5,
+      retardos_por_falta: null,
+    })
+    expect(META_PARTICIPACION_POR_OMISION).toBe(5)
+  })
+
+  it('la puntualidad nace sin penalizar retardos, no con la convención de 3', () => {
+    // «Tres retardos hacen una falta» es una convención que nadie validó. De las
+    // dos formas de equivocarse, esta no castiga a nadie sin que ella lo pida.
+    expect(parametrosPorOmision('auto_puntualidad')).toEqual({
+      meta_participacion: null,
+      retardos_por_falta: null,
+    })
+  })
+
+  it('un criterio que no es automático nace sin parámetros', () => {
+    expect(parametrosPorOmision('entregable')).toEqual({
+      meta_participacion: null,
+      retardos_por_falta: null,
+    })
+  })
+
+  it('la meta de participación es un entero de 1 para arriba', () => {
+    expect(metaParticipacionValida(1)).toBe(true)
+    expect(metaParticipacionValida(5)).toBe(true)
+    // Cero sería dividir entre cero, y media participación no existe.
+    expect(metaParticipacionValida(0)).toBe(false)
+    expect(metaParticipacionValida(-3)).toBe(false)
+    expect(metaParticipacionValida(2.5)).toBe(false)
+  })
+
+  it('los retardos por falta son un entero de 1 para arriba, o ninguno', () => {
+    // `1` es duro pero es la política de algunas escuelas: un retardo es falta.
+    expect(retardosPorFaltaValido(1)).toBe(true)
+    expect(retardosPorFaltaValido(3)).toBe(true)
+    expect(retardosPorFaltaValido(null)).toBe(true)
+    expect(retardosPorFaltaValido(0)).toBe(false)
+    expect(retardosPorFaltaValido(2.5)).toBe(false)
+  })
+
+  it('solo la participación puede quedar incompleta', () => {
+    const sinNada = { meta_participacion: null, retardos_por_falta: null }
+
+    // Sin meta no hay con qué normalizar.
+    expect(parametrosCompletos('auto_participacion', sinNada)).toBe(false)
+    expect(
+      parametrosCompletos('auto_participacion', { ...sinNada, meta_participacion: 5 }),
+    ).toBe(true)
+
+    // Puntualidad sin retardos_por_falta está completa: significa que no cuentan.
+    expect(parametrosCompletos('auto_puntualidad', sinNada)).toBe(true)
+    // Conducta nunca necesita nada: su escala es fija.
+    expect(parametrosCompletos('auto_conducta', sinNada)).toBe(true)
   })
 })

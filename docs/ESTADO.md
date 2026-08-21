@@ -38,7 +38,7 @@ del grupo, los cumpleaños y la sincronía.
 | 2 · Asistencia | El vertical completo hasta el iPad | ✅ Terminada |
 | Hito | Entrega, pausa de una semana, validación | ✅ Cumplido |
 | 3 · Resto de la v1 | Bitácora, resumen, respaldo, cumpleaños, sincronía | ▶ Bitácora y respaldo hechos; faltan C13, C15, C16 |
-| 5 · Criterios automáticos | Puntualidad, conducta y participación | ▶ C12 hecho; faltan C25b, C25, C26 |
+| 5 · Criterios automáticos | Puntualidad, conducta y participación | ▶ C12 y C25b hechos; faltan C25 y C26 |
 | 6 · Herramientas de aula | Sorteo de participación y formar equipos | ⬜ Alcance nuevo: C30, C31 |
 | 4 · Evaluación | Ciclo, trimestres, criterios, rúbricas, cálculo | ✅ Terminada: C18–C24 y C27–C29 |
 
@@ -103,22 +103,26 @@ asistencia capturada.
 
 ## Con qué continuar
 
-**El riesgo que dominaba esta sección ya está cubierto: `C14` está hecho.** Hay
+**El riesgo que dominaba esta sección ya está cubierto: `C14` está hecho**, y de
+los criterios automáticos ya están la bitácora (`C12`) y la configuración (`C25b`). Hay
 una pantalla en *Grupo → Ajustes → Respaldo* que escribe un archivo con las
 dieciséis tablas —borrados incluidos— y lo restaura por upsert, así que el mismo
 archivo dos veces no duplica nada. Queda **una verificación que necesita el
 dispositivo**: que la hoja de compartir del iPad ofrezca *Guardar en Archivos*. En
 el escritorio la exportación cae a una descarga normal, que es lo que se probó.
 
-**Siguiente commit: `C25b · feat(evaluacion): configurar los criterios
-automáticos`.** Es el primero de lo que queda del **alcance nuevo del 2026-08-21**
-(D-020 y D-021), en este orden:
+**Siguiente commit: `C25 · feat(evaluacion): registrar participación desde la
+asistencia`** —el modo en la pantalla de asistencia, sobre la tabla
+`participaciones` que ya existe vacía—. Es lo único que le falta a `C26` para tener
+de dónde leer los tres criterios. El orden de lo que queda del **alcance nuevo del
+2026-08-21** (D-020 y D-021):
 
 1. ~~`C12` · bitácora~~ — **hecho**: la pestaña se llama *Bitácora*, todo lo que se
    anota es un reporte con su conteo por alumno, y trajo `version(3)` completa.
    ~~`C14` · respaldo~~ — **hecho** también, y ya no condiciona a nadie.
-2. `C25b` · **configurar los criterios automáticos** — los tres tipos en el selector
-   de pesos, con `retardos_por_falta` y la meta de participación.
+2. ~~`C25b` · configurar los criterios automáticos~~ — **hecho**: los tres tipos se
+   agregan al trimestre y traen sus parámetros debajo de la fila. Puntualidad nace en
+   «los retardos no cuentan» y participación con la meta en 5.
 3. `C25` · **captura de participación** — el modo en la pantalla de asistencia, sobre
    la tabla `participaciones` que ya existe vacía.
 4. `C26` · **cálculo** de puntualidad, conducta y participación. Al entrar, los tres
@@ -153,11 +157,12 @@ automáticos —`C12`, `C25b`, `C25`, `C26`—, que dejaron de estar pospuestos 
 La Fase 4 está cerrada, así que nada de lo que falta depende de ella. En orden de
 valor por unidad de trabajo:
 
-- **Los dos criterios automáticos que faltan por configurar y capturar**: `C25b`
-  (configuración) y `C25` (captura de participación), y luego `C26`
-  (cálculo). El cálculo va al final porque hasta entonces no tiene de dónde
-  leer, y cuando entre aparece solo en el reporte de C29 y en el snapshot de C27,
-  sin tocar ninguna de las dos pantallas.
+- **`C25` · la captura de participación**, y luego `C26` (cálculo). El cálculo va al
+  final porque hasta entonces no tiene de dónde leer, y cuando entre aparece solo en
+  el reporte de C29 y en el snapshot de C27, sin tocar ninguna de las dos pantallas.
+  Mientras no exista, los tres criterios automáticos se pueden configurar y **pesan
+  en el reparto, pero califican `null`**: el reporte los excluye del promedio igual
+  que un criterio sin captura (D-019).
 - **Las dos herramientas de aula:** `C30` (sortear quién participa, que escribe en
   `participaciones` y por eso va después de `C25`) y `C31` (formar equipos, que no
   depende de nada y no guarda nada). Son las dos únicas funciones del proyecto que se
@@ -179,15 +184,15 @@ referencia: son trabajo pendiente, y el detalle está en
 [DATA-MODEL.md](./DATA-MODEL.md#criterios-automáticos) y en los commits `C12`,
 `C25`, `C25b` y `C26`.
 
-De los cuatro commits, `C12` ya está hecho: la pantalla existe, escribe reportes y
-cuenta los del trimestre por alumno. Lo que falta es configurarlos (`C25b`),
-capturar participación (`C25`) y calcular (`C26`).
+De los cuatro commits ya están dos: `C12` —la pantalla existe, escribe reportes y
+cuenta los del trimestre por alumno— y `C25b` —los tres se agregan al trimestre con
+sus parámetros—. Lo que falta es capturar participación (`C25`) y calcular (`C26`).
 
 En corto, para no tener que abrir los otros dos documentos:
 
 - **Puntualidad.** Configurable en dos niveles: si el criterio existe, se califica; y
   `retardos_por_falta` dice cuántos retardos hacen una falta, o que un retardo no
-  penaliza. La calificación es `(días − faltas − retardos convertidos) ÷ días`.
+  penaliza. **Nace en «no cuentan»**, no en 3: esa convención no está validada. La calificación es `(días − faltas − retardos convertidos) ÷ días`.
 - **Conducta.** Sale de la **bitácora** —la pantalla que ya existe, `C12`—, donde
   todo lo que se anota es un reporte y todos los reportes son negativos. 0 o 1
   reportes → 10.0; 2 → 5.0; 3 o más → 0.0. El primero se deja pasar a propósito.

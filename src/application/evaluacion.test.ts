@@ -33,6 +33,7 @@ import {
   guardarRubrica,
   faltaAbrirTrimestre,
   nombreDeCicloEn,
+  nombreSugerido,
   type Periodo,
   periodoVacio,
   periodosCompletos,
@@ -50,6 +51,8 @@ import {
   TIPOS_OFRECIDOS,
   trimestreDe,
   trimestreParaCopiar,
+  fijarMetaParticipacion,
+  fijarRetardosPorFalta,
 } from './evaluacion'
 
 const BUENOS: Periodo[] = [
@@ -765,11 +768,29 @@ describe('trimestreParaCopiar', () => {
 })
 
 describe('TIPOS_OFRECIDOS', () => {
-  it('no ofrece los criterios automáticos, que están pospuestos', () => {
+  it('ofrece los tres criterios automáticos, que volvieron al alcance', () => {
+    // Estuvieron fuera mientras estaban pospuestos; los retomó la usuaria con
+    // reglas propias (D-020), así que ahora se pueden agregar al trimestre.
     const tipos = TIPOS_OFRECIDOS.map((t) => t.tipo)
-    expect(tipos).not.toContain('auto_puntualidad')
-    expect(tipos).not.toContain('auto_conducta')
-    expect(tipos).not.toContain('auto_participacion')
+    expect(tipos).toContain('auto_puntualidad')
+    expect(tipos).toContain('auto_conducta')
+    expect(tipos).toContain('auto_participacion')
+  })
+
+  it('cada tipo dice de dónde sale, sin abrir otra pantalla', () => {
+    // En los automáticos no es adorno: es la diferencia entre configurar un
+    // criterio y descubrir en diciembre qué se estaba midiendo.
+    for (const opcion of TIPOS_OFRECIDOS) {
+      expect(opcion.ayuda.trim(), opcion.tipo).not.toBe('')
+    }
+  })
+
+  it('los automáticos traen nombre sugerido y los demás no', () => {
+    expect(nombreSugerido('auto_puntualidad')).toBe('Puntualidad')
+    expect(nombreSugerido('auto_conducta')).toBe('Conducta')
+    expect(nombreSugerido('auto_participacion')).toBe('Participación')
+    // «Tareas» o «Portafolio» sí es una decisión suya.
+    expect(nombreSugerido('entregable')).toBe('')
   })
 
   it('no ofrece personalizado, que no tiene forma de captura', () => {
@@ -1386,5 +1407,112 @@ describe('borrarActividad', () => {
     await expect(
       borrarActividad({ ...trimestre, estado: 'cerrado' }, actual, true),
     ).rejects.toThrow(/cerrado/)
+  })
+})
+
+describe('criterios automáticos en el trimestre', () => {
+  it('se pueden agregar los tres, y quitar', async () => {
+    const t1 = await primerTrimestre()
+
+    await agregarCriterio(t1, 'Puntualidad', 'auto_puntualidad')
+    await agregarCriterio(t1, 'Conducta', 'auto_conducta')
+    await agregarCriterio(t1, 'Participación', 'auto_participacion')
+
+    const conLosTres = (await esquemaDelTrimestre(t1.id))!.criterios
+    expect(conLosTres.map((c) => c.criterio.tipo).sort()).toEqual([
+      'auto_conducta',
+      'auto_participacion',
+      'auto_puntualidad',
+    ])
+
+    await quitarCriterio(t1, conLosTres[0]!.ponderado.id)
+    expect((await esquemaDelTrimestre(t1.id))!.criterios).toHaveLength(2)
+  })
+
+  it('cada automático aparece a lo más una vez por trimestre', async () => {
+    // Dos puntualidades no significan nada: no hay dos puntualidades que medir.
+    const t1 = await primerTrimestre()
+    await agregarCriterio(t1, 'Puntualidad', 'auto_puntualidad')
+
+    await expect(
+      agregarCriterio(t1, 'Asistencia puntual', 'auto_puntualidad'),
+    ).rejects.toThrow(/una sola vez/)
+    expect((await esquemaDelTrimestre(t1.id))!.criterios).toHaveLength(1)
+  })
+
+  it('el mismo automático sí puede estar en dos trimestres distintos', async () => {
+    const ciclo = await unCiclo()
+    const [t1, t2] = ciclo.trimestres as [Trimestre, Trimestre]
+
+    await agregarCriterio(t1, 'Conducta', 'auto_conducta')
+    await agregarCriterio(t2, 'Conducta', 'auto_conducta')
+
+    expect((await esquemaDelTrimestre(t1.id))!.criterios).toHaveLength(1)
+    expect((await esquemaDelTrimestre(t2.id))!.criterios).toHaveLength(1)
+  })
+
+  it('la participación nace con la meta en 5', async () => {
+    const t1 = await primerTrimestre()
+    await agregarCriterio(t1, 'Participación', 'auto_participacion')
+
+    const ponderado = (await esquemaDelTrimestre(t1.id))!.criterios[0]!.ponderado
+    expect(ponderado.meta_participacion).toBe(5)
+  })
+
+  it('la meta se puede mover, y un cero no se acepta', async () => {
+    const t1 = await primerTrimestre()
+    await agregarCriterio(t1, 'Participación', 'auto_participacion')
+    const ponderado = (await esquemaDelTrimestre(t1.id))!.criterios[0]!.ponderado
+
+    await fijarMetaParticipacion(t1, ponderado, 8)
+    expect(
+      (await esquemaDelTrimestre(t1.id))!.criterios[0]!.ponderado.meta_participacion,
+    ).toBe(8)
+
+    await expect(fijarMetaParticipacion(t1, ponderado, 0)).rejects.toThrow(/de 1 para arriba/)
+  })
+
+  it('los retardos por falta se fijan y se pueden dejar en «no cuentan»', async () => {
+    const t1 = await primerTrimestre()
+    await agregarCriterio(t1, 'Puntualidad', 'auto_puntualidad')
+    const ponderado = (await esquemaDelTrimestre(t1.id))!.criterios[0]!.ponderado
+    // Nace sin penalizar: la convención de 3 no está validada.
+    expect(ponderado.retardos_por_falta).toBeNull()
+
+    await fijarRetardosPorFalta(t1, ponderado, 3)
+    expect(
+      (await esquemaDelTrimestre(t1.id))!.criterios[0]!.ponderado.retardos_por_falta,
+    ).toBe(3)
+
+    await fijarRetardosPorFalta(t1, ponderado, null)
+    expect(
+      (await esquemaDelTrimestre(t1.id))!.criterios[0]!.ponderado.retardos_por_falta,
+    ).toBeNull()
+  })
+
+  it('fijar un parámetro no borra el otro', async () => {
+    // Los dos viven en la misma fila. Escribir uno leyendo la fila entera es lo
+    // que evita que configurar la meta apague la conversión de retardos.
+    const t1 = await primerTrimestre()
+    await agregarCriterio(t1, 'Participación', 'auto_participacion')
+    let ponderado = (await esquemaDelTrimestre(t1.id))!.criterios[0]!.ponderado
+
+    await fijarRetardosPorFalta(t1, ponderado, 2)
+    ponderado = (await esquemaDelTrimestre(t1.id))!.criterios[0]!.ponderado
+    await fijarMetaParticipacion(t1, ponderado, 7)
+
+    const final = (await esquemaDelTrimestre(t1.id))!.criterios[0]!.ponderado
+    expect(final.retardos_por_falta).toBe(2)
+    expect(final.meta_participacion).toBe(7)
+  })
+
+  it('un trimestre cerrado no admite cambios de configuración', async () => {
+    const t1 = await primerTrimestre()
+    await agregarCriterio(t1, 'Participación', 'auto_participacion')
+    const ponderado = (await esquemaDelTrimestre(t1.id))!.criterios[0]!.ponderado
+    const cerrado = { ...t1, estado: 'cerrado' as const }
+
+    await expect(fijarMetaParticipacion(cerrado, ponderado, 6)).rejects.toThrow(/cerrado/)
+    await expect(fijarRetardosPorFalta(cerrado, ponderado, 2)).rejects.toThrow(/cerrado/)
   })
 })
