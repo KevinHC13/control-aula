@@ -298,14 +298,10 @@ proporcional (D-021).
 
 ## Deuda conocida
 
-- De las once tablas nuevas, tienen puerto y adaptador `ciclos`, `trimestres`,
-  `criterios`, `criterios_trimestre`, `rubricas`, `rubrica_criterios`,
-  `actividades`, `entregas` y `eval_rubrica`. `examen_config`, `resultados_examen`
-  y `cierres` no se tocan todavía.
 - **La regla de D-019 —una captura a medias no produce calificación— la decidí yo,
-  no la usuaria.** Es coherente con lo que la pantalla ya llamaba «sin calificar» y
-  con excluir una actividad sin registros, y nada de la boleta depende de ella
-  todavía porque C29 no existe. Conviene confirmarla antes de que sí dependa.
+  no la usuaria**, y ya **no es inocua**: con `C29` construido, es la regla que decide
+  el «10.0 sobre 40» del reporte y el snapshot del cierre. Sigue siendo una de las dos
+  preguntas que faltan por hacerle.
 - El examen **no tiene forma de decir cuántas preguntas trae por fuera de su propia
   pantalla**, y esa pantalla vive dentro de Calificaciones. Es una configuración
   —una vez por trimestre— viviendo en el camino de captura; funciona, pero no es
@@ -317,14 +313,16 @@ proporcional (D-021).
   en el iPad. No tiene el presupuesto de 15 segundos de la asistencia —son tantos
   toques como renglones por alumno— pero cuánto cuesta de verdad un grupo de 30
   solo se sabe con el iPad en la mano.
+- **Sostener el dedo para restar una participación solo se ha probado con eventos
+  sintéticos.** Funciona —el `click` que llega después no vuelve a sumar, comprobado
+  en el navegador— pero en iPadOS la pulsación larga pelea con el menú de selección.
+  Lleva `select-none`, `touch-manipulation` y `preventDefault`, y eso quiere un dedo
+  de verdad.
 - Un alumno a medias se ve como pendiente y nada avisa cuántos quedaron así al
   salir: el contador dice «12 de 30», no «hay tres a medias».
 - El criterio de los 15 segundos de C22 está medido en el navegador (73 ms para
   cuatro toques, incluyendo el viaje a IndexedDB), **no en el iPad con cronómetro**.
   Falta confirmarlo en el dispositivo, como se hizo con C8.
-- `CriterioTrimestre.meta_participacion` se escribe siempre en `null`: la copia de
-  esquema lo arrastra, pero nada lo pone. Pertenece a participación, que está
-  pospuesta.
 - No hay forma de reordenar los renglones de una rúbrica desde la pantalla. El
   `orden` se guarda y se respeta, y el adaptador ya sabe reordenar si le llegan en
   otro orden; falta el gesto en la interfaz.
@@ -342,8 +340,10 @@ proporcional (D-021).
   `cerrado_en`**: no hay bitácora, así que no se sabe cuándo se reabrió ni cuántas
   veces. El snapshot anterior se borra en suave, así que tampoco queda a la vista
   qué decía antes.
-- El respaldo no existe y la sincronía tampoco: el único ejemplar de los datos
-  reales vive en un iPad.
+- **El respaldo y la sincronía existen, pero el iPad real todavía no los ha usado.**
+  Mientras no se haga una copia —a archivo o a la nube— desde el dispositivo, el
+  único ejemplar de los datos reales sigue viviendo ahí. Es el riesgo más viejo del
+  proyecto y ya no es por falta de código.
 - Los criterios de aceptación de C10 y C10c que dependen del dispositivo se
   marcaron al momento de la entrega. No se han vuelto a correr desde entonces.
 

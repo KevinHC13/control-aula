@@ -927,17 +927,17 @@ cosas de la lista de abajo; sin ellas, un modo olvidado ensucia datos en silenci
 - [x] Se registra sin salir de la pantalla de asistencia
 - [x] No agrega ningún toque al camino de pasar lista
 - [x] El conteo del trimestre es visible por alumno
-- [~] La normalización usa la meta configurada, no el máximo del grupo
+- [x] La normalización usa la meta configurada, no el máximo del grupo
 - [x] Con el modo prendido, **la pantalla se ve distinta** y el contador cambia de
       significado: es imposible confundirla con la de pasar lista
 - [x] El modo **se apaga solo** al salir de la pantalla y al cambiar de día
 - [x] **Se puede deshacer** sin salir del modo: sostener el dedo resta una
 - [x] Con el modo prendido, un toque **nunca** cambia la asistencia
 
-La normalización queda a medias porque **la fórmula es de `C26`**: lo que existe aquí
-es que la meta se lee del criterio del trimestre y se ve en cada fila —«3 de 5»—, así
-que la pantalla ya no depende del máximo del grupo. El `mín(participaciones ÷ meta,
-1)` es el commit siguiente, donde se repite este criterio.
+La normalización se cerró con `C26`, que trajo el `mín(participaciones ÷ meta, 1)`;
+aquí quedó la parte visible —la meta se lee del criterio del trimestre y se ve en cada
+fila, «3 de 5»—. Comprobado en el navegador el 2026-08-21: con la meta en 5, un alumno
+con una participación califica **2.0**, sin que el resto del grupo cambie el número.
 
 Cómo quedó:
 
