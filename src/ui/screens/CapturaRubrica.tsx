@@ -168,36 +168,75 @@ export function CapturaRubrica({
             </p>
           </div>
 
-          <ul className="flex flex-col gap-5">
-            {renglones.map((renglon) => (
-              <li key={renglon.id} className="flex flex-col gap-2">
-                <p className="text-base font-medium text-tinta">{renglon.nombre}</p>
-                {/* Los cuatro niveles con su descriptor a la vista: elegir sin
-                    leerlo es lo que hace que en diciembre nadie recuerde qué
-                    quiso decir «Bien» en septiembre. */}
-                <div className="flex flex-col gap-2">
-                  {NIVELES.map((nombre, n) => (
-                    <BotonNivel
+          {/* La rúbrica en tabla, como está en el papel: un renglón por fila y
+              un nivel por columna. Los descriptores quedan a la vista todos a la
+              vez, que es lo que hace comparable «Bien» con «Regular» sin ir y
+              venir por la pantalla.
+
+              -mx-4 para ganar el ancho de los márgenes: en cuatro columnas cada
+              píxel es texto que no se corta. */}
+          <div className="-mx-4 overflow-x-auto">
+            {/* table-fixed para que las cuatro columnas queden del mismo ancho:
+                  un descriptor largo no debe angostar los otros tres, o la tabla
+                  deja de leerse como matriz. */}
+            <table className="w-full min-w-[36rem] table-fixed border-collapse">
+              <caption className="sr-only">
+                Rúbrica {rubrica.rubrica.nombre}: un renglón por fila, un nivel por
+                columna
+              </caption>
+              <thead>
+                <tr>
+                  {/* La esquina va vacía: encabezar la columna de renglones con
+                      una palabra le quitaría ancho a los descriptores. */}
+                  <th scope="col" className="w-[7.5rem] px-2 pb-1" />
+                  {NIVELES.map((nombre) => (
+                    <th
                       key={nombre}
-                      nombre={nombre}
-                      descriptor={renglon.descriptores[n] ?? ''}
-                      elegido={fila.niveles[renglon.id] === (n as Nivel)}
-                      deshabilitado={!abierto}
-                      alTocar={() =>
-                        void calificarRenglon(
-                          trimestre,
-                          actividad,
-                          fila,
-                          renglon.id,
-                          n as Nivel,
-                        )
-                      }
-                    />
+                      scope="col"
+                      className="px-1 pb-1 text-center text-[13px] font-medium text-tinta-2"
+                    >
+                      {nombre}
+                    </th>
                   ))}
-                </div>
-              </li>
-            ))}
-          </ul>
+                </tr>
+              </thead>
+              <tbody>
+                {renglones.map((renglon) => (
+                  <tr key={renglon.id} className="border-t border-linea">
+                    <th
+                      scope="row"
+                      className="px-2 py-2 text-left align-top text-base font-medium text-tinta"
+                    >
+                      {renglon.nombre}
+                    </th>
+                    {/* Sin align-top y con h-full en el botón, las cuatro celdas
+                        de una fila quedan de la misma altura: un descriptor de tres
+                        líneas no deja a los otros tres flotando a media fila. */}
+                    {NIVELES.map((nombre, n) => (
+                      <td key={nombre} className="p-1">
+                        <CeldaNivel
+                          nivel={nombre}
+                          renglon={renglon.nombre}
+                          descriptor={renglon.descriptores[n] ?? ''}
+                          elegido={fila.niveles[renglon.id] === (n as Nivel)}
+                          deshabilitado={!abierto}
+                          alTocar={() =>
+                            void calificarRenglon(
+                              trimestre,
+                              actividad,
+                              fila,
+                              renglon.id,
+                              n as Nivel,
+                            )
+                          }
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
           {abierto && (
             <div className="flex gap-2">
@@ -268,15 +307,24 @@ function FilaCalificacionAlumno({
   )
 }
 
-/** Un nivel con su descriptor. Objetivo táctil de renglón completo. */
-function BotonNivel({
-  nombre,
+/**
+ * Una celda de la tabla: el descriptor de ese nivel para ese renglón, y todo el
+ * recuadro es el objetivo táctil.
+ *
+ * El `aria-label` repite renglón y nivel porque la celda sola no los dice: con
+ * lector de pantalla, «Casi completo» no ubica en qué fila ni en qué columna cayó
+ * el toque.
+ */
+function CeldaNivel({
+  nivel,
+  renglon,
   descriptor,
   elegido,
   deshabilitado,
   alTocar,
 }: {
-  nombre: string
+  nivel: string
+  renglon: string
   descriptor: string
   elegido: boolean
   deshabilitado: boolean
@@ -288,19 +336,17 @@ function BotonNivel({
       onClick={alTocar}
       disabled={deshabilitado}
       aria-pressed={elegido}
+      aria-label={`${renglon}, ${nivel}: ${descriptor}`}
       className={cn(
-        'flex min-h-11 w-full items-start gap-3 rounded-md border px-3 py-2 text-left',
+        'flex h-full min-h-14 w-full items-start break-words rounded-md border px-2 py-2 text-left text-base',
         'outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
         'active:bg-cuadro disabled:opacity-60',
         elegido
           ? 'border-azul bg-azul text-papel active:bg-azul'
-          : 'border-linea bg-papel text-tinta',
+          : 'border-linea bg-papel text-tinta-2',
       )}
     >
-      <span className="w-20 shrink-0 text-base font-medium">{nombre}</span>
-      <span className={cn('min-w-0 flex-1 text-base', elegido ? 'opacity-90' : 'text-tinta-2')}>
-        {descriptor}
-      </span>
+      {descriptor}
     </button>
   )
 }

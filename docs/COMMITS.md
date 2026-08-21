@@ -672,7 +672,8 @@ tocar.
 - [x] Cada toque de nivel guarda de inmediato
 - [x] El progreso es visible: «12 de 30»
 
-Verificado en el navegador con una rúbrica de dos renglones: los cuatro niveles
+Verificado en el navegador con una rúbrica de dos renglones —y luego con un tercero
+de descriptores largos, para ver el ajuste de las columnas—: los cuatro niveles
 salen con su descriptor; tocar uno marca el botón y sube el contador en el acto;
 calificar los dos renglones deja al alumno como «Calificado» y el contador en
 «1 de 30»; «Siguiente sin calificar» pasa del alumno 1 al 2 y del 2 al 3 aunque el
@@ -694,6 +695,12 @@ Decisiones que salieron de construirlo:
   a quien no trajo el trabajo, atiende la puerta, vuelve— así que «siguiente»
   significa «el que falta», no «el que sigue en la lista». Y **avanza**: si el
   actual es el que falta, no se queda ahí.
+- **La rúbrica se captura en tabla: renglones en filas, niveles en columnas.** Es
+  la forma en que la rúbrica está en el papel, y deja los cuatro descriptores de un
+  renglón a la vista al mismo tiempo, que es lo que hace comparable «Bien» con
+  «Regular» sin ir y venir por la pantalla. `table-fixed` para que un descriptor
+  largo no angoste las otras tres columnas, y la tabla scrollea dentro de su propio
+  contenedor —no la página— cuando no cabe.
 - **`calificarRenglon` escribe un renglón y conserva los demás.** El puerto no
   recibe el mapa completo: recibirlo haría que dos toques rápidos se pisaran el
   mapa que cada uno tenía en la mano.
