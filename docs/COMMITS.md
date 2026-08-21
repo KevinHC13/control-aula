@@ -824,7 +824,7 @@ Decisiones que salieron de construirlo:
   `calificarRenglon` con su renglón. Y `siguienteSinCapturar` vive en `domain/`,
   compartido con la captura de rúbrica: es el mismo recorrido, no dos parecidos.
 
-### ⬜ C25 · `feat(evaluacion): registrar participación desde la asistencia`
+### ✅ C25 · `feat(evaluacion): registrar participación desde la asistencia`
 
 **Ya no está pospuesto** (D-020). Se marca con un **modo**: un interruptor en la
 pantalla de asistencia que cambia lo que hace el toque —prendido, tocar a un alumno
@@ -838,15 +838,45 @@ lo que cuesta es que el mismo gesto signifique dos cosas. Eso se paga con las tr
 cosas de la lista de abajo; sin ellas, un modo olvidado ensucia datos en silencio.
 
 **Aceptación**
-- [ ] Se registra sin salir de la pantalla de asistencia
-- [ ] No agrega ningún toque al camino de pasar lista
-- [ ] El conteo del trimestre es visible por alumno
-- [ ] La normalización usa la meta configurada, no el máximo del grupo
-- [ ] Con el modo prendido, **la pantalla se ve distinta** y el contador cambia de
+- [x] Se registra sin salir de la pantalla de asistencia
+- [x] No agrega ningún toque al camino de pasar lista
+- [x] El conteo del trimestre es visible por alumno
+- [~] La normalización usa la meta configurada, no el máximo del grupo
+- [x] Con el modo prendido, **la pantalla se ve distinta** y el contador cambia de
       significado: es imposible confundirla con la de pasar lista
-- [ ] El modo **se apaga solo** al salir de la pantalla y al cambiar de día
-- [ ] **Se puede deshacer** sin salir del modo: sostener el dedo resta una
-- [ ] Con el modo prendido, un toque **nunca** cambia la asistencia
+- [x] El modo **se apaga solo** al salir de la pantalla y al cambiar de día
+- [x] **Se puede deshacer** sin salir del modo: sostener el dedo resta una
+- [x] Con el modo prendido, un toque **nunca** cambia la asistencia
+
+La normalización queda a medias porque **la fórmula es de `C26`**: lo que existe aquí
+es que la meta se lee del criterio del trimestre y se ve en cada fila —«3 de 5»—, así
+que la pantalla ya no depende del máximo del grupo. El `mín(participaciones ÷ meta,
+1)` es el commit siguiente, donde se repite este criterio.
+
+Cómo quedó:
+
+- **El modo se guarda como el día en que se prendió**, no como un booleano. Está
+  prendido solo si ese día sigue siendo el que se ve, así que cambiar de día lo apaga
+  sin un efecto que lo apague, y salir de la pantalla lo apaga porque es estado
+  local.
+- **Con el modo apagado no hay ni una suscripción de participaciones abierta**: el
+  bloque del modo monta sus propios hooks al encenderse. Quien pasa lista y se va no
+  paga nada.
+- **La pantalla cambia de color, no de sitio.** Barras verdes en vez de azules, un
+  aviso arriba y el contador grande contando participaciones del día —con «de cuántos
+  alumnos» debajo, porque doce participaciones de tres alumnos es justo lo que el
+  criterio existe para hacer visible—.
+- **Sostener el dedo resta una**, con 500 ms y cancelando el `click` que llega
+  después. Es la única pulsación larga de la app, así que el aviso del modo lo dice.
+- **Es un contador y no una fila por marca**: tres toques son una fila con
+  `cantidad: 3` y una sola entrada en la `outbox`. Restar nunca baja de cero, restar
+  donde no hay nada no escribe, y deshacer deja la fila en cero en vez de borrarla.
+- **Marcar no revisa si el trimestre está cerrado**, igual que la asistencia: la
+  captura diaria no pregunta por trimestres y un trimestre cerrado lee su snapshot,
+  así que no puede cambiar una calificación reportada.
+- Si el trimestre no tiene el criterio de Participación —o no tiene meta—, el aviso
+  lo dice y se marca igual: la atribución se deriva al leer, así que el criterio se
+  puede agregar después y las marcas ya cuentan.
 
 ### ✅ C25b · `feat(evaluacion): configurar los criterios automáticos`
 

@@ -27,12 +27,12 @@ Existen y funcionan:
   De las once tablas de evaluación tienen puerto y adaptador `ciclos`,
   `trimestres`, `criterios`, `criterios_trimestre`, `rubricas`,
   `rubrica_criterios`, `actividades`, `entregas`, `eval_rubrica`, `examen_config`,
-  `resultados_examen` y `cierres`. **Quince de las dieciséis tablas están en uso**;
-  la que falta es `participaciones`.
+  `resultados_examen` y `cierres`. **Las dieciséis tablas están en uso**:
+  `participaciones` entró con el modo de participación (C25).
 - **`application/`**: `asistencia.ts`, `grupo.ts`, `importacion.ts`,
   `evaluacion.ts`, `entregas.ts`, `calificacion.ts`, `examen.ts`,
-  `calificaciones.ts` —el reporte del trimestre y su cierre—, `bitacora.ts` y
-  `respaldo.ts` —el archivo JSON con todo, C14—. `armarReporte` es la
+  `calificaciones.ts` —el reporte del trimestre y su cierre—, `bitacora.ts`,
+  `participacion.ts` y `respaldo.ts` —el archivo JSON con todo, C14—. `armarReporte` es la
   única función que decide entre recalcular y leer el snapshot: no duplicar esa
   decisión.
 - **`services/`**: `extraccion.ts`, la única salida a red del cliente.
@@ -55,11 +55,11 @@ dispositivo, no de código: ver en el iPad que la hoja de compartir ofrezca *Gua
 en Archivos*.
 
 Del **alcance nuevo del 2026-08-21** —la usuaria retomó los tres criterios
-automáticos con reglas propias (D-020)— ya está `C25b`: los tres tipos se agregan al
-trimestre en *Criterios y pesos*, con sus parámetros debajo de la fila. **Lo que
-sigue es `C25`** —el modo de participación en la pantalla de asistencia— y luego
-`C26` —el cálculo, que hasta entonces devuelve `null` para los tres—. Ninguno vuelve
-a tocar el esquema.
+automáticos con reglas propias (D-020)— ya están `C12`, `C25b` y `C25`: la bitácora,
+la configuración de los tres criterios y el modo de participación en la pantalla de
+asistencia. **Lo único que falta es `C26`, el cálculo**: hasta que entre, los tres
+criterios pesan en el reparto pero califican `null`, y el reporte los excluye del
+promedio igual que un criterio sin captura (D-019).
 
 Encima entran dos **herramientas de aula** (D-021): `C30` —sortear quién participa,
 que escribe en `participaciones` y no registra nada por sí solo— y `C31` —formar

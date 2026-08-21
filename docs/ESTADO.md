@@ -38,7 +38,7 @@ del grupo, los cumpleaños y la sincronía.
 | 2 · Asistencia | El vertical completo hasta el iPad | ✅ Terminada |
 | Hito | Entrega, pausa de una semana, validación | ✅ Cumplido |
 | 3 · Resto de la v1 | Bitácora, resumen, respaldo, cumpleaños, sincronía | ▶ Bitácora y respaldo hechos; faltan C13, C15, C16 |
-| 5 · Criterios automáticos | Puntualidad, conducta y participación | ▶ C12 y C25b hechos; faltan C25 y C26 |
+| 5 · Criterios automáticos | Puntualidad, conducta y participación | ▶ C12, C25b y C25 hechos; falta C26 |
 | 6 · Herramientas de aula | Sorteo de participación y formar equipos | ⬜ Alcance nuevo: C30, C31 |
 | 4 · Evaluación | Ciclo, trimestres, criterios, rúbricas, cálculo | ✅ Terminada: C18–C24 y C27–C29 |
 
@@ -49,9 +49,9 @@ Verificado en `src/` a esta fecha:
 | Capa | Contenido |
 |---|---|
 | `domain/` | `entities.ts` con la jerarquía de evaluación completa, `values.ts`, `fechas.ts`, `rules.ts`, `evaluacion.ts` (estructura) y `calculo.ts` (los números), con pruebas |
-| `data/dexie/` | `db.ts` en `version(3)`, adaptadores de alumnos, asistencia, evaluación, bitácora y respaldo, `outbox`, semilla |
-| `data/ports/` | `alumnos.ts`, `asistencia.ts`, `evaluacion.ts` (ciclo, trimestres, criterios, pesos, rúbricas y actividades), `bitacora.ts`, `respaldo.ts` |
-| `application/` | `asistencia.ts`, `grupo.ts`, `importacion.ts`, `evaluacion.ts`, `entregas.ts`, `calificacion.ts`, `examen.ts`, `calificaciones.ts` (reporte y cierre), `bitacora.ts`, `respaldo.ts` |
+| `data/dexie/` | `db.ts` en `version(3)`, adaptadores de alumnos, asistencia, evaluación, bitácora, participaciones y respaldo, `outbox`, semilla |
+| `data/ports/` | `alumnos.ts`, `asistencia.ts`, `evaluacion.ts` (ciclo, trimestres, criterios, pesos, rúbricas y actividades), `bitacora.ts`, `participaciones.ts`, `respaldo.ts` |
+| `application/` | `asistencia.ts`, `grupo.ts`, `importacion.ts`, `evaluacion.ts`, `entregas.ts`, `calificacion.ts`, `examen.ts`, `calificaciones.ts` (reporte y cierre), `bitacora.ts`, `participacion.ts`, `respaldo.ts` |
 | `services/` | `extraccion.ts` — única salida a red del cliente |
 | `ui/` | Cuatro pestañas, Asistencia completa (con la etiqueta del trimestre), Calificaciones con sus actividades, las tres capturas —entregas, rúbrica y examen, esta última con teclado propio— y el reporte del trimestre por alumno y por campo, Bitácora con el conteo por alumno y su historial, Ajustes, CargarLista, CicloEscolar, CriteriosYPesos (con el cierre del trimestre), Rubricas, Respaldo |
 | `tests/` | `arquitectura.test.ts` — verifica las reglas de dependencia en cada `npm test` |
@@ -59,7 +59,8 @@ Verificado en `src/` a esta fecha:
 
 Pantalla de asistencia: tira de días de tres meses que se desliza, calendario del
 mes como mosaico, contador de presentes, filas con ciclo de estados y barra
-bicolor.
+bicolor, y el **modo participación** (`C25`), que cambia lo que hace el toque y cómo
+se ve la pantalla.
 
 ## Lo que es placeholder
 
@@ -103,19 +104,28 @@ asistencia capturada.
 
 ## Con qué continuar
 
-**El riesgo que dominaba esta sección ya está cubierto: `C14` está hecho**, y de
-los criterios automáticos ya están la bitácora (`C12`) y la configuración (`C25b`). Hay
+**El riesgo que dominaba esta sección ya está cubierto: `C14` está hecho**, y de los
+criterios automáticos ya están la bitácora (`C12`), la configuración (`C25b`) y la
+captura de participación (`C25`). **Solo falta el cálculo, `C26`.** Hay
 una pantalla en *Grupo → Ajustes → Respaldo* que escribe un archivo con las
 dieciséis tablas —borrados incluidos— y lo restaura por upsert, así que el mismo
 archivo dos veces no duplica nada. Queda **una verificación que necesita el
 dispositivo**: que la hoja de compartir del iPad ofrezca *Guardar en Archivos*. En
 el escritorio la exportación cae a una descarga normal, que es lo que se probó.
 
-**Siguiente commit: `C25 · feat(evaluacion): registrar participación desde la
-asistencia`** —el modo en la pantalla de asistencia, sobre la tabla
-`participaciones` que ya existe vacía—. Es lo único que le falta a `C26` para tener
-de dónde leer los tres criterios. El orden de lo que queda del **alcance nuevo del
-2026-08-21** (D-020 y D-021):
+**Siguiente commit: `C26 · feat(evaluacion): calcular puntualidad, conducta y
+participación`.** Ya está todo lo que necesita para leer: la asistencia desde la
+Fase 2, la bitácora desde `C12` y las participaciones desde `C25`, con sus parámetros
+desde `C25b`. Son las tres fórmulas en `domain/calculo.ts` y su composición en
+`application/calificaciones.ts`, que hoy devuelve `null` para todo criterio `auto_*`.
+
+Al entrar, los tres aparecen solos en el reporte de C29 y en el snapshot de C27, sin
+tocar ninguna de las dos pantallas. Y una consecuencia que conviene mirar antes de
+darla por buena: con conducta configurada, **todo el grupo tiene calificación desde el
+primer día** —10.0 de conducta—, así que el reporte deja de mostrar `—` y empieza a
+mostrar «10.0 sobre 15».
+
+El orden de lo que queda del **alcance nuevo del 2026-08-21** (D-020 y D-021):
 
 1. ~~`C12` · bitácora~~ — **hecho**: la pestaña se llama *Bitácora*, todo lo que se
    anota es un reporte con su conteo por alumno, y trajo `version(3)` completa.
@@ -123,8 +133,9 @@ de dónde leer los tres criterios. El orden de lo que queda del **alcance nuevo 
 2. ~~`C25b` · configurar los criterios automáticos~~ — **hecho**: los tres tipos se
    agregan al trimestre y traen sus parámetros debajo de la fila. Puntualidad nace en
    «los retardos no cuentan» y participación con la meta en 5.
-3. `C25` · **captura de participación** — el modo en la pantalla de asistencia, sobre
-   la tabla `participaciones` que ya existe vacía.
+3. ~~`C25` · captura de participación~~ — **hecho**: el interruptor *Marcar
+   participación* en la pantalla de asistencia, con barras verdes, el contador
+   contando participaciones y sostener el dedo para restar.
 4. `C26` · **cálculo** de puntualidad, conducta y participación. Al entrar, los tres
    aparecen solos en el reporte de C29 y en el snapshot de C27.
 5. `C30` · **sortear quién participa** y `C31` · **formar equipos**. `C30` va después
@@ -157,12 +168,10 @@ automáticos —`C12`, `C25b`, `C25`, `C26`—, que dejaron de estar pospuestos 
 La Fase 4 está cerrada, así que nada de lo que falta depende de ella. En orden de
 valor por unidad de trabajo:
 
-- **`C25` · la captura de participación**, y luego `C26` (cálculo). El cálculo va al
-  final porque hasta entonces no tiene de dónde leer, y cuando entre aparece solo en
-  el reporte de C29 y en el snapshot de C27, sin tocar ninguna de las dos pantallas.
-  Mientras no exista, los tres criterios automáticos se pueden configurar y **pesan
-  en el reparto, pero califican `null`**: el reporte los excluye del promedio igual
-  que un criterio sin captura (D-019).
+- **`C26` · el cálculo de los tres criterios automáticos.** Es lo único que les falta:
+  ya tienen de dónde leer y con qué parámetros. Mientras no exista, los tres se
+  pueden configurar y marcar, y **pesan en el reparto pero califican `null`**: el
+  reporte los excluye del promedio igual que un criterio sin captura (D-019).
 - **Las dos herramientas de aula:** `C30` (sortear quién participa, que escribe en
   `participaciones` y por eso va después de `C25`) y `C31` (formar equipos, que no
   depende de nada y no guarda nada). Son las dos únicas funciones del proyecto que se
@@ -184,9 +193,10 @@ referencia: son trabajo pendiente, y el detalle está en
 [DATA-MODEL.md](./DATA-MODEL.md#criterios-automáticos) y en los commits `C12`,
 `C25`, `C25b` y `C26`.
 
-De los cuatro commits ya están dos: `C12` —la pantalla existe, escribe reportes y
-cuenta los del trimestre por alumno— y `C25b` —los tres se agregan al trimestre con
-sus parámetros—. Lo que falta es capturar participación (`C25`) y calcular (`C26`).
+De los cuatro commits ya están tres: `C12` —la bitácora escribe reportes y cuenta los
+del trimestre por alumno—, `C25b` —los tres se agregan al trimestre con sus
+parámetros— y `C25` —el modo de participación en la asistencia—. **Lo único que falta
+es calcular (`C26`).**
 
 En corto, para no tener que abrir los otros dos documentos:
 
@@ -197,9 +207,9 @@ En corto, para no tener que abrir los otros dos documentos:
   todo lo que se anota es un reporte y todos los reportes son negativos. 0 o 1
   reportes → 10.0; 2 → 5.0; 3 o más → 0.0. El primero se deja pasar a propósito.
   Desaparece el `signo` que el diseño viejo iba a agregarle a cada nota.
-- **Participación.** Se marca desde la pantalla de asistencia con un **modo**: con el
-  interruptor prendido, tocar a un alumno le suma una participación en vez de ciclar
-  su asistencia. Se califica **proporcional con tope contra una meta que nace en 5**
+- **Participación.** Se marca desde la pantalla de asistencia con un **modo**, ya
+  construido (`C25`): con el interruptor prendido, tocar a un alumno le suma una
+  participación en vez de ciclar su asistencia, y sostener el dedo resta una. Se califica **proporcional con tope contra una meta que nace en 5**
   (D-021): cinco participaciones o más valen 10.0, una vale 2.0.
 
 Los tres se configuran como cualquier otro criterio: se usan si tienen fila en el

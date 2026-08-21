@@ -19,6 +19,8 @@ import {
 import { useAsistenciaDelDia } from '@/ui/hooks/useAsistenciaDelDia'
 import { useAsistenciaDelMes } from '@/ui/hooks/useAsistenciaDelMes'
 import { useCicloEnCurso } from '@/ui/hooks/useCicloEnCurso'
+import { cn } from '@/ui/lib/utils'
+import { ModoParticipacion } from '@/ui/screens/ModoParticipacion'
 import { useInterfaz } from '@/ui/store/interfaz'
 
 export function Asistencia() {
@@ -38,6 +40,22 @@ export function Asistencia() {
   // Suscrito siempre: así el mosaico ya está pintado cuando el diálogo abre, en
   // vez de aparecer vacío un cuadro.
   const { dias } = useAsistenciaDelMes(mesVisible)
+
+  /**
+   * El modo participación: con el interruptor prendido, tocar a un alumno le suma
+   * una participación en vez de ciclar su asistencia (D-020).
+   *
+   * Se guarda **el día en que se prendió**, no un booleano, y el modo está
+   * prendido solo si ese día sigue siendo el que se está viendo. Así se apaga solo
+   * al cambiar de día sin un efecto que lo apague —el modo es para la clase que
+   * está ocurriendo; hojear otro día es consultar, no capturar—.
+   *
+   * Y es estado local, no del store: eso es lo que lo apaga al salir de la
+   * pantalla. Guardarlo en Zustand sería dejarlo prendido esperando a que ella
+   * vuelva y pase lista sin darse cuenta.
+   */
+  const [modoDesde, setModoDesde] = useState<Fecha | null>(null)
+  const participacion = modoDesde === diaSeleccionado
 
   function abrirCalendario() {
     setMesVisible(mesDe(diaSeleccionado))
@@ -94,27 +112,54 @@ export function Asistencia() {
         </DialogContent>
       </Dialog>
 
-      <div className="flex flex-col gap-1">
-        <ContadorPresentes filas={filas} />
-        {/* A qué trimestre va lo que se capture hoy. Informa, no pregunta: la
-            atribución es por fecha y nunca manual. */}
-        <EtiquetaTrimestre
-          trimestre={trimestreDe(diaSeleccionado, ciclo)}
-          hayCiclo={ciclo !== null}
-          sinAbrir={faltaAbrirTrimestre(diaSeleccionado, ciclo)}
-          cargando={cargandoCiclo}
-        />
-      </div>
+      {/* El interruptor va antes del contador porque cambia lo que el contador
+          significa. Un solo control, y apagado no cuesta ni un toque a quien pasa
+          lista y se va. */}
+      <button
+        type="button"
+        aria-pressed={participacion}
+        onClick={() => setModoDesde(participacion ? null : diaSeleccionado)}
+        className={cn(
+          'flex min-h-11 items-center gap-2 self-start rounded-md border px-3 text-base',
+          'outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+          participacion
+            ? 'border-verde bg-verde text-papel'
+            : 'border-linea text-tinta-2 hover:bg-cuadro',
+        )}
+      >
+        {participacion ? 'Marcando participación' : 'Marcar participación'}
+      </button>
 
-      {/* -mx-4 para que la barra de color toque el borde de la pantalla: es lo
-          que hace que la columna bicolor se lea de corrido. */}
-      <ul className="-mx-4 border-t border-linea">
-        {filas.map((fila) => (
-          <li key={fila.alumno.id}>
-            <FilaAlumno fila={fila} alTocar={() => void alTocar(fila)} />
-          </li>
-        ))}
-      </ul>
+      {participacion ? (
+        <ModoParticipacion
+          fecha={diaSeleccionado}
+          trimestre={trimestreDe(diaSeleccionado, ciclo)}
+        />
+      ) : (
+        <>
+          <div className="flex flex-col gap-1">
+            <ContadorPresentes filas={filas} />
+            {/* A qué trimestre va lo que se capture hoy. Informa, no pregunta: la
+                atribución es por fecha y nunca manual. */}
+            <EtiquetaTrimestre
+              trimestre={trimestreDe(diaSeleccionado, ciclo)}
+              hayCiclo={ciclo !== null}
+              sinAbrir={faltaAbrirTrimestre(diaSeleccionado, ciclo)}
+              cargando={cargandoCiclo}
+            />
+          </div>
+
+          {/* -mx-4 para que la barra de color toque el borde de la pantalla: es lo
+              que hace que la columna bicolor se lea de corrido. */}
+          <ul className="-mx-4 border-t border-linea">
+            {filas.map((fila) => (
+              <li key={fila.alumno.id}>
+                <FilaAlumno fila={fila} alTocar={() => void alTocar(fila)} />
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
 
       {!cargando && filas.length === 0 && (
         <p className="text-base text-tinta-2">

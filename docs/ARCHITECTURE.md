@@ -21,6 +21,7 @@ src/
 │   │   ├─ asistencia.ts
 │   │   ├─ evaluacion.ts
 │   │   ├─ bitacora.ts
+│   │   ├─ participaciones.ts
 │   │   └─ respaldo.ts
 │   ├─ dexie/                  Implementación actual
 │   │   ├─ db.ts                   Esquema y versiones
@@ -28,6 +29,7 @@ src/
 │   │   ├─ asistencia.adapter.ts
 │   │   ├─ evaluacion.adapter.ts
 │   │   ├─ bitacora.adapter.ts
+│   │   ├─ participaciones.adapter.ts
 │   │   └─ respaldo.adapter.ts
 │   ├─ seed/                   Semilla del grupo (grupo.ts ignorado por git)
 │   └─ index.ts                Contenedor: única línea que elige adaptadores
@@ -38,6 +40,7 @@ src/
 │   ├─ importacion.ts
 │   ├─ evaluacion.ts
 │   ├─ bitacora.ts
+│   ├─ participacion.ts
 │   └─ respaldo.ts
 │
 ├─ services/                 Única salida a red del cliente
