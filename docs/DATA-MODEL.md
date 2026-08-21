@@ -395,9 +395,12 @@ valor. Cambiar la tabla no requiere migrar datos.
 `niveles` puede quedar **incompleto**: la pantalla de captura escribe renglón por
 renglón, y salir a media rúbrica deja un mapa con menos entradas que renglones. La
 interfaz trata eso como *sin calificar* —`nivelesCompletos` en `domain/`— y no lo
-cuenta en el «12 de 30». Qué hace el cálculo con un mapa incompleto —promediar lo
-que hay o excluir al alumno de la actividad— se decide en C28, y hasta entonces no
-hay número que dependa de ello.
+cuenta en el «12 de 30».
+
+**El cálculo dice lo mismo** (D-019): `valorDeEvaluacion` devuelve `null` con un
+mapa incompleto y el alumno queda excluido de esa actividad. Promediar tres
+renglones de cuatro daría un número que se ve final sacado de menos evidencia que
+el de los demás.
 
 ## Criterio
 
@@ -449,14 +452,26 @@ correcto.
 ## Trimestre
 
 ```ts
-export function valorTrimestre(
-  parciales: { peso: number; valor: number }[]
-): number | null {
-  const conValor = parciales.filter(p => p.valor !== null)
-  if (conValor.length === 0) return null
-  return conValor.reduce((acc, p) => acc + p.valor * (p.peso / 100), 0)
-}
+export function calificacionDeTrimestre(
+  parciales: readonly { peso: number; valor: number | null }[]
+): { valor: number | null; pesoConsiderado: number }
 ```
+
+Los criterios con valor se ponderan por su peso y el resultado se **normaliza sobre
+los pesos que sí aportan** (D-019):
+
+```
+valor = Σ(valor × peso) ÷ Σ(peso)      sobre los criterios con valor y peso > 0
+```
+
+Sin normalizar, a mitad del trimestre —solo Tareas capturado, 40%— un alumno con
+todo perfecto saldría en 0.4, o 4.0 en base 10. El criterio que todavía no tiene
+nada capturado no vale cero: no está.
+
+`pesoConsiderado` viaja con el valor porque una cifra normalizada sin contexto
+también miente, por optimista: 10.0 sobre el 40% del trimestre no es un 10 de
+boleta. Al cerrar, los pesos suman 100 y todos los criterios tienen valor, así que
+sale en 100 y normalizar no cambia nada.
 
 ## Presentación en base 10
 
@@ -473,8 +488,9 @@ equivale a 3.0.
 El porcentaje **no aparece nunca** en la interfaz. Ella ve base 10 en todas las
 pantallas.
 
-`[POR VALIDAR]` — Redondeo: ¿entero o un decimal? Sea cual sea, se aplica solo al
-presentar, nunca en pasos intermedios.
+**Validado el 2026-08-21: un decimal** (D-018). `comoCalificacion` es el único
+lugar de la cadena que redondea —de ahí que sea el único que puede hacerlo sin
+acumular error— y devuelve `—` cuando no hay dato, nunca `0.0`.
 
 ## Actividades sin calificar
 

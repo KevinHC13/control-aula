@@ -555,3 +555,38 @@ que hay exactamente uno.
 y en base 1; el decimal es solo al mostrar. Un entero borraría la diferencia entre
 8.4 y 8.6, que es exactamente la comparación que ella hace al decidir una
 calificación de boleta.
+
+## D-019 · Lo que no está capturado no vale cero: se excluye
+
+**Estado:** aceptada — 2026-08-21. Completa a
+[D-015](#d-015--la-evaluación-se-modela-con-rúbricas-trimestres-y-pesos)
+
+C28 tenía que decidir qué hace el cálculo con lo que está a medias. La regla quedó
+en una sola frase: **`null` significa «no hay dato», nunca cero**, y se aplica en
+los tres niveles de la cadena.
+
+- **Una captura incompleta no produce calificación.** Un alumno con tres de cuatro
+  renglones de la rúbrica, o con un campo del examen sin cifra, no tiene valor en
+  esa actividad: se excluye, igual que una actividad sin ningún registro. La
+  alternativa era promediar lo que hubiera, y eso daría un número que se ve final
+  sacado de menos evidencia que el de los demás, sin que nada lo distinga. La
+  pantalla de captura ya lo llamaba «sin calificar»; ahora el cálculo dice lo
+  mismo.
+- **El trimestre se normaliza sobre los pesos que sí aportan.** Con Tareas al 40%
+  capturado y el resto vacío, un alumno con todo perfecto tiene 10.0 de lo que se
+  ha calificado, no 4.0. Sumar `valor × peso` sobre pesos incompletos no da una
+  calificación parcial: da una calificación equivocada, y a mitad del trimestre es
+  la única que hay. Es la misma razón por la que una actividad sin registros se
+  excluye del promedio (docs/DATA-MODEL.md), un nivel más arriba.
+
+**Lo que la normalización obliga a mostrar.** Una cifra normalizada sin contexto
+también miente, por optimista: 10.0 sobre el 40% del trimestre no es un 10 de
+boleta. Por eso `calificacionDeTrimestre` devuelve `pesoConsiderado` junto al
+valor, y la pantalla de C29 tiene que decir sobre cuánto está calculando. Al
+cerrar, los pesos suman 100 y todos los criterios tienen valor, así que
+`pesoConsiderado` sale en 100 y normalizar no cambia nada — el snapshot del cierre
+no depende de esta decisión.
+
+Queda **por confirmar con la usuaria** el primer punto: si ella espera que tres de
+cuatro renglones ya den calificación, es una línea de `valorDeEvaluacion`. Nada de
+la boleta depende todavía de esto, porque la pantalla de consulta es C29.

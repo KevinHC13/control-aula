@@ -12,12 +12,11 @@ español también (`asistencia`, `calificaciones`, `alumnos`).
 **`docs/ESTADO.md` es la fuente de verdad del estatus.** Leerlo antes de decidir
 qué construir; el resumen de aquí abajo se queda viejo primero.
 
-Hecho hasta C24, más los fixes C19b y C21c. Existen y funcionan:
+Hecho hasta C24 y C28, más los fixes C19b y C21c. Existen y funcionan:
 
-- **`domain/`** completo para asistencia y para la **estructura** de la
-  evaluación: `entities.ts` con la jerarquía `Ciclo → … → Actividad`,
-  `values.ts`, `fechas.ts`, `rules.ts` y `evaluacion.ts`, con pruebas. Falta la
-  cadena de cálculo de calificaciones (C28).
+- **`domain/`** completo: `entities.ts` con la jerarquía `Ciclo → … → Actividad`,
+  `values.ts`, `fechas.ts`, `rules.ts`, `evaluacion.ts` —la estructura de la
+  evaluación— y `calculo.ts` —la cadena de cálculo, C28—, con pruebas.
 - **`data/`** con Dexie en `version(2)`: `db.ts` con las quince tablas
   sincronizables, adaptadores de alumnos y asistencia, los dos puertos, la
   `outbox` y la semilla (`grupo.ts` ignorado, `grupo.example.ts` versionado).
@@ -39,11 +38,12 @@ Hecho hasta C24, más los fixes C19b y C21c. Existen y funcionan:
 - Una Edge Function desplegada en Supabase, `extraer-lista`, en
   `supabase/functions/`.
 
-**Lo que sigue es C28**: la cadena de cálculo, en `domain/`, sin acceso a base de
-datos. Toda la captura ya existe. Al presentar se convierte a base 10 **con un
-decimal** (D-018), una sola vez, sin redondeo intermedio ni piso de escala. La
-migración a `version(2)` ya ocurrió y está probada en
-`src/data/dexie/migracion.test.ts`; no hay otra migración pendiente en la Fase 4.
+**Lo que sigue es C29**: la pantalla donde ella lee las calificaciones por alumno
+y campo formativo. La captura y el cálculo ya existen; falta la lectura que junte
+las capturas de un trimestre completo y la composición en `application/`, porque
+`domain/calculo.ts` es puro y no sabe leer. La migración a `version(2)` ya ocurrió y
+está probada en `src/data/dexie/migracion.test.ts`; no hay otra migración pendiente
+en la Fase 4.
 
 Falta además de la Fase 3: notas, resumen del grupo, respaldo JSON, cumpleaños y
 el motor de sincronía. `C25` y `C26` —criterios automáticos de puntualidad,
@@ -155,8 +155,13 @@ y fórmulas en `docs/DATA-MODEL.md`; lo que no se negocia al escribir código:
   `Criterio`: es lo que hace que un trimestre nuevo nazca con cero actividades sin
   borrar ni filtrar nada.
 - Todo el cálculo en **base 1**; la conversión a base 10 ocurre una sola vez, al
-  presentar. **Sin redondeo intermedio y sin piso de escala** — una calificación
+  presentar, **con un decimal** (D-018), y `comoCalificacion` es el único lugar que
+  redondea. **Sin redondeo intermedio y sin piso de escala** — una calificación
   menor a 5 se muestra tal cual. El porcentaje no aparece nunca en la interfaz.
+- **Lo que no está capturado no vale cero: se excluye** (D-019). Una captura
+  incompleta devuelve `null` y el alumno queda fuera de esa actividad; el trimestre
+  se normaliza sobre los pesos que sí aportan y viaja con `pesoConsiderado`, para
+  que la pantalla pueda decir sobre cuánto calcula.
 - Niveles fijos `['Excelente','Bien','Regular','Mal']` con
   `VALOR_NIVEL = [3, 2.5, 2, 0]`. Se almacena el **índice** del nivel, no su
   valor, para que cambiar la tabla no migre datos.
@@ -270,7 +275,8 @@ reporte. Lo que queda abierto, con lo que bloquea cada uno, está listado en
 `docs/ESTADO.md`:
 
 - El umbral de riesgo por asistencia.
-- ¿Qué hace el cálculo con una captura a medias? Lo decide C28.
+- ¿Una captura a medias debería dar calificación? Se resolvió excluyéndola (D-019),
+  pero sin preguntárselo a la usuaria.
 - El umbral real de riesgo por asistencia. Bloquea solo el color de alerta de C13.
 
 Ninguno bloquea C28. Si aparece uno nuevo, se marca `[POR VALIDAR]` y se anota en

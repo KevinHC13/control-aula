@@ -1,7 +1,7 @@
 # Estado del proyecto
 
-Actualizado el **2026-08-21**, con C18 a C24 terminados, más los fixes C19b y
-C21c. Este es el documento que se lee primero para saber
+Actualizado el **2026-08-21**, con C18 a C24 y C28 terminados, más los fixes C19b
+y C21c. Este es el documento que se lee primero para saber
 dónde va el proyecto y qué sigue. El plan detallado, con criterios de aceptación
 por commit, está en [COMMITS.md](./COMMITS.md).
 
@@ -18,8 +18,9 @@ La Fase 4 va en marcha: **C18 a C21 están hechos** —dominio de evaluación,
 `db.version(2)`, el ciclo escolar con sus trimestres, los criterios con sus pesos y
 las rúbricas, las actividades, las dos capturas de entregable y el examen por
 aciertos—, con una corrección de modelo encima: la rúbrica cuelga de la actividad, no
-del criterio (D-016). **Toda la captura de la Fase 4 está construida.** Lo que sigue
-es `C28`: la cadena de cálculo, que es la que convierte todo eso en un número.
+del criterio (D-016). **Toda la captura de la Fase 4 está construida, y también el
+cálculo** (C28): lo que falta es la pantalla donde ella lee los números, que es
+`C29`.
 
 ## Fases
 
@@ -29,7 +30,7 @@ es `C28`: la cadena de cálculo, que es la que convierte todo eso en un número.
 | 2 · Asistencia | El vertical completo hasta el iPad | ✅ Terminada |
 | Hito | Entrega, pausa de una semana, validación | ✅ Cumplido |
 | 3 · Resto de la v1 | Notas, resumen, respaldo, cumpleaños, sincronía | ⬜ Sin empezar |
-| 4 · Evaluación | Ciclo, trimestres, criterios, rúbricas, cálculo | ▶ En curso: C18–C24 hechos, sigue C28 |
+| 4 · Evaluación | Ciclo, trimestres, criterios, rúbricas, cálculo | ▶ En curso: C18–C24 y C28 hechos, sigue C29 |
 
 ## Lo que existe y funciona
 
@@ -37,7 +38,7 @@ Verificado en `src/` a esta fecha:
 
 | Capa | Contenido |
 |---|---|
-| `domain/` | `entities.ts` con la jerarquía de evaluación completa, `values.ts`, `fechas.ts`, `rules.ts`, `evaluacion.ts`, con pruebas |
+| `domain/` | `entities.ts` con la jerarquía de evaluación completa, `values.ts`, `fechas.ts`, `rules.ts`, `evaluacion.ts` (estructura) y `calculo.ts` (los números), con pruebas |
 | `data/dexie/` | `db.ts` en `version(2)`, adaptadores de alumnos y asistencia, `outbox`, semilla |
 | `data/ports/` | `alumnos.ts`, `asistencia.ts`, `evaluacion.ts` (ciclo, trimestres, criterios, pesos, rúbricas y actividades) |
 | `application/` | `asistencia.ts`, `grupo.ts`, `importacion.ts`, `evaluacion.ts`, `entregas.ts`, `calificacion.ts`, `examen.ts` |
@@ -54,9 +55,9 @@ bicolor.
 
 `ui/screens/Notas.tsx` y el resumen de `ui/screens/Grupo.tsx`. Existen, navegan y
 no hacen nada. `Calificaciones` ya no: lista las actividades del trimestre, las
-administra y las captura, con rúbrica o sin ella. Lo que falta ahí son los
-**números**: el promedio de un criterio y la calificación del trimestre llegan en
-C28.
+administra y las captura —con rúbrica, sin ella y por aciertos de examen—. Lo que
+falta ahí es **mostrar** los números: el cálculo ya existe (C28), la pantalla que lo
+lee es C29.
 
 ## Lo que cambió con la validación
 
@@ -89,30 +90,28 @@ asistencia capturada.
 
 ## Con qué continuar
 
-**Siguiente commit: `C28 · feat(evaluacion): calcular calificaciones por criterio y
-campo formativo`.** Toda la captura ya existe, así que esto es lo que falta para que
-los datos se vuelvan una calificación. Va completo en `domain/rules.ts`, sin acceso a
-base de datos.
+**Siguiente commit: `C29 · feat(evaluacion): consultar calificaciones por alumno y
+campo formativo`.** Es el que cierra la fase: la pantalla donde ella saca los
+números para la boleta. Toda la captura y todo el cálculo ya existen, así que esto
+es leer, agregar y presentar.
+
+Lo que hace falta para armarla, y que todavía no existe:
+
+- Una lectura que junte, por alumno, **las capturas de un trimestre completo**:
+  entregas, evaluaciones de rúbrica y resultado de examen. Hoy cada puerto lee una
+  actividad o un examen a la vez, que es lo que la captura necesitaba.
+- La composición en `application/`: `domain/calculo.ts` es puro y no sabe leer;
+  alguien tiene que cruzar actividades, rúbricas y pesos y pasarle valores.
 
 Lo que ya está decidido y hay que respetar:
 
-- Todo el cálculo en **base 1**; la conversión a base 10 ocurre una sola vez, al
-  presentar, **con un decimal** (D-018). Sin redondeo intermedio y sin piso de
-  escala: una calificación menor a 5 se muestra tal cual.
-- El general de un criterio es el promedio de **todas** sus actividades, no el
-  promedio de los promedios por campo formativo.
-- El general del examen usa **aciertos totales sobre preguntas totales**, no el
-  promedio de los cuatro campos: un campo de 30 preguntas pesa más que uno de 20.
-- Una actividad sin ningún registro se excluye del promedio, y `valorCriterio([])`
-  devuelve `null`, nunca `0`.
-- El porcentaje no aparece nunca en la interfaz.
-
-Queda una decisión que C28 tiene que tomar y que la captura dejó abierta a
-propósito: **qué hace el cálculo con una captura a medias** —un alumno con tres de
-cuatro renglones de la rúbrica, o con un campo del examen sin cifra—. La interfaz ya
-los trata como *sin capturar* y no los cuenta en el «12 de 30»; el cálculo puede
-promediar lo que hay o excluir al alumno de esa actividad. Hasta ahora ningún número
-depende de eso.
+- La cifra que se muestra sale de `comoCalificacion`: base 10 con un decimal, y `—`
+  cuando no hay dato. **El porcentaje no aparece nunca.**
+- Una captura incompleta no produce calificación, y el trimestre se normaliza sobre
+  los pesos que sí aportan (D-019). Por eso `calificacionDeTrimestre` devuelve
+  `pesoConsiderado`: **la pantalla tiene que decir sobre cuánto está calculando**,
+  o una cifra normalizada a mitad del trimestre se lee como una de boleta.
+- El desglose es **por campo formativo**: es la agrupación con la que ella reporta.
 
 El orden del resto de la Fase 4 es:
 
@@ -122,8 +121,9 @@ C18 ─ C19 ─ C20 ─ C21 ─ C21b ─┬─ C22 ─┐
                               └─ C24 ─┘       └─ C27
 ```
 
-Hechos: de C18 a C24, toda la rama de captura. Falta C28 —el cálculo—, y encima de
-él C27 (cierre) y C29 (consulta).
+Hechos: de C18 a C24 —toda la rama de captura— y C28, el cálculo. Falta C29
+(consulta), que es el que cierra la fase, y C27 (cierre del trimestre), que necesita
+el snapshot.
 
 C29 es el que cierra la fase: la pantalla donde ella saca los números para la
 boleta.
@@ -140,8 +140,8 @@ Dos commits de la Fase 3 no dependen de nada de evaluación:
 - **`C12` · anecdotario.** Independiente por completo mientras conducta siga
   pospuesta.
 
-`C13` (resumen del grupo) se puede hacer a medias: la parte de asistencia ya es
-posible, la de promedio necesita C28.
+`C13` (resumen del grupo) ya se puede hacer completo: la parte de asistencia siempre
+fue posible y la de promedio tiene desde C28 con qué calcularse.
 
 ## Pospuesto por decisión, no por falta de tiempo
 
@@ -161,7 +161,7 @@ Lo que todavía está marcado `[POR VALIDAR]` y qué bloquea cada uno:
 | Pregunta | Bloquea |
 |---|---|
 | ¿Cuál es el umbral real de riesgo por asistencia? | Solo el color de alerta de C13 |
-| ¿Qué hace el cálculo con una captura a medias? | El valor de esa actividad para ese alumno. Lo decide C28 |
+| ¿Una captura a medias debería dar calificación? | Se resolvió en C28 excluyéndola (D-019). Si ella espera lo contrario, es una línea de `valorDeEvaluacion` |
 | Si se retoma participación: ¿premiar volumen? | C25, que está pospuesto |
 
 Ya **no** están abiertos: la escala, la forma de evaluación y la utilidad de los
@@ -175,6 +175,10 @@ antes de C24 y quedaron en D-018: **uno** y **un decimal**.
   `criterios`, `criterios_trimestre`, `rubricas`, `rubrica_criterios`,
   `actividades`, `entregas` y `eval_rubrica`. `examen_config`, `resultados_examen`
   y `cierres` no se tocan todavía.
+- **La regla de D-019 —una captura a medias no produce calificación— la decidí yo,
+  no la usuaria.** Es coherente con lo que la pantalla ya llamaba «sin calificar» y
+  con excluir una actividad sin registros, y nada de la boleta depende de ella
+  todavía porque C29 no existe. Conviene confirmarla antes de que sí dependa.
 - El examen **no tiene forma de decir cuántas preguntas trae por fuera de su propia
   pantalla**, y esa pantalla vive dentro de Calificaciones. Es una configuración
   —una vez por trimestre— viviendo en el camino de captura; funciona, pero no es

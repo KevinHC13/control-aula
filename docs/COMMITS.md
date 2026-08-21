@@ -791,22 +791,56 @@ entran al alcance actual. Conducta además requiere agregar `signo` a `Nota`.
 - [ ] Renombrar un criterio después no altera el snapshot
 - [ ] Reabrir requiere confirmación explícita y queda registrado
 
-### ⬜ C28 · `feat(evaluacion): calcular calificaciones por criterio y campo formativo`
+### ✅ C28 · `feat(evaluacion): calcular calificaciones por criterio y campo formativo`
 
-Toda la cadena de cálculo en `domain/rules.ts`, sin acceso a base de datos.
+Toda la cadena de cálculo, sin acceso a base de datos. **Vive en
+`domain/calculo.ts`, no en `rules.ts`** como decía este plan: `rules.ts` es de
+asistencia y `evaluacion.ts` es la estructura de la evaluación —qué trimestre le
+toca a una fecha, si los pesos cierran—. Los números son una tercera cosa, se
+cambian por razones distintas y se leen en momentos distintos.
 
 **Aceptación**
-- [ ] Los valores intermedios se manejan en base 1; la conversión a base 10 ocurre solo al presentar
-- [ ] El general de un criterio es el promedio de **todas** sus actividades, no el promedio de los promedios por campo
-- [ ] El general del examen usa aciertos totales sobre preguntas totales
-- [ ] Una actividad sin ningún registro se excluye del promedio
-- [ ] Una rúbrica con todos los criterios en «Mal» da 0.0
-- [ ] Una rúbrica con todos los criterios en «Bien» da 8.3 en base 10
-- [ ] El nivel elegido se almacena como índice, no como valor
-- [ ] No existe piso de escala: una calificación menor a 5 se muestra tal cual
-- [ ] `valorCriterio([])` devuelve `null`, nunca `0`
-- [ ] No hay redondeo en ningún paso intermedio
-- [ ] La maestra ve base 10 en toda la interfaz; el porcentaje no aparece nunca
+- [x] Los valores intermedios se manejan en base 1; la conversión a base 10 ocurre solo al presentar
+- [x] El general de un criterio es el promedio de **todas** sus actividades, no el promedio de los promedios por campo
+- [x] El general del examen usa aciertos totales sobre preguntas totales
+- [x] Una actividad sin ningún registro se excluye del promedio
+- [x] Una rúbrica con todos los criterios en «Mal» da 0.0
+- [x] Una rúbrica con todos los criterios en «Bien» da 8.3 en base 10
+- [x] El nivel elegido se almacena como índice, no como valor
+- [x] No existe piso de escala: una calificación menor a 5 se muestra tal cual
+- [x] `valorCriterio([])` devuelve `null`, nunca `0`
+- [x] No hay redondeo en ningún paso intermedio
+- [x] La maestra ve base 10 en toda la interfaz; el porcentaje no aparece nunca
+
+Este commit **no cambia nada de la interfaz**: es dominio puro, y lo que lo verifica
+son sus 41 pruebas, no el navegador. La pantalla que muestra estos números es C29.
+Entre ellas está el ejemplo trabajado de `docs/DATA-MODEL.md` —dos actividades de
+Lenguajes y una de Saberes con rúbrica— que da 5.0, 8.3 y **6.1** de general, con
+una prueba aparte que comprueba que el promedio de los promedios (6.7) *no* es lo
+que devuelve.
+
+El último criterio se cumple por construcción: la única función que produce texto
+es `comoCalificacion`, que da base 10 con un decimal o `—`. No hay ninguna que
+devuelva porcentaje.
+
+Decisiones que salieron de construirlo:
+
+- **Lo que no está capturado no vale cero: se excluye** (D-019). Una captura
+  incompleta —tres de cuatro renglones, o un campo del examen sin cifra— devuelve
+  `null` y el alumno queda fuera de esa actividad, igual que una actividad sin
+  registros queda fuera del promedio. Promediar lo que hubiera daría un número que
+  se ve final sacado de menos evidencia que el de los demás.
+- **El trimestre se normaliza sobre los pesos que sí aportan** (D-019), y devuelve
+  `pesoConsiderado` junto al valor. Sin normalizar, a mitad del trimestre un alumno
+  con todo perfecto en Tareas (40%) saldría en 4.0. Con normalización sale 10.0,
+  que es cierto pero incompleto, así que la cifra no viaja sola: C29 tiene que
+  decir sobre cuánto está calculando.
+- **`comoCalificacion` es el único lugar que redondea.** Por eso es el único que
+  puede hacerlo sin acumular error, y por eso devuelve texto: una función que
+  devolviera `number` redondeado invitaría a seguir calculando con él.
+- **`null` y `0` no se mezclan nunca.** `promedioDe` ya lo hacía para asistencia;
+  aquí la regla se repite en cada nivel de la cadena, y cada función dice en su
+  documentación por qué su `null` no es un cero.
 
 ### ⬜ C29 · `feat(evaluacion): consultar calificaciones por alumno y campo formativo`
 
