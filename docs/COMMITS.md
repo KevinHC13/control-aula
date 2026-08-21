@@ -781,15 +781,53 @@ entran al alcance actual. Conducta además requiere agregar `signo` a `Nota`.
 - [ ] Solo las notas marcadas como negativas afectan conducta
 - [ ] Una nota sin signo explícito no afecta nada
 
-### ⬜ C27 · `feat(evaluacion): cerrar trimestre con snapshot de calificaciones`
+### ✅ C27 · `feat(evaluacion): cerrar trimestre con snapshot de calificaciones`
 
 **Aceptación**
-- [ ] No se puede cerrar si los pesos no suman 100
-- [ ] Al cerrar se escribe un `CierreTrimestre` por alumno
-- [ ] El snapshot guarda nombres y pesos como texto, no referencias
-- [ ] Un trimestre cerrado rechaza toda escritura
-- [ ] Renombrar un criterio después no altera el snapshot
-- [ ] Reabrir requiere confirmación explícita y queda registrado
+- [x] No se puede cerrar si los pesos no suman 100
+- [x] Al cerrar se escribe un `CierreTrimestre` por alumno
+- [x] El snapshot guarda nombres y pesos como texto, no referencias
+- [x] Un trimestre cerrado rechaza toda escritura
+- [x] Renombrar un criterio después no altera el snapshot
+- [x] Reabrir requiere confirmación explícita y queda registrado
+
+Verificado en el navegador con el grupo de ejemplo: con 70 / 100 el botón de cerrar
+está deshabilitado y dice por qué; al cuadrar los pesos, cerrar avisa que **29 de 30
+alumnos se cerrarían sin calificación** y pide confirmar; al confirmar se escriben
+los 30 cierres y el trimestre queda cerrado con su `cerrado_en`. El snapshot del
+alumno con captura completa guardó `Entregables 40%` en 0.889 y `Examen 60%` en
+0.771 —con su desglose por campo— y un final de 0.818, o **8.2** en base 10. Con el
+trimestre cerrado desaparecen «Nueva actividad», «Preguntas» y «Siguiente», y las
+once teclas del teclado del examen salen deshabilitadas; las filas siguen entrando,
+porque consultar es legítimo. Reabrir pide confirmación aparte, deja los 30 cierres
+borrados en suave y **conserva `cerrado_en`**.
+
+Decisiones que salieron de construirlo:
+
+- **El cierre vive en *Criterios y pesos*.** Es la única pantalla donde la cifra de
+  los 100 está a la vista, y cerrar desde otro lado obligaría a explicar de nuevo
+  por qué no se puede.
+- **Cerrar es calcular y guardar el resultado**, así que vive en el mismo archivo
+  que lee las calificaciones (`application/calificaciones.ts`). Ahí está también la
+  regla de que **un trimestre cerrado no se recalcula**: sus números salen del
+  snapshot, en un solo lugar, para que ninguna pantalla pueda saltárselo por
+  descuido.
+- **`capturasDelTrimestre` es la única lectura del puerto que devuelve datos en
+  crudo.** Calcular una calificación necesita todo junto y el cálculo vive en
+  `domain/`, que no sabe leer; resolverlo en el adaptador lo obligaría a importar la
+  cadena de cálculo, y pedirlo por partes serían decenas de consultas por pantalla.
+- **Un criterio sin calificación se guarda en el snapshot, con su peso y en `null`.**
+  Sacarlo dejaría un hueco imposible de distinguir de un criterio que nunca existió.
+  Por lo mismo `final` es `number | null`: un alumno que llegó la última semana se
+  cierra sin calificación, y eso es un dato.
+- **El desglose por campo formativo va en el snapshot.** Es la agrupación con la que
+  ella reporta; recalcularlo sería justamente lo que el snapshot existe para no
+  tener que hacer.
+- **Reabrir borra el snapshot y conserva `cerrado_en`.** Con el trimestre abierto las
+  calificaciones vuelven a calcularse, y dejar los cierres vivos dejaría dos
+  verdades a la vez. `cerrado_en` con `estado: 'abierto'` es la huella de que estuvo
+  cerrado: es lo único que registra la reapertura mientras no exista una bitácora.
+  Volver a cerrar reescribe el mismo snapshot por alumno en vez de duplicarlo.
 
 ### ✅ C28 · `feat(evaluacion): calcular calificaciones por criterio y campo formativo`
 

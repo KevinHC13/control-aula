@@ -1,6 +1,7 @@
 import type {
   Actividad,
   Ciclo,
+  CierreTrimestre,
   Entrega,
   EvaluacionRubrica,
   ExamenConfig,
@@ -122,6 +123,45 @@ export interface ExamenDelTrimestre {
   config: ExamenConfig | null
 }
 
+/**
+ * Todo lo capturado en un trimestre, en crudo y de una sola lectura.
+ *
+ * Es la única lectura del puerto que no devuelve un agregado ya resuelto, y es a
+ * propósito: calcular una calificación necesita **todo** junto —qué actividades
+ * hay, con qué rúbrica, qué se capturó de cada alumno, cuántas preguntas traía el
+ * examen— y el cálculo vive en `domain/`, que no sabe leer. Resolverlo aquí
+ * obligaría al adaptador a importar la cadena de cálculo; pedirlo por partes
+ * serían decenas de consultas para armar una pantalla.
+ *
+ * Quien la usa la cruza una vez y calcula para los 30 alumnos de un jalón
+ * (`application/calificaciones.ts`).
+ */
+export interface CapturasDelTrimestre {
+  trimestre: Trimestre
+  /** Los criterios del trimestre con su peso y su tipo, ordenados por `orden`. */
+  criterios: CriterioDelTrimestre[]
+  /** Todas las actividades de esos criterios, vivas. */
+  actividades: Actividad[]
+  /**
+   * Los renglones **vivos** de cada rúbrica en uso, por `rubrica_id`. Son los que
+   * deciden si una captura está completa: un nivel guardado de un renglón borrado
+   * no cuenta.
+   */
+  renglonesPorRubrica: Record<Id, Id[]>
+  entregas: Entrega[]
+  evaluaciones: EvaluacionRubrica[]
+  /** La configuración de preguntas de cada criterio de examen que la tenga. */
+  configuraciones: ExamenConfig[]
+  resultados: ResultadoExamen[]
+}
+
+/** Un snapshot por escribir al cerrar. Sin los campos que genera el dispositivo. */
+export interface DatosCierre {
+  alumno_id: Id
+  final: number | null
+  desglose: CierreTrimestre['desglose']
+}
+
 /** Un trimestre por crear: todavía no tiene `id` ni `ciclo_id`. */
 export interface PeriodoNuevo {
   numero: 1 | 2 | 3
@@ -139,9 +179,9 @@ export interface PeriodoNuevo {
  * lo que alguna pantalla usa; los criterios y las actividades entran cuando
  * tengan pantalla.
  *
- * No hay `cerrarTrimestre`: cerrar escribe un snapshot de calificaciones y eso
- * necesita la cadena de cálculo, que llega en C28. Un puerto declara solo lo que
- * se usa hoy (docs/DECISIONES.md D-009).
+ * `cerrarTrimestre` recibe los snapshots ya calculados: el cálculo vive en
+ * `domain/` y la composición en `application/`, así que el puerto solo los
+ * escribe. Un puerto declara solo lo que se usa hoy (docs/DECISIONES.md D-009).
  */
 export interface EvaluacionRepo {
   /** El ciclo abierto con sus trimestres. `null` si todavía no se configura uno. */
@@ -379,4 +419,40 @@ export interface EvaluacionRepo {
     campo: CampoFormativo,
     aciertos: number | null,
   ): Promise<void>
+
+  /** Todo lo capturado en el trimestre. `null` si el trimestre no existe. */
+  capturasDelTrimestre(trimestreId: Id): Promise<CapturasDelTrimestre | null>
+
+  /**
+   * Lo mismo, reactivo. Sostiene que la pantalla de calificaciones se corrija sola
+   * mientras se captura en otra pestaña, sin botón de recalcular.
+   */
+  observarCapturasDelTrimestre(trimestreId: Id): Suscribible<CapturasDelTrimestre | null>
+
+  /** Los snapshots del cierre, vivos. Vacío si el trimestre no se ha cerrado. */
+  cierresDeTrimestre(trimestreId: Id): Promise<CierreTrimestre[]>
+
+  /** Lo mismo, reactivo. */
+  observarCierresDeTrimestre(trimestreId: Id): Suscribible<CierreTrimestre[]>
+
+  /**
+   * Cierra el trimestre y escribe su snapshot, todo en una transacción: un
+   * trimestre marcado como cerrado sin sus cierres no tendría de dónde sacar las
+   * calificaciones que ya se reportaron.
+   *
+   * Los snapshots llegan calculados. Quien llama ya verificó que los pesos suman
+   * 100 y que el trimestre está abierto: las reglas viven en el caso de uso.
+   */
+  cerrarTrimestre(trimestreId: Id, cierres: DatosCierre[]): Promise<void>
+
+  /**
+   * Reabre el trimestre y borra en suave su snapshot: con el trimestre abierto las
+   * calificaciones vuelven a calcularse de lo capturado, y dejar los cierres vivos
+   * dejaría dos verdades a la vez.
+   *
+   * `cerrado_en` **se conserva** a propósito: con `estado: 'abierto'` es la huella
+   * de que este trimestre estuvo cerrado, que es lo único que registra la
+   * reapertura mientras no exista una bitácora.
+   */
+  reabrirTrimestre(trimestreId: Id): Promise<void>
 }

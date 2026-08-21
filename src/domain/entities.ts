@@ -199,15 +199,30 @@ export interface ExamenConfig extends Sincronizable {
  *
  * Guarda nombres y pesos como **texto**, no referencias: es la verdad histórica
  * aunque después se renombre o se borre un criterio.
+ *
+ * Todo en **base 1**, igual que el resto de la cadena de cálculo: la conversión a
+ * base 10 sigue ocurriendo una sola vez, al presentar.
  */
 export interface CierreTrimestre extends Sincronizable {
   trimestre_id: Id
   alumno_id: Id
-  final: number
+  /** `null` cuando al cerrar no había nada capturado en ningún criterio. */
+  final: number | null
   desglose: {
     /** Nombre del criterio al momento del cierre. */
     criterio: string
     peso: number
-    calificacion: number
+    /**
+     * `null` cuando ese criterio no tenía nada capturado. Se guarda igual, con su
+     * peso: un criterio que desaparece del snapshot dejaría un hueco imposible de
+     * distinguir de un criterio que nunca existió.
+     */
+    calificacion: number | null
+    /**
+     * El desglose por campo formativo, que es la agrupación con la que ella
+     * reporta. Va en el snapshot porque recalcularlo sería justamente lo que el
+     * snapshot existe para no tener que hacer.
+     */
+    porCampo: Partial<Record<CampoFormativo, number>>
   }[]
 }

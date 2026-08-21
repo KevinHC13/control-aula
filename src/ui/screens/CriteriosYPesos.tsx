@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 
+import { cerrarTrimestre, reabrirTrimestre } from '@/application/calificaciones'
 import {
   agregarCriterio,
   ajustarPeso,
@@ -32,7 +33,9 @@ import { cn } from '@/ui/lib/utils'
  * El total corriente se ve siempre, pero **no bloquea guardar**: editar un
  * reparto pasa siempre por estados intermedios que no suman 100, y exigir que
  * cuadre para poder salir de la pantalla sería impedirle pensar a medias. Lo que
- * exige 100 es el cierre del trimestre (C27).
+ * exige 100 es el **cierre**, y por eso el cierre vive aquí: es la única pantalla
+ * donde esa cifra está a la vista, y cerrar desde otro lado obligaría a explicar
+ * de nuevo por qué no se puede.
  */
 export function CriteriosYPesos({ alVolver }: { alVolver: () => void }) {
   const { ciclo, cargando } = useCicloEnCurso()
@@ -136,10 +139,8 @@ export function CriteriosYPesos({ alVolver }: { alVolver: () => void }) {
           </div>
         )}
 
-        {trimestre && !abierto && (
-          <p className="text-[13px] text-tinta-2">
-            Este trimestre está cerrado: sus criterios y pesos ya no cambian.
-          </p>
+        {trimestre && (
+          <CierreDelTrimestre trimestre={trimestre} criterios={esquema?.criterios ?? []} />
         )}
       </div>
     </Marco>
@@ -326,5 +327,137 @@ function Alta({ trimestre }: { trimestre: Trimestre }) {
         </p>
       )}
     </form>
+  )
+}
+
+/**
+ * Cerrar el trimestre, y reabrirlo.
+ *
+ * Cerrar congela: los pesos quedan fijos, no se aceptan calificaciones nuevas y se
+ * escribe un snapshot por alumno. Sin eso, corregir un porcentaje en enero
+ * cambiaría una calificación ya reportada en la boleta de diciembre.
+ *
+ * Las dos acciones **confirman**, y por razones distintas. Cerrar con alumnos sin
+ * calificación es legítimo —uno que llegó la última semana— pero no es lo que se
+ * espera al apretar el botón, así que el caso de uso lo rechaza y aquí se pregunta.
+ * Reabrir es lo que permite que una calificación ya reportada cambie, o sea
+ * exactamente lo que cerrar existe para impedir.
+ */
+function CierreDelTrimestre({
+  trimestre,
+  criterios,
+}: {
+  trimestre: Trimestre
+  criterios: CriterioDelTrimestre[]
+}) {
+  const [problema, setProblema] = useState<string | null>(null)
+  const [confirmando, setConfirmando] = useState<'cerrar' | 'reabrir' | null>(null)
+  const reparto = estadoDelReparto({ trimestre, criterios })
+
+  async function cerrar(confirmado = false) {
+    setProblema(null)
+    try {
+      await cerrarTrimestre(trimestre, criterios.map((c) => c.ponderado), confirmado)
+      setConfirmando(null)
+    } catch (fallo) {
+      const mensaje = fallo instanceof Error ? fallo.message : 'No se pudo cerrar'
+      // Los alumnos sin calificación son una advertencia, no un impedimento: se
+      // vuelve a preguntar. Los pesos que no cuadran sí son un no.
+      if (/sin calificación/.test(mensaje)) setConfirmando('cerrar')
+      setProblema(mensaje)
+    }
+  }
+
+  async function reabrir() {
+    setProblema(null)
+    try {
+      await reabrirTrimestre(trimestre, true)
+      setConfirmando(null)
+    } catch (fallo) {
+      setProblema(fallo instanceof Error ? fallo.message : 'No se pudo reabrir')
+    }
+  }
+
+  if (trimestre.estado === 'cerrado') {
+    return (
+      <div className="flex flex-col gap-2 border-t border-linea pt-3">
+        <p className="text-base text-tinta">
+          Este trimestre está <strong>cerrado</strong>: sus criterios y pesos ya no cambian, y
+          sus calificaciones vienen del corte, no de recalcular.
+        </p>
+
+        {confirmando === 'reabrir' ? (
+          <div
+            role="alertdialog"
+            aria-label="Confirmar la reapertura"
+            className="flex flex-col gap-3 rounded-md border-l-[7px] border-rojo bg-rojo/5 px-4 py-3"
+          >
+            <p className="text-base text-tinta">
+              Al reabrirlo se borra el corte y las calificaciones vuelven a calcularse de lo
+              capturado. Si ya entregaste boletas, pueden dejar de coincidir con el papel.
+            </p>
+            <div className="flex gap-2">
+              <Button variant="destructive" onClick={() => void reabrir()}>
+                Reabrir el trimestre
+              </Button>
+              <Button variant="outline" onClick={() => setConfirmando(null)}>
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button variant="outline" className="self-start" onClick={() => setConfirmando('reabrir')}>
+            Reabrir el trimestre
+          </Button>
+        )}
+
+        {problema && <p className="text-base text-rojo">{problema}</p>}
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-2 border-t border-linea pt-3">
+      <p className="text-base text-tinta-2">
+        Cerrar el trimestre congela sus pesos y guarda la calificación de cada alumno como
+        quedó. Después de cerrarlo, capturar deja de ser posible.
+      </p>
+
+      {confirmando === 'cerrar' && (
+        <div
+          role="alertdialog"
+          aria-label="Confirmar el cierre"
+          className="flex flex-col gap-3 rounded-md border-l-[7px] border-rojo bg-rojo/5 px-4 py-3"
+        >
+          <p className="text-base text-tinta">
+            {problema}. Se guardan sin calificación, y eso es lo que va a decir el corte.
+          </p>
+          <div className="flex gap-2">
+            <Button variant="destructive" onClick={() => void cerrar(true)}>
+              Cerrar de todos modos
+            </Button>
+            <Button variant="outline" onClick={() => setConfirmando(null)}>
+              Cancelar
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <Button
+        className="self-start"
+        disabled={!reparto.cierra}
+        onClick={() => void cerrar()}
+      >
+        Cerrar el trimestre
+      </Button>
+
+      {!reparto.cierra && (
+        <p className="text-[13px] text-tinta-2">
+          Para cerrarlo, los pesos tienen que sumar 100.
+        </p>
+      )}
+
+      {problema && confirmando === null && <p className="text-base text-rojo">{problema}</p>}
+    </div>
   )
 }

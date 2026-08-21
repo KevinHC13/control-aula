@@ -1,7 +1,7 @@
 # Estado del proyecto
 
-Actualizado el **2026-08-21**, con C18 a C24 y C28 terminados, más los fixes C19b
-y C21c. Este es el documento que se lee primero para saber
+Actualizado el **2026-08-21**, con C18 a C24, C27 y C28 terminados, más los fixes
+C19b y C21c. Este es el documento que se lee primero para saber
 dónde va el proyecto y qué sigue. El plan detallado, con criterios de aceptación
 por commit, está en [COMMITS.md](./COMMITS.md).
 
@@ -19,8 +19,8 @@ La Fase 4 va en marcha: **C18 a C21 están hechos** —dominio de evaluación,
 las rúbricas, las actividades, las dos capturas de entregable y el examen por
 aciertos—, con una corrección de modelo encima: la rúbrica cuelga de la actividad, no
 del criterio (D-016). **Toda la captura de la Fase 4 está construida, y también el
-cálculo** (C28): lo que falta es la pantalla donde ella lee los números, que es
-`C29`.
+cálculo** (C28) **y el cierre del trimestre con su snapshot** (C27): lo único que
+falta de la fase es la pantalla donde ella lee los números, que es `C29`.
 
 ## Fases
 
@@ -30,7 +30,7 @@ cálculo** (C28): lo que falta es la pantalla donde ella lee los números, que e
 | 2 · Asistencia | El vertical completo hasta el iPad | ✅ Terminada |
 | Hito | Entrega, pausa de una semana, validación | ✅ Cumplido |
 | 3 · Resto de la v1 | Notas, resumen, respaldo, cumpleaños, sincronía | ⬜ Sin empezar |
-| 4 · Evaluación | Ciclo, trimestres, criterios, rúbricas, cálculo | ▶ En curso: C18–C24 y C28 hechos, sigue C29 |
+| 4 · Evaluación | Ciclo, trimestres, criterios, rúbricas, cálculo | ▶ En curso: C18–C24, C27 y C28 hechos, sigue C29 |
 
 ## Lo que existe y funciona
 
@@ -41,7 +41,7 @@ Verificado en `src/` a esta fecha:
 | `domain/` | `entities.ts` con la jerarquía de evaluación completa, `values.ts`, `fechas.ts`, `rules.ts`, `evaluacion.ts` (estructura) y `calculo.ts` (los números), con pruebas |
 | `data/dexie/` | `db.ts` en `version(2)`, adaptadores de alumnos y asistencia, `outbox`, semilla |
 | `data/ports/` | `alumnos.ts`, `asistencia.ts`, `evaluacion.ts` (ciclo, trimestres, criterios, pesos, rúbricas y actividades) |
-| `application/` | `asistencia.ts`, `grupo.ts`, `importacion.ts`, `evaluacion.ts`, `entregas.ts`, `calificacion.ts`, `examen.ts` |
+| `application/` | `asistencia.ts`, `grupo.ts`, `importacion.ts`, `evaluacion.ts`, `entregas.ts`, `calificacion.ts`, `examen.ts`, `calificaciones.ts` (reporte y cierre) |
 | `services/` | `extraccion.ts` — única salida a red del cliente |
 | `ui/` | Cuatro pestañas, Asistencia completa (con la etiqueta del trimestre), Calificaciones con sus actividades y las tres capturas —entregas, rúbrica y examen, esta última con teclado propio—, Ajustes, CargarLista, CicloEscolar, CriteriosYPesos, Rubricas |
 | `tests/` | `arquitectura.test.ts` — verifica las reglas de dependencia en cada `npm test` |
@@ -91,27 +91,27 @@ asistencia capturada.
 ## Con qué continuar
 
 **Siguiente commit: `C29 · feat(evaluacion): consultar calificaciones por alumno y
-campo formativo`.** Es el que cierra la fase: la pantalla donde ella saca los
-números para la boleta. Toda la captura y todo el cálculo ya existen, así que esto
-es leer, agregar y presentar.
-
-Lo que hace falta para armarla, y que todavía no existe:
-
-- Una lectura que junte, por alumno, **las capturas de un trimestre completo**:
-  entregas, evaluaciones de rúbrica y resultado de examen. Hoy cada puerto lee una
-  actividad o un examen a la vez, que es lo que la captura necesitaba.
-- La composición en `application/`: `domain/calculo.ts` es puro y no sabe leer;
-  alguien tiene que cruzar actividades, rúbricas y pesos y pasarle valores.
+campo formativo`,** el último de la fase: la pantalla donde ella saca los números
+para la boleta. **Ya no falta nada por debajo**: `reporteDeTrimestre` en
+`application/calificaciones.ts` devuelve, para los 30 alumnos, el desglose por
+criterio y por campo, el general del trimestre y `pesoConsiderado` —y decide sola si
+los números salen del snapshot o del cálculo—. C29 es pantalla y hooks.
 
 Lo que ya está decidido y hay que respetar:
 
-- La cifra que se muestra sale de `comoCalificacion`: base 10 con un decimal, y `—`
-  cuando no hay dato. **El porcentaje no aparece nunca.**
-- Una captura incompleta no produce calificación, y el trimestre se normaliza sobre
-  los pesos que sí aportan (D-019). Por eso `calificacionDeTrimestre` devuelve
-  `pesoConsiderado`: **la pantalla tiene que decir sobre cuánto está calculando**,
-  o una cifra normalizada a mitad del trimestre se lee como una de boleta.
-- El desglose es **por campo formativo**: es la agrupación con la que ella reporta.
+- La cifra sale de `comoCalificacion`: base 10 con un decimal, y `—` cuando no hay
+  dato. **El porcentaje no aparece nunca.**
+- **El desglose no es un lujo:** cuando un resultado no cuadre con su intuición —y
+  va a pasar— es lo único que dice si el error está en la fórmula o en la
+  expectativa. Se muestra criterio por criterio, no solo el final.
+- **Hay que decir sobre cuánto se está calculando.** `pesoConsiderado < 100`
+  significa que hay criterios sin capturar, y una cifra normalizada sin ese aviso se
+  lee como una de boleta (D-019).
+- Se consulta **por alumno y por grupo**: son dos vistas de lo mismo, y la del grupo
+  es la que ella usa para transcribir.
+- En un trimestre cerrado los números vienen del snapshot. Eso ya lo resuelve
+  `reporteDeTrimestre`; la pantalla solo tiene que **decirlo**, o parecerá que
+  recalcula.
 
 El orden del resto de la Fase 4 es:
 
@@ -121,9 +121,8 @@ C18 ─ C19 ─ C20 ─ C21 ─ C21b ─┬─ C22 ─┐
                               └─ C24 ─┘       └─ C27
 ```
 
-Hechos: de C18 a C24 —toda la rama de captura— y C28, el cálculo. Falta C29
-(consulta), que es el que cierra la fase, y C27 (cierre del trimestre), que necesita
-el snapshot.
+Hechos: de C18 a C24 —toda la rama de captura—, C28 (el cálculo) y C27 (el cierre).
+Falta **solo C29**, la consulta, que es el que cierra la fase.
 
 C29 es el que cierra la fase: la pantalla donde ella saca los números para la
 boleta.
@@ -211,9 +210,10 @@ antes de C24 y quedaron en D-018: **uno** y **un decimal**.
   no se ha desplegado— y es una propiedad de sobra, no un dato que mienta.
 - No hay forma de reordenar los criterios de un trimestre. El campo `orden`
   existe y se respeta al leer, pero solo lo fija el orden de alta.
-- Cerrar un trimestre no tiene interfaz (es C27). La regla de que un trimestre
-  cerrado rechaza cambios de fecha ya está escrita y probada, pero hoy solo se
-  puede llegar a ese estado tocando IndexedDB a mano.
+- **Reabrir un trimestre no queda registrado más que por la huella de
+  `cerrado_en`**: no hay bitácora, así que no se sabe cuándo se reabrió ni cuántas
+  veces. El snapshot anterior se borra en suave, así que tampoco queda a la vista
+  qué decía antes.
 - El respaldo no existe y la sincronía tampoco: el único ejemplar de los datos
   reales vive en un iPad.
 - Los criterios de aceptación de C10 y C10c que dependen del dispositivo se

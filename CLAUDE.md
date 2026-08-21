@@ -12,7 +12,7 @@ español también (`asistencia`, `calificaciones`, `alumnos`).
 **`docs/ESTADO.md` es la fuente de verdad del estatus.** Leerlo antes de decidir
 qué construir; el resumen de aquí abajo se queda viejo primero.
 
-Hecho hasta C24 y C28, más los fixes C19b y C21c. Existen y funcionan:
+Hecho hasta C24, C27 y C28, más los fixes C19b y C21c. Existen y funcionan:
 
 - **`domain/`** completo: `entities.ts` con la jerarquía `Ciclo → … → Actividad`,
   `values.ts`, `fechas.ts`, `rules.ts`, `evaluacion.ts` —la estructura de la
@@ -22,10 +22,11 @@ Hecho hasta C24 y C28, más los fixes C19b y C21c. Existen y funcionan:
   `outbox` y la semilla (`grupo.ts` ignorado, `grupo.example.ts` versionado).
   De las once tablas de evaluación tienen puerto y adaptador `ciclos`,
   `trimestres`, `criterios`, `criterios_trimestre`, `rubricas`,
-  `rubrica_criterios`, `actividades`, `entregas`, `eval_rubrica`, `examen_config`
-  y `resultados_examen`; solo `cierres` no se toca todavía.
+  `rubrica_criterios`, `actividades`, `entregas`, `eval_rubrica`, `examen_config`,
+  `resultados_examen` y `cierres`. **Las quince tablas están en uso.**
 - **`application/`**: `asistencia.ts`, `grupo.ts`, `importacion.ts`,
-  `evaluacion.ts`, `entregas.ts`, `calificacion.ts`, `examen.ts`.
+  `evaluacion.ts`, `entregas.ts`, `calificacion.ts`, `examen.ts` y
+  `calificaciones.ts` —el reporte del trimestre y su cierre—.
 - **`services/`**: `extraccion.ts`, la única salida a red del cliente.
 - **`ui/`**: las cuatro pestañas, la de asistencia terminada (tira de días,
   calendario del mes, contador, filas, etiqueta del trimestre), Ajustes, la carga
@@ -38,11 +39,11 @@ Hecho hasta C24 y C28, más los fixes C19b y C21c. Existen y funcionan:
 - Una Edge Function desplegada en Supabase, `extraer-lista`, en
   `supabase/functions/`.
 
-**Lo que sigue es C29**: la pantalla donde ella lee las calificaciones por alumno
-y campo formativo. La captura y el cálculo ya existen; falta la lectura que junte
-las capturas de un trimestre completo y la composición en `application/`, porque
-`domain/calculo.ts` es puro y no sabe leer. La migración a `version(2)` ya ocurrió y
-está probada en `src/data/dexie/migracion.test.ts`; no hay otra migración pendiente
+**Lo que sigue es C29**, el último de la fase: la pantalla donde ella lee las
+calificaciones por alumno y campo formativo. Debajo ya está todo —captura, cálculo y
+cierre—: `reporteDeTrimestre` devuelve el desglose de los 30 alumnos y decide solo si
+los números salen del snapshot o del cálculo. La migración a `version(2)` ya ocurrió
+y está probada en `src/data/dexie/migracion.test.ts`; no hay otra migración pendiente
 en la Fase 4.
 
 Falta además de la Fase 3: notas, resumen del grupo, respaldo JSON, cumpleaños y
@@ -171,7 +172,9 @@ y fórmulas en `docs/DATA-MODEL.md`; lo que no se negocia al escribir código:
   pantalla de captura escribe los 30 registros de golpe — lo contrario de
   asistencia (D-013), y a propósito.
 - Un trimestre cerrado rechaza toda escritura y su calificación viene del snapshot
-  `CierreTrimestre`, no de recalcular.
+  `CierreTrimestre`, no de recalcular. Esa decisión vive en un solo lugar
+  —`reporteDeTrimestre`— para que ninguna pantalla pueda saltársela. **Reabrir** borra
+  el snapshot, conserva `cerrado_en` como huella y exige confirmación explícita.
 - Los pesos pueden sumar cualquier cosa mientras se editan; solo el **cierre**
   exige 100.
 - Una rúbrica **en uso** no se borra: se desactiva (`Rubrica.activa`). Desactivada

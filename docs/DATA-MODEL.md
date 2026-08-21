@@ -205,17 +205,32 @@ con el papel.
 export interface CierreTrimestre extends Sincronizable {
   trimestre_id: Id
   alumno_id: Id
-  final: number
+  final: number | null
   desglose: {
     criterio: string      // nombre al momento del cierre
     peso: number
-    calificacion: number
+    calificacion: number | null
+    porCampo: Partial<Record<CampoFormativo, number>>
   }[]
 }
 ```
 
 El snapshot guarda nombres y pesos como texto, no referencias. Es la verdad
-histórica aunque después se renombre o se borre un criterio.
+histórica aunque después se renombre o se borre un criterio. Todo en **base 1**,
+como el resto de la cadena.
+
+`final` y `calificacion` admiten `null` porque un criterio puede quedar sin nada
+capturado al cerrar —y un alumno que llegó la última semana, sin nada en ninguno—.
+El criterio se guarda igual, con su peso: sacarlo del desglose dejaría un hueco
+imposible de distinguir de un criterio que nunca existió. `porCampo` va en el
+snapshot porque el reporte es por campo formativo, y recalcularlo sería lo que el
+snapshot existe para no tener que hacer.
+
+**Reabrir** borra el snapshot en suave y conserva `cerrado_en`: con el trimestre
+abierto las calificaciones vuelven a calcularse de lo capturado, y dejar los cierres
+vivos dejaría dos verdades a la vez. `cerrado_en` con `estado: 'abierto'` es la
+huella de que el trimestre estuvo cerrado. Volver a cerrar reescribe el mismo
+registro por alumno.
 
 ## Criterios
 

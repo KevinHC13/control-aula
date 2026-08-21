@@ -2,9 +2,11 @@ import { liveQuery } from 'dexie'
 
 import type {
   ActividadesDelCriterio,
+  CapturasDelTrimestre,
   CicloEnCurso,
   CriterioDelTrimestre,
   DatosActividad,
+  DatosCierre,
   EsquemaTrimestre,
   EvaluacionRepo,
   ExamenDelTrimestre,
@@ -15,6 +17,7 @@ import type {
 import type {
   Actividad,
   Ciclo,
+  CierreTrimestre,
   Entrega,
   EvaluacionRubrica,
   ExamenConfig,
@@ -805,6 +808,156 @@ export class DexieEvaluacionRepo implements EvaluacionRepo {
         op: 'upsert',
         at: momento,
       })
+    })
+  }
+
+  async capturasDelTrimestre(trimestreId: Id): Promise<CapturasDelTrimestre | null> {
+    const esquema = await this.esquemaDeTrimestre(trimestreId)
+    if (!esquema) return null
+
+    const deEsteTrimestre = new Set(esquema.criterios.map((c) => c.ponderado.id))
+    const vivos = <T extends Sincronizable>(registros: T[]) =>
+      registros.filter((r) => r.deleted_at === null)
+
+    const actividades = vivos(await db.actividades.toArray()).filter((a) =>
+      deEsteTrimestre.has(a.criterio_trimestre_id),
+    )
+    const deEstasActividades = new Set(actividades.map((a) => a.id))
+
+    // Una pasada por tabla y el cruce en memoria: son cuatro tablas y treinta
+    // alumnos, y la alternativa son decenas de consultas por índice para armar
+    // una sola pantalla.
+    const entregas = vivos(await db.entregas.toArray()).filter((e) =>
+      deEstasActividades.has(e.actividad_id),
+    )
+    const evaluaciones = vivos(await db.eval_rubrica.toArray()).filter((e) =>
+      deEstasActividades.has(e.actividad_id),
+    )
+    const configuraciones = vivos(await db.examen_config.toArray()).filter((c) =>
+      deEsteTrimestre.has(c.criterio_trimestre_id),
+    )
+    const resultados = vivos(await db.resultados_examen.toArray()).filter((r) =>
+      deEsteTrimestre.has(r.criterio_trimestre_id),
+    )
+
+    // Solo las rúbricas que estas actividades usan, con sus renglones vivos en
+    // orden: son los que deciden si una captura está completa.
+    const enUso = new Set(
+      actividades.map((a) => a.rubrica_id).filter((id): id is Id => id !== null),
+    )
+    const renglonesPorRubrica: Record<Id, Id[]> = {}
+    for (const renglon of vivos(await db.rubrica_criterios.toArray()).sort(
+      (a, b) => a.orden - b.orden,
+    )) {
+      if (!enUso.has(renglon.rubrica_id)) continue
+      renglonesPorRubrica[renglon.rubrica_id] = [
+        ...(renglonesPorRubrica[renglon.rubrica_id] ?? []),
+        renglon.id,
+      ]
+    }
+
+    return {
+      trimestre: esquema.trimestre,
+      criterios: esquema.criterios,
+      actividades,
+      renglonesPorRubrica,
+      entregas,
+      evaluaciones,
+      configuraciones,
+      resultados,
+    }
+  }
+
+  observarCapturasDelTrimestre(
+    trimestreId: Id,
+  ): Suscribible<CapturasDelTrimestre | null> {
+    return liveQuery(() => this.capturasDelTrimestre(trimestreId))
+  }
+
+  async cierresDeTrimestre(trimestreId: Id): Promise<CierreTrimestre[]> {
+    const registros = await db.cierres.where('trimestre_id').equals(trimestreId).toArray()
+    // El filtro va en memoria: IndexedDB no indexa `null`. Ver la nota en
+    // alumnos.adapter.ts.
+    return registros.filter((c) => c.deleted_at === null)
+  }
+
+  observarCierresDeTrimestre(trimestreId: Id): Suscribible<CierreTrimestre[]> {
+    return liveQuery(() => this.cierresDeTrimestre(trimestreId))
+  }
+
+  async cerrarTrimestre(trimestreId: Id, cierres: DatosCierre[]): Promise<void> {
+    await db.transaction('rw', db.trimestres, db.cierres, db.outbox, async () => {
+      const trimestre = await db.trimestres.get(trimestreId)
+      if (!trimestre) throw new Error(`No existe el trimestre ${trimestreId}`)
+
+      const momento = ahora()
+      await db.trimestres.put({
+        ...trimestre,
+        estado: 'cerrado',
+        cerrado_en: momento,
+        updated_at: momento,
+      })
+
+      // Upsert por alumno: volver a cerrar después de reabrir reescribe su
+      // snapshot en vez de dejar dos, y revive el que se borró al reabrir.
+      const previos = await db.cierres.where('trimestre_id').equals(trimestreId).toArray()
+      const registros: CierreTrimestre[] = cierres.map((cierre) => ({
+        id: previos.find((p) => p.alumno_id === cierre.alumno_id)?.id ?? nuevoId(),
+        trimestre_id: trimestreId,
+        ...cierre,
+        updated_at: momento,
+        deleted_at: null,
+      }))
+
+      await db.cierres.bulkPut(registros)
+      await db.outbox.bulkAdd([
+        {
+          tabla: 'trimestres' as const,
+          registro_id: trimestre.id,
+          op: 'upsert' as const,
+          at: momento,
+        },
+        ...registros.map((c) => ({
+          tabla: 'cierres' as const,
+          registro_id: c.id,
+          op: 'upsert' as const,
+          at: momento,
+        })),
+      ])
+    })
+  }
+
+  async reabrirTrimestre(trimestreId: Id): Promise<void> {
+    await db.transaction('rw', db.trimestres, db.cierres, db.outbox, async () => {
+      const trimestre = await db.trimestres.get(trimestreId)
+      if (!trimestre) throw new Error(`No existe el trimestre ${trimestreId}`)
+
+      const momento = ahora()
+      // `cerrado_en` se conserva: con el estado abierto es la huella de que este
+      // trimestre estuvo cerrado.
+      await db.trimestres.put({ ...trimestre, estado: 'abierto', updated_at: momento })
+
+      const vivos = (
+        await db.cierres.where('trimestre_id').equals(trimestreId).toArray()
+      ).filter((c) => c.deleted_at === null)
+
+      await db.cierres.bulkPut(
+        vivos.map((c) => ({ ...c, deleted_at: momento, updated_at: momento })),
+      )
+      await db.outbox.bulkAdd([
+        {
+          tabla: 'trimestres' as const,
+          registro_id: trimestre.id,
+          op: 'upsert' as const,
+          at: momento,
+        },
+        ...vivos.map((c) => ({
+          tabla: 'cierres' as const,
+          registro_id: c.id,
+          op: 'delete' as const,
+          at: momento,
+        })),
+      ])
     })
   }
 
