@@ -14,6 +14,7 @@ src/
 │   ├─ values.ts               Fecha, Id, EstadoAsistencia, CampoFormativo, NIVELES
 │   ├─ fechas.ts               Aritmética de fechas sin librerías
 │   ├─ sorteo.ts               Sorteo ponderado, con el azar inyectado
+│   ├─ equipos.ts              Reparto en equipos, con la semilla inyectada
 │   └─ rules.ts                porcentajeAsistencia(), valorCriterio(), aBase10()
 │
 ├─ data/
@@ -43,6 +44,7 @@ src/
 │   ├─ bitacora.ts
 │   ├─ participacion.ts
 │   ├─ sorteo.ts
+│   ├─ equipos.ts
 │   └─ respaldo.ts
 │
 ├─ services/                 Única salida a red del cliente

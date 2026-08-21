@@ -61,11 +61,12 @@ la configuración, `C25` el modo de participación y `C26` las tres fórmulas. C
 conducta configurada, todo el grupo tiene 10.0 desde el primer día: no tener reportes
 es el dato.
 
-De las dos **herramientas de aula** (D-021) ya está `C30`, el sorteo de
-participación, en la pantalla de asistencia junto al modo de captura. **Lo que sigue
-es `C31`, formar equipos**, que no depende de nada y no guarda nada. Y de la Fase 3
-quedan `C13` (resumen del grupo), `C15` (cumpleaños) y `C16` (el motor de sincronía,
-el que cierra la v1).
+Las dos **herramientas de aula** (D-021) están hechas: `C30` —el sorteo de
+participación, en la pantalla de asistencia— y `C31` —formar equipos, en la pestaña
+Grupo, que no guarda nada—.
+
+**Lo que queda es la Fase 3**: `C13` (el resumen del grupo, el último placeholder),
+`C15` (cumpleaños) y `C16` (el motor de sincronía, el que cierra la v1).
 
 Encima entran dos **herramientas de aula** (D-021): `C30` —sortear quién participa,
 que escribe en `participaciones` y no registra nada por sí solo— y `C31` —formar

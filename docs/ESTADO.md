@@ -37,9 +37,9 @@ del grupo, los cumpleaños y la sincronía.
 | 1 · Cimientos | Scaffold, shadcn, dominio, Dexie, puertos | ✅ Terminada |
 | 2 · Asistencia | El vertical completo hasta el iPad | ✅ Terminada |
 | Hito | Entrega, pausa de una semana, validación | ✅ Cumplido |
-| 3 · Resto de la v1 | Bitácora, resumen, respaldo, cumpleaños, sincronía | ▶ Bitácora y respaldo hechos; faltan C13, C15, C16 |
+| 3 · Resto de la v1 | Bitácora, resumen, respaldo, cumpleaños, sincronía | ▶ Bitácora y respaldo hechos; **es lo único que queda**: C13, C15, C16 |
 | 5 · Criterios automáticos | Puntualidad, conducta y participación | ✅ Terminada: C12, C25b, C25, C26 |
-| 6 · Herramientas de aula | Sorteo de participación y formar equipos | ▶ C30 hecho; falta C31 |
+| 6 · Herramientas de aula | Sorteo de participación y formar equipos | ✅ Terminada: C30 y C31 |
 | 4 · Evaluación | Ciclo, trimestres, criterios, rúbricas, cálculo | ✅ Terminada: C18–C24 y C27–C29 |
 
 ## Lo que existe y funciona
@@ -48,10 +48,10 @@ Verificado en `src/` a esta fecha:
 
 | Capa | Contenido |
 |---|---|
-| `domain/` | `entities.ts` con la jerarquía de evaluación completa, `values.ts`, `fechas.ts`, `rules.ts`, `evaluacion.ts` (estructura), `calculo.ts` (los números, incluidas las tres fórmulas automáticas) y `sorteo.ts` (el sorteo ponderado), con pruebas |
+| `domain/` | `entities.ts` con la jerarquía de evaluación completa, `values.ts`, `fechas.ts`, `rules.ts`, `evaluacion.ts` (estructura), `calculo.ts` (los números, incluidas las tres fórmulas automáticas), `sorteo.ts` (el sorteo ponderado) y `equipos.ts` (el reparto), con pruebas |
 | `data/dexie/` | `db.ts` en `version(3)`, adaptadores de alumnos, asistencia, evaluación, bitácora, participaciones y respaldo, `outbox`, semilla |
 | `data/ports/` | `alumnos.ts`, `asistencia.ts`, `evaluacion.ts` (ciclo, trimestres, criterios, pesos, rúbricas y actividades), `bitacora.ts`, `participaciones.ts`, `respaldo.ts` |
-| `application/` | `asistencia.ts`, `grupo.ts`, `importacion.ts`, `evaluacion.ts`, `entregas.ts`, `calificacion.ts`, `examen.ts`, `calificaciones.ts` (reporte y cierre), `bitacora.ts`, `participacion.ts`, `sorteo.ts`, `respaldo.ts` |
+| `application/` | `asistencia.ts`, `grupo.ts`, `importacion.ts`, `evaluacion.ts`, `entregas.ts`, `calificacion.ts`, `examen.ts`, `calificaciones.ts` (reporte y cierre), `bitacora.ts`, `participacion.ts`, `sorteo.ts`, `equipos.ts`, `respaldo.ts` |
 | `services/` | `extraccion.ts` — única salida a red del cliente |
 | `ui/` | Cuatro pestañas, Asistencia completa (con la etiqueta del trimestre), Calificaciones con sus actividades, las tres capturas —entregas, rúbrica y examen, esta última con teclado propio— y el reporte del trimestre por alumno y por campo, Bitácora con el conteo por alumno y su historial, Ajustes, CargarLista, CicloEscolar, CriteriosYPesos (con el cierre del trimestre), Rubricas, Respaldo |
 | `tests/` | `arquitectura.test.ts` — verifica las reglas de dependencia en cada `npm test` |
@@ -64,8 +64,9 @@ ve la pantalla, y el **sorteo de quién pasa** (`C30`), en un diálogo.
 
 ## Lo que es placeholder
 
-Solo el resumen de `ui/screens/Grupo.tsx` (`C13`). Existe, navega y no hace nada;
-es el único placeholder que queda. `Notas.tsx` ya no existe: se volvió
+Solo el resumen de `ui/screens/Grupo.tsx` (`C13`). Existe, navega y desde ahí se
+entra a Ajustes y a los equipos, pero no muestra un solo número del grupo; es el
+único placeholder que queda. `Notas.tsx` ya no existe: se volvió
 `ui/screens/Bitacora.tsx` en `C12`, y `Calificaciones` está completa —lista las
 actividades, las captura de las tres formas y muestra el reporte del trimestre por
 alumno y por campo—.
@@ -113,18 +114,26 @@ archivo dos veces no duplica nada. Queda **una verificación que necesita el
 dispositivo**: que la hoja de compartir del iPad ofrezca *Guardar en Archivos*. En
 el escritorio la exportación cae a una descarga normal, que es lo que se probó.
 
-**Siguiente commit: `C31 · feat(grupo): formar equipos`**, la segunda herramienta de
-aula (D-021). No depende de nada y **no guarda nada**: los equipos son estado de
-interfaz, viven en la pantalla mientras está abierta. Se pide por número de equipos o
-por niños por equipo —el mismo dato visto al revés— y el sobrante se reparte: con 30
-alumnos y 4 equipos toca 8, 8, 7 y 7.
+**Lo único que queda de la v1 es la Fase 3**, en este orden de valor por unidad de
+trabajo:
 
-`C30`, el sorteo, ya está: vive en la pantalla de asistencia junto al modo de
-participación, pondera a favor de quien menos ha pasado y **no registra nada por sí
-solo**.
+1. **`C13` · el resumen del grupo.** Es el último placeholder de la app y ya se puede
+   hacer completo: la asistencia siempre fue posible y el promedio sale de
+   `reporteDeTrimestre`. Lo único que sigue abierto es el **umbral de riesgo**, que
+   solo decide el color de la alerta —se puede construir con el del prototipo y
+   marcarlo—.
+2. **`C15` · cumpleaños.** Independiente por completo.
+3. **`C16` · el motor de sincronía**, el que cierra la v1. Lee la `outbox` y sube;
+   solo *subir pendientes* y *restaurar todo*, sin merge. Ojo con lo que dejó `C14`:
+   restaurar un respaldo **no encola nada**, así que un iPad restaurado desde archivo
+   hoy no subiría nada solo (D-022) — eso se resuelve aquí.
 
-Después de eso, lo que queda de la Fase 3: `C13` (resumen del grupo), `C15`
-(cumpleaños) y `C16` (el motor de sincronía, el que cierra la v1).
+Las dos herramientas de aula ya están: `C30` —el sorteo, en la pantalla de
+asistencia, que pondera a favor de quien menos ha pasado y no registra nada por sí
+solo— y `C31` —formar equipos, en Grupo, que no guarda nada—.
+
+Y sigue pendiente algo que no es un commit: **la Fase 4 y todo el alcance nuevo nunca
+se han usado en el iPad.** Solo en el navegador de escritorio.
 
 Y una consecuencia de `C26` que conviene mirar en la pantalla: con conducta
 configurada, **todo el grupo tiene calificación desde el primer día** —10.0—, así que
@@ -176,8 +185,7 @@ automáticos —`C12`, `C25b`, `C25`, `C26`—, que dejaron de estar pospuestos 
 La Fase 4 está cerrada, así que nada de lo que falta depende de ella. En orden de
 valor por unidad de trabajo:
 
-- **`C31` · formar equipos**, la herramienta de aula que falta. No depende de nada y
-  no guarda nada. `C30`, el sorteo, ya está.
+- **`C13` · resumen del grupo.** El último placeholder, y ya se puede completo.
 - **Las dos herramientas de aula:** `C30` (sortear quién participa, que escribe en
   `participaciones` y por eso va después de `C25`) y `C31` (formar equipos, que no
   depende de nada y no guarda nada). Son las dos únicas funciones del proyecto que se

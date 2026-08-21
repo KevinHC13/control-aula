@@ -1185,20 +1185,38 @@ tiros y alguien sale tres veces mientras otro no sale ninguna— y los niños lo
 antes que nadie. Ponderado se puede decir en voz alta: *le toca a quien menos ha
 pasado*.
 
-### ⬜ C31 · `feat(grupo): formar equipos`
+### ✅ C31 · `feat(grupo): formar equipos`
 
 Ella dice cuántos equipos o cuántos niños por equipo, y el sistema los arma. Vive en
 la pestaña **Grupo**: es una herramienta sobre la composición del salón, no sobre el
 día.
 
 **Aceptación**
-- [ ] Se puede pedir por **número de equipos** o por **niños por equipo**
-- [ ] El sobrante se reparte: con 30 alumnos y 4 equipos toca 8, 8, 7 y 7
-- [ ] Se arma con los presentes, y se puede pedir con todo el grupo
-- [ ] «Volver a sortear» da un reparto distinto
-- [ ] Los equipos se leen de lejos, para mostrarlos al grupo
-- [ ] Pedir más equipos que alumnos no rompe nada: lo dice y no arma equipos vacíos
-- [ ] **No guarda nada**: los equipos viven mientras la pantalla está abierta
+- [x] Se puede pedir por **número de equipos** o por **niños por equipo**
+- [x] El sobrante se reparte: con 30 alumnos y 4 equipos toca 8, 8, 7 y 7
+- [x] Se arma con los presentes, y se puede pedir con todo el grupo
+- [x] «Volver a sortear» da un reparto distinto
+- [x] Los equipos se leen de lejos, para mostrarlos al grupo
+- [x] Pedir más equipos que alumnos no rompe nada: lo dice y no arma equipos vacíos
+- [x] **No guarda nada**: los equipos viven mientras la pantalla está abierta
+
+Cómo quedó:
+
+- **El azar entra como semilla**, no como `Math.random()` dentro del dominio:
+  `domain/equipos.ts` convierte un número en una secuencia determinista (mulberry32),
+  así que una prueba puede afirmar quién quedó con quién. Mismo trato que `C30`.
+- **Fisher–Yates y no `sort()` con un número al azar**: ordenar así sesga el reparto
+  y además depende de cómo esté implementado el `sort` del motor.
+- **El reparto se deriva de la semilla**, igual que el sorteado en la ruleta: el
+  estado de la pantalla es un número, no una lista de equipos que pudiera quedar
+  apuntando a un alumno que ya no está.
+- **Las dos formas de pedirlo son el mismo dato al revés**: de 4 en 4 con 30 alumnos
+  salen 8 equipos, y el último no queda de 2 porque `tamanos` los vuelve a repartir
+  en 4, 4, 4, 4, 4, 4, 3 y 3.
+- La diferencia entre el equipo más grande y el más chico **nunca pasa de uno**, y
+  está probado para varios repartos: es la forma fuerte de «el sobrante se reparte».
+- Reusa `estaEnElSalon()` de `C30` para «solo los presentes», que era la razón de
+  haberle puesto nombre propio a esa regla.
 
 El último no es pereza, es la regla de Zustand del proyecto: los equipos son estado
 de interfaz, no un dato del salón. Guardarlos significa una tabla, una fecha y una

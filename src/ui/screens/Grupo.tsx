@@ -6,6 +6,7 @@ import { Ajustes } from '@/ui/screens/Ajustes'
 import { CargarLista } from '@/ui/screens/CargarLista'
 import { CicloEscolar } from '@/ui/screens/CicloEscolar'
 import { CriteriosYPesos } from '@/ui/screens/CriteriosYPesos'
+import { Equipos } from '@/ui/screens/Equipos'
 import { Respaldo } from '@/ui/screens/Respaldo'
 import { Rubricas } from '@/ui/screens/Rubricas'
 
@@ -22,6 +23,7 @@ type Vista =
   | 'criterios'
   | 'rubricas'
   | 'respaldo'
+  | 'equipos'
 
 export function Grupo() {
   const [vista, setVista] = useState<Vista>('resumen')
@@ -59,6 +61,12 @@ export function Grupo() {
     return <Respaldo alVolver={() => setVista('ajustes')} />
   }
 
+  // Los equipos vuelven al resumen y no a Ajustes: no son configuración, son una
+  // herramienta que se usa en clase.
+  if (vista === 'equipos') {
+    return <Equipos alVolver={() => setVista('resumen')} />
+  }
+
   return (
     <section aria-labelledby="titulo-grupo" className="flex flex-col gap-4">
       <header className="flex items-center justify-between">
@@ -74,6 +82,13 @@ export function Grupo() {
           <IconoEngrane className="size-6" />
         </Button>
       </header>
+
+      {/* El resumen del grupo es todavía un placeholder (C13). Los equipos entran
+          aquí porque son una herramienta sobre la composición del salón, no sobre
+          el día. */}
+      <Button variant="outline" className="self-start" onClick={() => setVista('equipos')}>
+        Formar equipos
+      </Button>
     </section>
   )
 }
