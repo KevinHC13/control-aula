@@ -12,7 +12,8 @@ español también (`asistencia`, `calificaciones`, `alumnos`).
 **`docs/ESTADO.md` es la fuente de verdad del estatus.** Leerlo antes de decidir
 qué construir; el resumen de aquí abajo se queda viejo primero.
 
-Hecho hasta C24, C27 y C28, más los fixes C19b y C21c. Existen y funcionan:
+**La Fase 4 está terminada**: hecho de C18 a C29 —salvo C25 y C26, pospuestos—,
+más los fixes C19b y C21c. Existen y funcionan:
 
 - **`domain/`** completo: `entities.ts` con la jerarquía `Ciclo → … → Actividad`,
   `values.ts`, `fechas.ts`, `rules.ts`, `evaluacion.ts` —la estructura de la
@@ -26,28 +27,31 @@ Hecho hasta C24, C27 y C28, más los fixes C19b y C21c. Existen y funcionan:
   `resultados_examen` y `cierres`. **Las quince tablas están en uso.**
 - **`application/`**: `asistencia.ts`, `grupo.ts`, `importacion.ts`,
   `evaluacion.ts`, `entregas.ts`, `calificacion.ts`, `examen.ts` y
-  `calificaciones.ts` —el reporte del trimestre y su cierre—.
+  `calificaciones.ts` —el reporte del trimestre y su cierre—. `armarReporte` es la
+  única función que decide entre recalcular y leer el snapshot: no duplicar esa
+  decisión.
 - **`services/`**: `extraccion.ts`, la única salida a red del cliente.
 - **`ui/`**: las cuatro pestañas, la de asistencia terminada (tira de días,
   calendario del mes, contador, filas, etiqueta del trimestre), Ajustes, la carga
   de lista con IA, la configuración del ciclo escolar, los criterios con sus pesos,
-  las rúbricas, y `Calificaciones` con las actividades del trimestre y sus tres
-  capturas: entregas, rúbrica alumno por alumno y el examen por aciertos, con
-  teclado numérico propio.
+  las rúbricas, el cierre del trimestre, y `Calificaciones` con las actividades del
+  trimestre, sus tres capturas —entregas, rúbrica alumno por alumno y el examen por
+  aciertos con teclado numérico propio— y el reporte por alumno y por campo
+  formativo.
   `Notas` y el resumen de `Grupo` siguen siendo placeholders.
 - PWA con `vite-plugin-pwa`, Zustand y el aviso de actualización.
 - Una Edge Function desplegada en Supabase, `extraer-lista`, en
   `supabase/functions/`.
 
-**Lo que sigue es C29**, el último de la fase: la pantalla donde ella lee las
-calificaciones por alumno y campo formativo. Debajo ya está todo —captura, cálculo y
-cierre—: `reporteDeTrimestre` devuelve el desglose de los 30 alumnos y decide solo si
-los números salen del snapshot o del cálculo. La migración a `version(2)` ya ocurrió
-y está probada en `src/data/dexie/migracion.test.ts`; no hay otra migración pendiente
-en la Fase 4.
+**Lo que sigue es C14, el respaldo en JSON**, y no por vistoso: el iPad ya guarda un
+trimestre entero de asistencia y calificaciones y **no hay ninguna forma de
+recuperarlo si se pierde**. Después, `C13` (resumen del grupo, que ya tiene de dónde
+sacar el promedio), `C12`, `C15` y el motor de sincronía. Ojo con algo que no es un
+commit: **la Fase 4 nunca se ha usado en el iPad**, solo en el navegador; falta medir
+con cronómetro la captura con rúbrica y la del examen.
 
-Falta además de la Fase 3: notas, resumen del grupo, respaldo JSON, cumpleaños y
-el motor de sincronía. `C25` y `C26` —criterios automáticos de puntualidad,
+Falta la Fase 3: respaldo JSON —lo más urgente—, resumen del grupo, notas,
+cumpleaños y el motor de sincronía. `C25` y `C26` —criterios automáticos de puntualidad,
 conducta y participación— están **pospuestos por decisión de la usuaria**, no
 pendientes.
 

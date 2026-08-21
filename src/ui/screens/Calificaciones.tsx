@@ -24,6 +24,7 @@ import { CapturaEntregas } from '@/ui/screens/CapturaEntregas'
 import { CapturaExamen } from '@/ui/screens/CapturaExamen'
 import { CapturaRubrica } from '@/ui/screens/CapturaRubrica'
 import { FormaActividad } from '@/ui/screens/FormaActividad'
+import { ReporteDelTrimestre } from '@/ui/screens/ReporteDelTrimestre'
 
 /**
  * Las actividades del trimestre, agrupadas por criterio.
@@ -63,12 +64,21 @@ export function Calificaciones() {
   const [examenAbierto, setExamenAbierto] = useState<string | null>(null)
   const examen = examenes.find((e) => e.ponderado.id === examenAbierto)
 
+  // El reporte del trimestre: lo mismo que se captura aquí, ya sumado.
+  const [viendoReporte, setViendoReporte] = useState(false)
+
   const grupoAbierto = grupos.find((g) => g.ponderado.id === subvista?.grupoId)
   // Se busca por id y no se guarda la actividad: así la subvista siempre ve la
   // versión recién emitida por la suscripción, no una copia congelada al abrirla.
   const actividadAbierta = grupoAbierto?.actividades.find(
     (a) => a.actividad.id === subvista?.actividadId,
   )
+
+  if (viendoReporte && trimestre) {
+    return (
+      <ReporteDelTrimestre trimestre={trimestre} alVolver={() => setViendoReporte(false)} />
+    )
+  }
 
   if (examen && trimestre) {
     return (
@@ -191,6 +201,18 @@ export function Calificaciones() {
               alAbrir={() => setExamenAbierto(item.ponderado.id)}
             />
           ))}
+
+          {/* Al final y no arriba: la lista de lo que falta calificar es lo que
+              se abre todos los días; los números se consultan al cortar. */}
+          {trimestre && (
+            <Button
+              variant="outline"
+              className="mt-2 self-start"
+              onClick={() => setViendoReporte(true)}
+            >
+              Ver las calificaciones del trimestre
+            </Button>
+          )}
         </>
       )}
     </section>

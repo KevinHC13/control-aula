@@ -1,7 +1,7 @@
 # Estado del proyecto
 
-Actualizado el **2026-08-21**, con C18 a C24, C27 y C28 terminados, más los fixes
-C19b y C21c. Este es el documento que se lee primero para saber
+Actualizado el **2026-08-21**, con la **Fase 4 terminada** —C18 a C29, salvo C25 y
+C26 que están pospuestos— más los fixes C19b y C21c. Este es el documento que se lee primero para saber
 dónde va el proyecto y qué sigue. El plan detallado, con criterios de aceptación
 por commit, está en [COMMITS.md](./COMMITS.md).
 
@@ -19,8 +19,10 @@ La Fase 4 va en marcha: **C18 a C21 están hechos** —dominio de evaluación,
 las rúbricas, las actividades, las dos capturas de entregable y el examen por
 aciertos—, con una corrección de modelo encima: la rúbrica cuelga de la actividad, no
 del criterio (D-016). **Toda la captura de la Fase 4 está construida, y también el
-cálculo** (C28) **y el cierre del trimestre con su snapshot** (C27): lo único que
-falta de la fase es la pantalla donde ella lee los números, que es `C29`.
+cálculo** (C28), **el cierre con su snapshot** (C27) **y la pantalla donde ella lee
+los números** (C29). **La Fase 4 está terminada.** Lo que sigue es lo que quedó
+pendiente de la Fase 3, y el pendiente más urgente no es una función: es que **el
+único ejemplar de los datos reales vive en un iPad**.
 
 ## Fases
 
@@ -29,8 +31,8 @@ falta de la fase es la pantalla donde ella lee los números, que es `C29`.
 | 1 · Cimientos | Scaffold, shadcn, dominio, Dexie, puertos | ✅ Terminada |
 | 2 · Asistencia | El vertical completo hasta el iPad | ✅ Terminada |
 | Hito | Entrega, pausa de una semana, validación | ✅ Cumplido |
-| 3 · Resto de la v1 | Notas, resumen, respaldo, cumpleaños, sincronía | ⬜ Sin empezar |
-| 4 · Evaluación | Ciclo, trimestres, criterios, rúbricas, cálculo | ▶ En curso: C18–C24, C27 y C28 hechos, sigue C29 |
+| 3 · Resto de la v1 | Notas, resumen, respaldo, cumpleaños, sincronía | ▶ Pendiente: es lo que queda |
+| 4 · Evaluación | Ciclo, trimestres, criterios, rúbricas, cálculo | ✅ Terminada: C18–C24 y C27–C29. C25 y C26 pospuestos |
 
 ## Lo que existe y funciona
 
@@ -43,7 +45,7 @@ Verificado en `src/` a esta fecha:
 | `data/ports/` | `alumnos.ts`, `asistencia.ts`, `evaluacion.ts` (ciclo, trimestres, criterios, pesos, rúbricas y actividades) |
 | `application/` | `asistencia.ts`, `grupo.ts`, `importacion.ts`, `evaluacion.ts`, `entregas.ts`, `calificacion.ts`, `examen.ts`, `calificaciones.ts` (reporte y cierre) |
 | `services/` | `extraccion.ts` — única salida a red del cliente |
-| `ui/` | Cuatro pestañas, Asistencia completa (con la etiqueta del trimestre), Calificaciones con sus actividades y las tres capturas —entregas, rúbrica y examen, esta última con teclado propio—, Ajustes, CargarLista, CicloEscolar, CriteriosYPesos, Rubricas |
+| `ui/` | Cuatro pestañas, Asistencia completa (con la etiqueta del trimestre), Calificaciones con sus actividades, las tres capturas —entregas, rúbrica y examen, esta última con teclado propio— y el reporte del trimestre por alumno y por campo, Ajustes, CargarLista, CicloEscolar, CriteriosYPesos (con el cierre del trimestre), Rubricas |
 | `tests/` | `arquitectura.test.ts` — verifica las reglas de dependencia en cada `npm test` |
 | Infra | PWA con `vite-plugin-pwa` y aviso de actualización; Edge Function `extraer-lista` desplegada |
 
@@ -54,10 +56,9 @@ bicolor.
 ## Lo que es placeholder
 
 `ui/screens/Notas.tsx` y el resumen de `ui/screens/Grupo.tsx`. Existen, navegan y
-no hacen nada. `Calificaciones` ya no: lista las actividades del trimestre, las
-administra y las captura —con rúbrica, sin ella y por aciertos de examen—. Lo que
-falta ahí es **mostrar** los números: el cálculo ya existe (C28), la pantalla que lo
-lee es C29.
+no hacen nada. Son los dos únicos placeholders que quedan: `Calificaciones` está
+completa —lista las actividades, las captura de las tres formas y muestra el reporte
+del trimestre por alumno y por campo—.
 
 ## Lo que cambió con la validación
 
@@ -90,30 +91,26 @@ asistencia capturada.
 
 ## Con qué continuar
 
-**Siguiente commit: `C29 · feat(evaluacion): consultar calificaciones por alumno y
-campo formativo`,** el último de la fase: la pantalla donde ella saca los números
-para la boleta. **Ya no falta nada por debajo**: `reporteDeTrimestre` en
-`application/calificaciones.ts` devuelve, para los 30 alumnos, el desglose por
-criterio y por campo, el general del trimestre y `pesoConsiderado` —y decide sola si
-los números salen del snapshot o del cálculo—. C29 es pantalla y hooks.
+**Siguiente commit: `C14 · feat: exportar e importar respaldo en json`.** No es lo
+más vistoso que queda, es lo más urgente: con la Fase 4 terminada, el iPad ya
+acumula asistencia, actividades, rúbricas, calificaciones y cortes de trimestre, y
+**no existe ninguna forma de recuperar el año si se pierde**. No hay sincronía, no
+hay respaldo y no hay copia. Todo lo demás que falta puede esperar; esto no.
 
-Lo que ya está decidido y hay que respetar:
+Ya se puede tomar sin volver a tocar nada: `version(2)` está en su lugar y
+`TABLAS_SINCRONIZABLES` enumera exactamente las quince tablas que hay que exportar.
 
-- La cifra sale de `comoCalificacion`: base 10 con un decimal, y `—` cuando no hay
-  dato. **El porcentaje no aparece nunca.**
-- **El desglose no es un lujo:** cuando un resultado no cuadre con su intuición —y
-  va a pasar— es lo único que dice si el error está en la fórmula o en la
-  expectativa. Se muestra criterio por criterio, no solo el final.
-- **Hay que decir sobre cuánto se está calculando.** `pesoConsiderado < 100`
-  significa que hay criterios sin capturar, y una cifra normalizada sin ese aviso se
-  lee como una de boleta (D-019).
-- Se consulta **por alumno y por grupo**: son dos vistas de lo mismo, y la del grupo
-  es la que ella usa para transcribir.
-- En un trimestre cerrado los números vienen del snapshot. Eso ya lo resuelve
-  `reporteDeTrimestre`; la pantalla solo tiene que **decirlo**, o parecerá que
-  recalcula.
+Después, en orden de utilidad para ella: `C13` (resumen del grupo, que ya tiene de
+dónde sacar el promedio), `C12` (anecdotario) y `C15` (cumpleaños). `C16` y `C17`
+—el motor de sincronía— son los que cierran la v1.
 
-El orden del resto de la Fase 4 es:
+Y una cosa que no es un commit: **la Fase 4 nunca se ha usado en el iPad.** Se
+construyó completa entre dos sesiones y solo se ha visto en el navegador. Antes de
+seguir agregando, conviene una pasada con el dispositivo en la mano y la lista de
+`docs/PWA-IOS.md`, sobre todo para medir con cronómetro la captura con rúbrica y la
+del examen, que es lo único que sigue sin medir.
+
+La Fase 4 quedó así, completa:
 
 ```
 C18 ─ C19 ─ C20 ─ C21 ─ C21b ─┬─ C22 ─┐
@@ -121,26 +118,19 @@ C18 ─ C19 ─ C20 ─ C21 ─ C21b ─┬─ C22 ─┐
                               └─ C24 ─┘       └─ C27
 ```
 
-Hechos: de C18 a C24 —toda la rama de captura—, C28 (el cálculo) y C27 (el cierre).
-Falta **solo C29**, la consulta, que es el que cierra la fase.
+Todos hechos. `C25` y `C26` —los criterios automáticos— siguen pospuestos por
+decisión de la usuaria, no pendientes.
 
-C29 es el que cierra la fase: la pantalla donde ella saca los números para la
-boleta.
+### Lo que queda, y de qué depende
 
-### Lo que se puede tomar en paralelo
+Nada de lo que falta depende de evaluación: la Fase 4 está cerrada.
 
-Dos commits de la Fase 3 no dependen de nada de evaluación:
-
-- **`C14` · respaldo en JSON.** Con datos reales del salón ya dentro del iPad y
-  sin motor de sincronía, es el mayor riesgo abierto del proyecto: hoy no hay
-  ninguna forma de recuperar el año si el iPad se pierde. Ya se puede tomar sin
-  volver a tocarlo: `version(2)` está en su lugar y `TABLAS_SINCRONIZABLES`
-  enumera exactamente lo que hay que exportar.
-- **`C12` · anecdotario.** Independiente por completo mientras conducta siga
-  pospuesta.
-
-`C13` (resumen del grupo) ya se puede hacer completo: la parte de asistencia siempre
-fue posible y la de promedio tiene desde C28 con qué calcularse.
+- **`C14` · respaldo en JSON.** El mayor riesgo abierto del proyecto, y ahora más
+  que antes: el iPad guarda un trimestre entero de calificaciones y no hay copia.
+- **`C13` · resumen del grupo.** Ya se puede completo: la asistencia siempre fue
+  posible y el promedio sale de `reporteDeTrimestre`.
+- **`C12` · anecdotario** y **`C15` · cumpleaños.** Independientes por completo.
+- **`C16` y `C17` · sincronía.** Los que cierran la v1.
 
 ## Pospuesto por decisión, no por falta de tiempo
 

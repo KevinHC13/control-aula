@@ -556,11 +556,19 @@ export async function borrarRubrica(rubrica: RubricaConCriterios): Promise<void>
  * omisión y el reporte por campo deja de significar algo.
  */
 export const CAMPOS_CON_NOMBRE = [
-  { campo: 'lenguajes', nombre: 'Lenguajes' },
-  { campo: 'saberes_pensamiento_cientifico', nombre: 'Saberes y pensamiento científico' },
-  { campo: 'etica_naturaleza_sociedades', nombre: 'Ética, naturaleza y sociedades' },
-  { campo: 'humano_comunitario', nombre: 'De lo humano y lo comunitario' },
-] as const satisfies readonly { campo: CampoFormativo; nombre: string }[]
+  { campo: 'lenguajes', nombre: 'Lenguajes', corto: 'Leng.' },
+  {
+    campo: 'saberes_pensamiento_cientifico',
+    nombre: 'Saberes y pensamiento científico',
+    corto: 'Saberes',
+  },
+  {
+    campo: 'etica_naturaleza_sociedades',
+    nombre: 'Ética, naturaleza y sociedades',
+    corto: 'Ética',
+  },
+  { campo: 'humano_comunitario', nombre: 'De lo humano y lo comunitario', corto: 'Humano' },
+] as const satisfies readonly { campo: CampoFormativo; nombre: string; corto: string }[]
 
 /**
  * Los siete ejes articuladores de la NEM. Son **opcionales**: la actividad se

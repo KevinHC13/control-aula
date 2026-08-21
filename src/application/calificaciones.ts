@@ -251,19 +251,17 @@ export function reporteDeCierres(
  * El reporte del trimestre: del snapshot si está cerrado, calculado si está
  * abierto.
  *
- * La decisión vive aquí y en un solo lugar, para que ninguna pantalla pueda
- * recalcular un trimestre cerrado por descuido.
+ * **Esta es la única función que decide entre las dos cosas**, y por eso es pura y
+ * la usan las dos entradas —la lectura de una sola vez y el hook reactivo—. Con la
+ * decisión repetida, cualquier pantalla podría recalcular un trimestre cerrado por
+ * descuido, y ese descuido cambiaría una calificación ya reportada.
  */
-export async function reporteDeTrimestre(
-  trimestreId: Id,
-): Promise<ReporteDeTrimestre | null> {
-  const capturas = await repos.evaluacion.capturasDelTrimestre(trimestreId)
-  if (!capturas) return null
-
-  const alumnos = await repos.alumnos.lista()
-
+export function armarReporte(
+  capturas: CapturasDelTrimestre,
+  cierres: readonly CierreTrimestre[],
+  alumnos: readonly Alumno[],
+): ReporteDeTrimestre {
   if (capturas.trimestre.estado === 'cerrado') {
-    const cierres = await repos.evaluacion.cierresDeTrimestre(trimestreId)
     return {
       trimestre: capturas.trimestre,
       delSnapshot: true,
@@ -276,6 +274,21 @@ export async function reporteDeTrimestre(
     delSnapshot: false,
     alumnos: reporteDeCapturas(capturas, alumnos),
   }
+}
+
+/** Lo mismo, leyendo. `null` si el trimestre no existe. */
+export async function reporteDeTrimestre(
+  trimestreId: Id,
+): Promise<ReporteDeTrimestre | null> {
+  const capturas = await repos.evaluacion.capturasDelTrimestre(trimestreId)
+  if (!capturas) return null
+
+  const [alumnos, cierres] = await Promise.all([
+    repos.alumnos.lista(),
+    repos.evaluacion.cierresDeTrimestre(trimestreId),
+  ])
+
+  return armarReporte(capturas, cierres, alumnos)
 }
 
 /** Los snapshots que se escribirían al cerrar, en el orden del grupo. */

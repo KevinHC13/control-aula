@@ -880,18 +880,53 @@ Decisiones que salieron de construirlo:
   aquí la regla se repite en cada nivel de la cadena, y cada función dice en su
   documentación por qué su `null` no es un cero.
 
-### ⬜ C29 · `feat(evaluacion): consultar calificaciones por alumno y campo formativo`
+### ✅ C29 · `feat(evaluacion): consultar calificaciones por alumno y campo formativo`
 
 La pantalla donde ella saca los números para la boleta. Cierra la Fase 4.
 
 **Aceptación**
-- [ ] Muestra el **desglose por criterio**, no solo la calificación final
-- [ ] Muestra por campo formativo y en general, para cada criterio y para el trimestre
-- [ ] Todo en base 10; el porcentaje no aparece en ninguna parte de la interfaz
-- [ ] Un criterio sin actividades calificadas se muestra como «sin calificar», nunca como 0
-- [ ] Se consulta por alumno y por grupo
-- [ ] Indica con claridad cuando el trimestre aún está incompleto
-- [ ] En un trimestre cerrado, los números vienen del snapshot, no de recalcular
+- [x] Muestra el **desglose por criterio**, no solo la calificación final
+- [x] Muestra por campo formativo y en general, para cada criterio y para el trimestre
+- [x] Todo en base 10; el porcentaje no aparece en ninguna parte de la interfaz
+- [x] Un criterio sin actividades calificadas se muestra como «sin calificar», nunca como 0
+- [x] Se consulta por alumno y por grupo
+- [x] Indica con claridad cuando el trimestre aún está incompleto
+- [x] En un trimestre cerrado, los números vienen del snapshot, no de recalcular
+
+Verificado en el navegador con tres alumnos en tres estados distintos —uno con todo
+capturado, uno con el examen a la mitad y uno con la rúbrica a medias—: la tabla del
+grupo da 8.2, 6.4 y `—`, y las cifras cuadran a mano (Camila: Entregables 8.3 con
+todo en Bien, examen 18 de 35 = 5.1, y 8.3 × 40 + 5.1 × 60 = **6.4**). En su
+desglose, *Lenguajes* sale 5.0 y no 3.0 porque solo el examen evaluó ese campo y la
+normalización es por columna. El alumno a medias dice «Sin calificar» en rojo, no un
+cero.
+
+El último criterio se verificó **de la forma dura**: se cerró el trimestre con un
+snapshot que dice a propósito algo distinto de lo capturado —7.0 y un criterio
+renombrado «Entregables de septiembre»— y la pantalla mostró 7.0 y ese nombre, no el
+8.2 que daría recalcular ni el nombre vivo. También cambia el aviso de arriba: «son
+las del corte» en vez de «se recalculan con cada captura».
+
+Decisiones que salieron de construirlo:
+
+- **`armarReporte` es la única función que decide entre snapshot y cálculo**, y por
+  eso es pura: la usan la lectura de una vez y el hook reactivo. Con la decisión
+  repetida en dos lados, cualquier pantalla podría recalcular un trimestre cerrado
+  por descuido, y ese descuido cambia una calificación ya reportada.
+- **Dos desgloses del grupo, no uno.** «Por campo formativo» es lo que se
+  transcribe a la boleta; «por criterio» es lo que contesta «¿por qué salió esto?».
+  Son la misma tabla con otras columnas, y elegir cuesta un toque.
+- **La consulta se entra desde el final de la lista de captura**, no desde arriba:
+  lo que se abre todos los días es qué falta calificar; los números se consultan al
+  cortar el trimestre.
+- **Un campo que nadie evaluó no tiene columna.** Una columna entera de `—` invita a
+  buscar un dato que no existe.
+- **El aviso de «sobre cuánto» va por alumno y también arriba.** Debajo de cada
+  final aparece «sobre 40» cuando falta capturar, porque el pesoConsiderado es de
+  cada alumno, no del grupo: uno puede tener el examen capturado y otro no.
+- El único `%` de la pantalla es el **peso** de un criterio en el desglose del
+  alumno, que es lo que permite reconstruir la cuenta a mano. La tabla del grupo no
+  tiene ninguno.
 
 El desglose no es un lujo: cuando un resultado no cuadre con su intuición —y va a
 pasar— es lo único que dice si el error está en la fórmula o en la expectativa.
