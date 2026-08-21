@@ -120,18 +120,27 @@ completo.
       seguridad y de rendimiento del proyecto salen limpios. Comprobado con la clave
       publicable —la que viaja en el bundle— que un `select` devuelve cero filas y un
       `insert` se rechaza con `42501`: sin sesión no se lee ni se escribe nada.
-- [ ] **Crear su cuenta** en *Authentication → Users*, con correo y contraseña. Es la
-      que se teclea una vez en Ajustes → Copia en la nube. Requiere el panel: no se
-      puede hacer desde el repositorio.
-- [ ] **Apagar los registros públicos** en *Authentication → Sign In / Providers*,
-      en la tarjeta de **Email**: el interruptor *Allow new users to sign up*. Con `signup` abierto cualquiera puede crear un
-      usuario; no vería nada de ella —las políticas lo impiden— pero no hay razón
-      para dejar la puerta.
+- [x] **Crear su cuenta.** Hecha el 2026-08-21 en *Authentication → Users*, con el
+      correo confirmado. Es la que se teclea una vez en Ajustes → Copia en la nube.
+- [x] **Apagar los registros públicos.** Hecho el 2026-08-21. Está en *Authentication
+      → Sign In / Providers*, en la sección **User Signups** del principio de la
+      página —**no** dentro de la tarjeta de Email, que solo trae los ajustes del
+      proveedor—: el interruptor *Allow new users to sign up*. Verificado que el
+      registro responde `signup_disabled` **antes** de mirar la contraseña, que es la
+      señal de que está apagado de verdad, y que el login sigue contestando
+      `invalid_credentials`.
 
-Sin esos pasos la app funciona igual: la nube es un respaldo, no una dependencia
-(docs/DECISIONES.md D-023). Y hasta que exista la cuenta, la subida y la
-restauración **no se han probado contra Supabase de verdad**: lo que está probado es
-el motor, contra una nube simulada.
+Ojo con el interruptor de al lado: *Enable email provider*, dentro de la tarjeta de
+Email, **tiene que quedar encendido**. Apagarlo cierra también los inicios de sesión
+—el servidor contesta `email_provider_disabled` a login y a registro por igual— y la
+pantalla de la nube deja de poder entrar. Se descubrió apagándolo por error.
+
+Los tres pasos están hechos, así que la nube ya existe. Lo que **falta probar** es la
+primera sincronía de verdad: entrar desde la app, subir y ver las filas en las tablas.
+Hasta entonces, subir y restaurar solo están probados contra una nube simulada.
+
+Nada de esto bloquea usar la app: la nube es un respaldo, no una dependencia
+(docs/DECISIONES.md D-023).
 
 ## Lista de verificación antes de entregarle el iPad
 
