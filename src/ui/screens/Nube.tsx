@@ -14,6 +14,7 @@ import type { ConteoPorTabla } from '@/data/ports/respaldo'
 import { IconoAtras } from '@/ui/components/iconos'
 import { Button } from '@/ui/components/ui/button'
 import { Input } from '@/ui/components/ui/input'
+import { plural } from '@/ui/lib/plural'
 
 /**
  * La copia en la nube: subir lo pendiente y restaurar todo.
@@ -81,7 +82,8 @@ export function Nube({ alVolver }: { alVolver: () => void }) {
       setAviso(
         subidos === 0
           ? 'No había nada por subir.'
-          : `Subidos ${subidos} cambios.${pendientes > 0 ? ` Quedan ${pendientes}.` : ''}`,
+          : `Subidos ${subidos} ${plural(subidos, 'cambio', 'cambios')}.` +
+            (pendientes > 0 ? ` Quedan ${pendientes}.` : ''),
       )
     } catch (fallo) {
       // La cola queda intacta: el siguiente intento empieza donde este se quedó.
@@ -194,7 +196,7 @@ export function Nube({ alVolver }: { alVolver: () => void }) {
             <p className="text-[13px] text-tinta-2">
               {porSubir === 0
                 ? 'todo está subido'
-                : 'cambios en espera · se suben en lotes, y cada lote sale de la cola solo cuando el servidor confirma'}
+                : `${plural(porSubir ?? 0, 'cambio', 'cambios')} en espera · se suben en lotes, y cada lote sale de la cola solo cuando el servidor confirma`}
             </p>
             <Button
               className="self-start"
@@ -273,7 +275,8 @@ function Restaurado({ conteo }: { conteo: ConteoPorTabla }) {
   return (
     <div className="flex flex-col gap-1" aria-live="polite">
       <p className="text-base text-verde">
-        Restaurados <span className="cifra">{total}</span> registros.
+        Restaurados <span className="cifra">{total}</span>{' '}
+        {plural(total, 'registro', 'registros')}.
       </p>
       <ul className="text-[13px] text-tinta-2">
         {conFilas.map(([tabla, cuantas]) => (

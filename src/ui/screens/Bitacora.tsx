@@ -13,6 +13,7 @@ import { IconoAtras, IconoBasura } from '@/ui/components/iconos'
 import { Button } from '@/ui/components/ui/button'
 import { useBitacoraDelTrimestre } from '@/ui/hooks/useBitacoraDelTrimestre'
 import { useCicloEnCurso } from '@/ui/hooks/useCicloEnCurso'
+import { plural } from '@/ui/lib/plural'
 import { cn } from '@/ui/lib/utils'
 
 /**
@@ -106,7 +107,7 @@ export function Bitacora() {
               ? 'Cargando…'
               : conReportes === 0
                 ? 'Ningún reporte en este trimestre'
-                : `${conReportes} ${conReportes === 1 ? 'alumno' : 'alumnos'} con reportes`}
+                : `${conReportes} ${plural(conReportes, 'alumno', 'alumnos')} con reportes`}
           </p>
 
           <ul>

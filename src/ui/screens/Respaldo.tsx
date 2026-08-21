@@ -12,6 +12,7 @@ import {
 import type { ConteoPorTabla } from '@/data/ports/respaldo'
 import { IconoAtras } from '@/ui/components/iconos'
 import { Button } from '@/ui/components/ui/button'
+import { plural } from '@/ui/lib/plural'
 
 /**
  * Guardar el año en un archivo, y volverlo a meter.
@@ -58,7 +59,8 @@ export function Respaldo({ alVolver }: { alVolver: () => void }) {
         URL.revokeObjectURL(url)
       }
 
-      setAviso(`${nombre} · ${contarRegistros(archivo)} registros`)
+      const cuantos = contarRegistros(archivo)
+      setAviso(`${nombre} · ${cuantos} ${plural(cuantos, 'registro', 'registros')}`)
     } catch (e) {
       // Cancelar la hoja de compartir lanza AbortError, y cancelar no es un
       // error que valga la pena mostrarle.
@@ -164,7 +166,7 @@ export function Respaldo({ alVolver }: { alVolver: () => void }) {
           <div className="flex flex-col gap-2 rounded-md border border-linea p-3">
             <p className="text-base text-tinta">
               El archivo trae <span className="cifra">{contarRegistros(porRestaurar)}</span>{' '}
-              registros
+              {plural(contarRegistros(porRestaurar), 'registro', 'registros')}
               {porRestaurar.generado_en !== '' && (
                 <>
                   , generados el{' '}
@@ -207,7 +209,8 @@ function ResumenRestaurado({ conteo }: { conteo: ConteoPorTabla }) {
   return (
     <div className="flex flex-col gap-1" aria-live="polite">
       <p className="text-base text-verde">
-        Restaurados <span className="cifra">{total}</span> registros.
+        Restaurados <span className="cifra">{total}</span>{' '}
+        {plural(total, 'registro', 'registros')}.
       </p>
       <ul className="text-[13px] text-tinta-2">
         {conFilas.map(([tabla, cuantas]) => (

@@ -9,6 +9,7 @@ import {
 import { IconoAtras } from '@/ui/components/iconos'
 import { Button } from '@/ui/components/ui/button'
 import { useAsistenciaDelDia } from '@/ui/hooks/useAsistenciaDelDia'
+import { plural } from '@/ui/lib/plural'
 import { cn } from '@/ui/lib/utils'
 import { useInterfaz } from '@/ui/store/interfaz'
 
@@ -151,7 +152,8 @@ export function Equipos({ alVolver }: { alVolver: () => void }) {
         {pedidos > posibles && (
           <p className="text-base text-tinta-2">
             Pediste <span className="cifra">{pedidos}</span> equipos y hay{' '}
-            <span className="cifra">{alumnos.length}</span> alumnos: salen{' '}
+            <span className="cifra">{alumnos.length}</span>{' '}
+            {plural(alumnos.length, 'alumno', 'alumnos')}: salen{' '}
             <span className="cifra">{posibles}</span>, de uno. No se arman equipos
             vacíos.
           </p>

@@ -1,5 +1,6 @@
 import type { FilaResumen } from '@/application/resumen'
 import { comoCalificacion } from '@/domain/calculo'
+import { plural } from '@/ui/lib/plural'
 import { cn } from '@/ui/lib/utils'
 
 /**
@@ -30,12 +31,13 @@ export function FilaResumenAlumno({ fila }: { fila: FilaResumen }) {
             'sin días capturados'
           ) : (
             <>
-              <span className="cifra">{dias}</span> días
+              <span className="cifra">{dias}</span> {plural(dias, 'día', 'días')}
               {ausencias > 0 && (
                 <>
                   {' · '}
                   <span className="text-rojo">
-                    <span className="cifra">{ausencias}</span> faltas
+                    <span className="cifra">{ausencias}</span>{' '}
+                    {plural(ausencias, 'falta', 'faltas')}
                   </span>
                 </>
               )}
@@ -43,7 +45,8 @@ export function FilaResumenAlumno({ fila }: { fila: FilaResumen }) {
                 <>
                   {' · '}
                   <span className="text-ambar">
-                    <span className="cifra">{retardos}</span> retardos
+                    <span className="cifra">{retardos}</span>{' '}
+                    {plural(retardos, 'retardo', 'retardos')}
                   </span>
                 </>
               )}

@@ -7,6 +7,7 @@ import { fechaLocal } from '@/domain/fechas'
 import { FilaResumenAlumno } from '@/ui/components/FilaResumenAlumno'
 import { useCicloEnCurso } from '@/ui/hooks/useCicloEnCurso'
 import { useResumenDelGrupo } from '@/ui/hooks/useResumenDelGrupo'
+import { plural } from '@/ui/lib/plural'
 import { cn } from '@/ui/lib/utils'
 
 /**
@@ -91,7 +92,8 @@ export function ResumenDelGrupo() {
             {resumen && resumen.diasCapturados > 0 && (
               <>
                 {' · '}
-                <span className="cifra">{resumen.diasCapturados}</span> días
+                <span className="cifra">{resumen.diasCapturados}</span>{' '}
+                {plural(resumen.diasCapturados, 'día', 'días')}
               </>
             )}
           </p>
@@ -109,7 +111,7 @@ export function ResumenDelGrupo() {
       {resumen && resumen.enRiesgo > 0 && (
         <p className="text-base text-rojo" aria-live="polite">
           <span className="cifra">{resumen.enRiesgo}</span>{' '}
-          {resumen.enRiesgo === 1 ? 'alumno' : 'alumnos'} por mirar.
+          {plural(resumen.enRiesgo, 'alumno', 'alumnos')} por mirar.
         </p>
       )}
 
