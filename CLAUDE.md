@@ -45,7 +45,8 @@ Existen y funcionan:
   aciertos con teclado numérico propio— y el reporte por alumno y por campo
   formativo.
   **`Bitácora`** —lo que era `Notas`— con el conteo de reportes por alumno y el
-  historial del trimestre. El resumen de `Grupo` es el único placeholder que queda.
+  historial del trimestre, y **`Grupo`** con el resumen del trimestre —asistencia y
+  promedio, del grupo y por alumno (C13)— más los equipos. **Ya no hay placeholders.**
 - PWA con `vite-plugin-pwa`, Zustand y el aviso de actualización.
 - Una Edge Function desplegada en Supabase, `extraer-lista`, en
   `supabase/functions/`.
@@ -65,8 +66,8 @@ Las dos **herramientas de aula** (D-021) están hechas: `C30` —el sorteo de
 participación, en la pantalla de asistencia— y `C31` —formar equipos, en la pestaña
 Grupo, que no guarda nada—.
 
-**Lo que queda es la Fase 3**: `C13` (el resumen del grupo, el último placeholder),
-`C15` (cumpleaños) y `C16` (el motor de sincronía, el que cierra la v1).
+De la Fase 3 ya está `C13`, el resumen del grupo. **Lo que queda es `C15`**
+(cumpleaños) **y `C16`** (el motor de sincronía, el que cierra la v1).
 
 Encima entran dos **herramientas de aula** (D-021): `C30` —sortear quién participa,
 que escribe en `participaciones` y no registra nada por sí solo— y `C31` —formar
@@ -74,8 +75,8 @@ equipos, que no guarda nada porque los equipos son estado de interfaz—. Son la
 únicas funciones que se usan con los niños mirando la pantalla: se leen de lejos y no
 hacen esperar.
 
-Queda además de la Fase 3 el resumen del grupo (`C13`, que ya tiene de dónde sacar el
-promedio), los cumpleaños (`C15`) y el motor de sincronía (`C16`).
+De la Fase 3 queda **los cumpleaños (`C15`) y el motor de sincronía (`C16`)**; el
+resumen del grupo (`C13`) ya está.
 
 Ojo con algo que no es un commit: **la Fase 4 nunca se ha usado en el iPad**, solo en
 el navegador; falta medir con cronómetro la captura con rúbrica y la del examen.
@@ -318,7 +319,9 @@ reporte. Lo que queda abierto, con lo que bloquea cada uno, está listado en
 - El umbral de riesgo por asistencia.
 - ¿Una captura a medias debería dar calificación? Se resolvió excluyéndola (D-019),
   pero sin preguntárselo a la usuaria.
-- El umbral real de riesgo por asistencia. Bloquea solo el color de alerta de C13.
+- El umbral real de riesgo por asistencia y de promedio. Ya no bloquea nada: `C13`
+  se construyó con los del prototipo —90 % y 6.0— y **la pantalla los escribe**, así
+  que el día que ella diga otro número es cambiar una constante.
 
 Ninguno bloquea C28. Si aparece uno nuevo, se marca `[POR VALIDAR]` y se anota en
 `docs/ESTADO.md` qué commit detiene.

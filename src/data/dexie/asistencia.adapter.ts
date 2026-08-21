@@ -35,6 +35,23 @@ export class DexieAsistenciaRepo implements AsistenciaRepo {
   }
 
   /**
+   * El rango completo en una sola consulta sobre el índice `fecha`, igual que el
+   * mes. Un trimestre son unos sesenta días y noventa consultas para pintar un
+   * resumen es justo lo que hace que abrir una pantalla se sienta lento.
+   */
+  async porRango(desde: Fecha, hasta: Fecha): Promise<RegistroAsistencia[]> {
+    const delRango = await db.asistencia
+      .where('fecha')
+      .between(desde, hasta, true, true)
+      .toArray()
+    return delRango.filter((r) => r.deleted_at === null)
+  }
+
+  observarRango(desde: Fecha, hasta: Fecha): Suscribible<RegistroAsistencia[]> {
+    return liveQuery(() => this.porRango(desde, hasta))
+  }
+
+  /**
    * Upsert por `[fecha+alumno_id]`: marcar dos veces al mismo alumno el mismo
    * día actualiza su registro, nunca crea un segundo.
    *

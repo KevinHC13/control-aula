@@ -66,6 +66,11 @@ export function promedioDe(valores: number[]): number | null {
  * Un alumno está en riesgo si su asistencia baja del umbral, o si su promedio
  * lo hace. Un promedio null —sin calificaciones capturadas— no cuenta como
  * riesgo: es ausencia de datos, no un dato malo.
+ *
+ * Ojo con las escalas: `pct` es 0–100 y **`promedio` viene en base 10**, que es la
+ * escala del umbral y la que ella lee. La cadena de cálculo viaja en base 1, así
+ * que quien llama convierte —sin eso, un 9.0 se compararía como 0.9 y el grupo
+ * entero saldría marcado—.
  */
 export function enRiesgo(pct: number, promedio: number | null): boolean {
   if (pct < UMBRAL_ASISTENCIA) return true

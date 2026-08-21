@@ -332,16 +332,41 @@ Cómo quedó, más allá de la lista:
   escribe, no un toque que cicla, y guardar a media frase dejaría media frase
   contando para conducta.
 
-### ⬜ C13 · `feat(grupo): mostrar resumen de asistencia y promedio`
+### ✅ C13 · `feat(grupo): mostrar resumen de asistencia y promedio`
 
 El promedio ya no es `promedioDe(calificaciones)`: es el del trimestre activo, así
 que la parte de calificaciones de esta pantalla depende de C28. La de asistencia,
-no. Si se toma antes, se toma solo con asistencia.
+no. Se tomó con las dos, ya con C28 hecho.
 
 **Aceptación**
-- [ ] Los valores coinciden con un conteo manual de la base
-- [ ] Sin calificaciones, el promedio muestra `—`, no `0.0`
-- [ ] El color de alerta usa el umbral validado con ella
+- [x] Los valores coinciden con un conteo manual de la base
+- [x] Sin calificaciones, el promedio muestra `—`, no `0.0`
+- [~] El color de alerta usa el umbral validado con ella
+
+El último **no se puede cerrar sin ella**: el umbral sigue sin validar y es el
+`[POR VALIDAR]` más viejo del proyecto. Lo que se hizo en su lugar es no esconderlo:
+se marca con los umbrales de arranque —90 % y 6.0— y **la pantalla los escribe**. Un
+color de alerta cuyo criterio no se ve es un color en el que no se puede confiar, y
+así el día que ella diga otro número el cambio es una constante.
+
+Cómo quedó:
+
+- **Dos cifras arriba y la lista debajo**, con las mismas dos por alumno y en columnas
+  fijas, para recorrerlas sin leer las etiquetas. Ni gráficas ni tendencias: lo que se
+  necesita al abrir es *a quién hay que mirar*.
+- **El promedio sale de `reporteDeTrimestre`**, así que un trimestre cerrado muestra
+  su snapshot y uno abierto lo calculado, y esta pantalla no repite esa decisión.
+- **Sin días capturados no se marca a nadie**, y el porcentaje es `—` en vez de 100:
+  `porcentajeAsistencia` devuelve 100 sin registros —correcto para su uso— y para el
+  resumen eso sería asistencia perfecta inventada. Marcar por falta de datos volvería
+  el aviso ruido las dos primeras semanas del trimestre.
+- **El promedio del grupo es el de quienes tienen calificación**, no el de todos con
+  los huecos en cero (D-019).
+- Una trampa que costó un comentario en `rules.ts`: `enRiesgo` compara contra 6.0,
+  que es **base 10**, y toda la cadena de cálculo viaja en base 1. Sin convertir, un
+  9.0 se compara como 0.9 y el grupo entero sale marcado.
+- El puerto de asistencia ganó `porRango`/`observarRango`, como los de bitácora y
+  participaciones: el resumen es un trimestre y el puerto recibe fechas.
 
 ### ✅ C14 · `feat: exportar e importar respaldo en json`
 

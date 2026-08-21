@@ -228,3 +228,28 @@ describe('observarDia', () => {
     expect(emisiones).toBe(antes)
   })
 })
+
+describe('porRango', () => {
+  it('trae los días del rango y deja fuera los demás', async () => {
+    // Es el trimestre visto desde el resumen del grupo: la atribución se deriva de
+    // la fecha, así que el puerto recibe fechas y no un trimestre.
+    await repo.marcar(ALUMNO, '2026-08-23', 'presente')
+    await repo.marcar(ALUMNO, '2026-08-24', 'ausente')
+    await repo.marcar(ALUMNO, '2026-11-27', 'retardo')
+    await repo.marcar(ALUMNO, '2026-11-28', 'presente')
+
+    const delRango = await repo.porRango('2026-08-24', '2026-11-27')
+    expect(delRango.map((r) => r.fecha).sort()).toEqual(['2026-08-24', '2026-11-27'])
+  })
+
+  it('trae a todos los alumnos del rango, no solo a uno', async () => {
+    await repo.marcar(ALUMNO, HOY, 'presente')
+    await repo.marcar(OTRO, HOY, 'ausente')
+
+    expect(await repo.porRango(AYER, HOY)).toHaveLength(2)
+  })
+
+  it('un rango sin registros devuelve la lista vacía, no falla', async () => {
+    expect(await repo.porRango('2027-01-01', '2027-03-01')).toEqual([])
+  })
+})

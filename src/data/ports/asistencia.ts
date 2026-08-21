@@ -27,6 +27,17 @@ export interface AsistenciaRepo {
   observarMes(mes: Mes): Suscribible<RegistroAsistencia[]>
 
   /**
+   * Los registros de un rango de fechas, sin los borrados. Es el trimestre visto
+   * desde el resumen del grupo: la atribución al trimestre se deriva de la fecha,
+   * así que el puerto recibe fechas y no un trimestre —igual que `bitacora` y
+   * `participaciones`—.
+   */
+  porRango(desde: Fecha, hasta: Fecha): Promise<RegistroAsistencia[]>
+
+  /** Lo mismo, reactivo: el resumen se corrige al pasar lista, sin recargar. */
+  observarRango(desde: Fecha, hasta: Fecha): Suscribible<RegistroAsistencia[]>
+
+  /**
    * Deja al alumno en ese estado ese día. Es un upsert: marcar dos veces el
    * mismo alumno el mismo día actualiza el registro, nunca crea un segundo —el
    * índice `[fecha+alumno_id]` es lo que lo garantiza.

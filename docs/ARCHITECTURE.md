@@ -45,6 +45,7 @@ src/
 │   ├─ participacion.ts
 │   ├─ sorteo.ts
 │   ├─ equipos.ts
+│   ├─ resumen.ts
 │   └─ respaldo.ts
 │
 ├─ services/                 Única salida a red del cliente

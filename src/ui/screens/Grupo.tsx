@@ -7,6 +7,7 @@ import { CargarLista } from '@/ui/screens/CargarLista'
 import { CicloEscolar } from '@/ui/screens/CicloEscolar'
 import { CriteriosYPesos } from '@/ui/screens/CriteriosYPesos'
 import { Equipos } from '@/ui/screens/Equipos'
+import { ResumenDelGrupo } from '@/ui/screens/ResumenDelGrupo'
 import { Respaldo } from '@/ui/screens/Respaldo'
 import { Rubricas } from '@/ui/screens/Rubricas'
 
@@ -83,12 +84,14 @@ export function Grupo() {
         </Button>
       </header>
 
-      {/* El resumen del grupo es todavía un placeholder (C13). Los equipos entran
-          aquí porque son una herramienta sobre la composición del salón, no sobre
-          el día. */}
+      {/* Los equipos entran aquí porque son una herramienta sobre la composición
+          del salón, no sobre el día. Van arriba del resumen porque se usan en
+          clase; el resumen se lee cuando hay tiempo. */}
       <Button variant="outline" className="self-start" onClick={() => setVista('equipos')}>
         Formar equipos
       </Button>
+
+      <ResumenDelGrupo />
     </section>
   )
 }
