@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   aBase10,
   aportacionAlFinal,
+  aportacionesQueSuman,
   calificacionDeCriterio,
   calificacionDeTrimestre,
   comoCalificacion,
@@ -465,5 +466,83 @@ describe('aportacionAlFinal', () => {
 
   it('sin nada capturado no hay aportación que calcular', () => {
     expect(aportacionAlFinal(1, 40, 0)).toBeNull()
+  })
+})
+
+/**
+ * La suma de las cifras **como se muestran**, no de los valores exactos. Es la
+ * cuenta que hace quien mira la pantalla, y es la que tiene que cuadrar.
+ */
+function sumaVisible(valores: readonly (number | null)[]): string {
+  const decimas = valores.reduce<number>(
+    (total, v) => total + (v === null ? 0 : Math.round(v * 100)),
+    0,
+  )
+  return (decimas / 10).toFixed(1)
+}
+
+describe('aportacionesQueSuman', () => {
+  it('cierra el caso que se veía mal en pantalla', () => {
+    // Pesos 40, 30 y 20 sobre 90 evaluados: las aportaciones reales son 4.44, 0 y
+    // 2.22, que mostradas daban «4.4 + 0.0 + 2.2 = 6.6» con un total de 6.7.
+    const criterios = [
+      { valor: 1, peso: 40 },
+      { valor: 0, peso: 30 },
+      { valor: 1, peso: 20 },
+    ]
+    const { valor, pesoConsiderado } = calificacionDeTrimestre(criterios)
+    expect(pesoConsiderado).toBe(90)
+    expect(comoCalificacion(valor)).toBe('6.7')
+
+    const crudas = criterios.map((c) => aportacionAlFinal(c.valor, c.peso, pesoConsiderado))
+    const ajustadas = aportacionesQueSuman(crudas, valor)
+
+    expect(ajustadas.map((a) => comoCalificacion(a))).toEqual(['4.5', '0.0', '2.2'])
+    // Y lo que importa: lo que se ve suma lo que se ve.
+    expect(sumaVisible(ajustadas)).toBe(comoCalificacion(valor))
+  })
+
+  it('no toca nada cuando las aportaciones ya cuadran', () => {
+    const criterios = [
+      { valor: 1, peso: 40 },
+      { valor: 0, peso: 30 },
+      { valor: 0.2, peso: 30 },
+    ]
+    const { valor, pesoConsiderado } = calificacionDeTrimestre(criterios)
+    const crudas = criterios.map((c) => aportacionAlFinal(c.valor, c.peso, pesoConsiderado))
+
+    expect(aportacionesQueSuman(crudas, valor).map((a) => comoCalificacion(a))).toEqual([
+      '4.0',
+      '0.0',
+      '0.6',
+    ])
+  })
+
+  it('la suma cuadra con repartos que no dan cifras redondas', () => {
+    // Tres criterios iguales: 3.33 cada uno, y el total 10.0. Alguno tiene que
+    // subir a 3.4 o la columna no cierra.
+    const criterios = [
+      { valor: 1, peso: 33 },
+      { valor: 1, peso: 33 },
+      { valor: 1, peso: 34 },
+    ]
+    const { valor, pesoConsiderado } = calificacionDeTrimestre(criterios)
+    const ajustadas = aportacionesQueSuman(
+      criterios.map((c) => aportacionAlFinal(c.valor, c.peso, pesoConsiderado)),
+      valor,
+    )
+
+    expect(sumaVisible(ajustadas)).toBe(comoCalificacion(valor))
+  })
+
+  it('los criterios sin calificar siguen sin aportar', () => {
+    const ajustadas = aportacionesQueSuman([0.4, null, 0.2], 0.6)
+
+    expect(ajustadas[1]).toBeNull()
+    expect(sumaVisible(ajustadas)).toBe('6.0')
+  })
+
+  it('sin calificación final no hay nada que repartir', () => {
+    expect(aportacionesQueSuman([null, null], null)).toEqual([null, null])
   })
 })

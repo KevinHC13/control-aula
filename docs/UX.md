@@ -107,6 +107,24 @@ De ahí tres reglas que salieron de leerla con datos reales el 2026-08-21:
    de cabeza. La columna *aporta* suma exactamente el final —y el último renglón lo
    dice—, así que la cuenta se verifica sin hacerla.
 
+Dos cosas que costaron una corrección, y valen como regla:
+
+- **«5.2 sobre 70» era indefendible.** Quería decir «5.2, calculado con el 70 % del
+  trimestre», y se lee como la fracción 5.2/70, que no significa nada. Ahora dice
+  **«falta 30 %»**: no se puede confundir con una parte de la calificación y además es
+  la mitad accionable.
+- **Una columna que dice sumar, tiene que sumar a la vista.** Con las aportaciones
+  redondeadas cada una por su cuenta, «4.4 + 0.0 + 2.2» daba 6.6 junto a un total de
+  6.7. Quien hace la suma concluye que la app está mal y deja de confiar en el resto
+  de los números. Se reparte la última décima por resto mayor
+  (`aportacionesQueSuman`), a cambio de que una aportación pueda salir en 4.5 donde el
+  producto exacto da 4.44: el lector usa esa columna para verificar la suma, y si
+  quiere el producto tiene el peso y la nota al lado.
+
+Y las dos cifras del desglose llevan encabezado —«su nota / de 10» y «aporta / al
+final»— porque están en escalas distintas: sin decirlo, «10.0» y «4.5» en la misma
+fila parecen un error.
+
 Lo que **no** se hizo, y por qué: cambiar la tabla para mostrar aportaciones en vez de
 calificaciones la habría hecho más reveladora, pero si la escuela le pide «la
 calificación de conducta» dejaría de verla. Y una barra proporcional por alumno se lee

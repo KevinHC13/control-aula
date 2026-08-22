@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 
 import type { CalificacionDeAlumno } from '@/application/calificaciones'
 import { CAMPOS_CON_NOMBRE } from '@/application/evaluacion'
-import { aportacionAlFinal, comoCalificacion } from '@/domain/calculo'
+import { aportacionAlFinal, aportacionesQueSuman, comoCalificacion } from '@/domain/calculo'
 import type { Trimestre } from '@/domain/entities'
 import type { CampoFormativo } from '@/domain/values'
 import { IconoAtras } from '@/ui/components/iconos'
@@ -278,8 +278,11 @@ function TablaDelGrupo({
               <td className="cifra px-2 text-right text-base font-semibold text-tinta">
                 {comoCalificacion(a.general)}
                 {a.pesoConsiderado < 100 && a.general !== null && (
-                  <span className="block text-[13px] font-normal text-tinta-2">
-                    sobre {a.pesoConsiderado}
+                  /* «sobre 70» se leía como la fracción 5.2/70, que no significa
+                     nada. Lo que falta por evaluar sí se entiende solo, y es
+                     además lo accionable. */
+                  <span className="block text-[13px] font-normal text-ambar">
+                    falta {100 - a.pesoConsiderado}%
                   </span>
                 )}
               </td>
@@ -302,6 +305,16 @@ function TablaDelGrupo({
 function DetalleDeAlumno({ alumno }: { alumno: CalificacionDeAlumno }) {
   const campos = CAMPOS_CON_NOMBRE.filter((c) => alumno.porCampo[c.campo] !== undefined)
 
+  // Se calculan de una vez y para el conjunto: el ajuste de la última décima
+  // depende de todas las aportaciones a la vez, así que no se puede decidir
+  // criterio por criterio dentro del map.
+  const aportaciones = aportacionesQueSuman(
+    alumno.criterios.map((c) =>
+      aportacionAlFinal(c.general, c.peso, alumno.pesoConsiderado),
+    ),
+    alumno.general,
+  )
+
   return (
     <div className="flex flex-col gap-4">
       <div>
@@ -316,7 +329,7 @@ function DetalleDeAlumno({ alumno }: { alumno: CalificacionDeAlumno }) {
           {alumno.general === null
             ? 'Este alumno todavía no tiene ninguna evaluación registrada'
             : alumno.pesoConsiderado < 100
-              ? `Sacado de ${alumno.pesoConsiderado} de 100 del trimestre: el resto no se ha capturado`
+              ? `Calculada solo con el ${alumno.pesoConsiderado}% del trimestre que ya está evaluado. Falta evaluar el ${100 - alumno.pesoConsiderado}% restante, así que esta calificación todavía puede cambiar.`
               : 'Del trimestre completo'}
         </p>
       </div>
@@ -330,10 +343,20 @@ function DetalleDeAlumno({ alumno }: { alumno: CalificacionDeAlumno }) {
         </h2>
         {/* Los encabezados de las dos cifras: sin ellos, «10.0» y «4.0» en la misma
             fila parecen un error en vez de dos cosas distintas. */}
-        <div className="flex items-baseline gap-2 border-b border-linea pb-1">
+        {/* Las dos cifras están en escalas distintas y eso hay que decirlo: la
+            primera es la calificación de ese criterio por sí solo, de 0 a 10; la
+            segunda es lo que pone en el final, que depende de su porcentaje. Sin
+            los encabezados, «3.3» y «0.7» en la misma fila parecen un error. */}
+        <div className="flex items-end gap-2 border-b border-linea pb-1">
           <span className="min-w-0 flex-1 text-[13px] text-tinta-2">criterio</span>
-          <span className="w-14 text-right text-[13px] text-tinta-2">califica</span>
-          <span className="w-14 text-right text-[13px] text-tinta-2">aporta</span>
+          <span className="w-16 text-right text-[13px] leading-tight text-tinta-2">
+            su nota
+            <span className="block text-tinta-2/70">de 10</span>
+          </span>
+          <span className="w-16 text-right text-[13px] leading-tight text-tinta-2">
+            aporta
+            <span className="block text-tinta-2/70">al final</span>
+          </span>
         </div>
         <ul>
           {alumno.criterios.length === 0 && (
@@ -350,7 +373,7 @@ function DetalleDeAlumno({ alumno }: { alumno: CalificacionDeAlumno }) {
                 </span>
                 <span
                   className={cn(
-                    'cifra w-14 text-right text-base',
+                    'cifra w-16 text-right text-base',
                     c.general === null ? 'text-tinta-2/50' : 'text-tinta-2',
                   )}
                 >
@@ -360,13 +383,11 @@ function DetalleDeAlumno({ alumno }: { alumno: CalificacionDeAlumno }) {
                     exacto, así que la cuenta se puede verificar sin hacerla. */}
                 <span
                   className={cn(
-                    'cifra w-14 text-right text-base',
+                    'cifra w-16 text-right text-base',
                     c.general === null ? 'text-tinta-2/50' : 'font-semibold text-tinta',
                   )}
                 >
-                  {comoCalificacion(
-                    aportacionAlFinal(c.general, c.peso, alumno.pesoConsiderado),
-                  )}
+                  {comoCalificacion(aportaciones[i] ?? null)}
                 </span>
               </div>
               {c.general === null ? (
@@ -393,8 +414,8 @@ function DetalleDeAlumno({ alumno }: { alumno: CalificacionDeAlumno }) {
             <span className="min-w-0 flex-1 text-[13px] text-tinta-2">
               La columna de la derecha suma la calificación final
             </span>
-            <span className="w-14 shrink-0" />
-            <span className="cifra w-14 shrink-0 text-right text-base font-semibold text-tinta">
+            <span className="w-16 shrink-0" />
+            <span className="cifra w-16 shrink-0 text-right text-base font-semibold text-tinta">
               {comoCalificacion(alumno.general)}
             </span>
           </div>

@@ -346,6 +346,59 @@ export function aportacionAlFinal(
   return (valor * peso) / pesoConsiderado
 }
 
+/**
+ * Las aportaciones ajustadas para que, **mostradas con un decimal, sumen exactamente
+ * la calificación final**.
+ *
+ * Sin esto la columna se contradice a la vista: con pesos 40 y 20 sobre 90, las
+ * aportaciones reales son 4.44 y 2.22, que mostradas dan «4.4 + 2.2 = 6.6» mientras
+ * el total dice 6.7. Quien hace la suma concluye que la app está mal, y deja de
+ * confiar en el resto de los números —que sí están bien—.
+ *
+ * El reparto es por **resto mayor**: se truncan todas a la décima, se cuenta lo que
+ * falta para llegar al total y esa diferencia se reparte entre las que quedaron más
+ * cerca de subir. Es lo que hace cualquier tabla de porcentajes que tenga que cerrar
+ * en 100.
+ *
+ * Lo que cuesta: una aportación puede salir en 4.5 donde el producto exacto da 4.44.
+ * Se acepta a cambio de que la columna cuadre, porque el lector la usa para verificar
+ * la suma, no para recalcular el producto —si quisiera el producto tiene el peso y la
+ * nota, que están al lado—.
+ *
+ * Devuelve los valores en base 1, como todo lo demás: `comoCalificacion` sigue siendo
+ * el único lugar que redondea.
+ */
+export function aportacionesQueSuman(
+  aportaciones: readonly (number | null)[],
+  total: number | null,
+): (number | null)[] {
+  if (total === null) return aportaciones.map(() => null)
+
+  // Todo en décimas de la base 10, que es la unidad que se muestra: una
+  // aportación en base 1 por 100 son las décimas que se ven.
+  const enDecimas = aportaciones.map((a) => (a === null ? null : a * 100))
+  const objetivo = Math.round(total * 100)
+
+  const truncadas = enDecimas.map((d) => (d === null ? null : Math.floor(d)))
+  const yaRepartido = truncadas.reduce<number>((suma, d) => suma + (d ?? 0), 0)
+
+  // Las que están más cerca de la siguiente décima suben primero.
+  const porResto = enDecimas
+    .map((d, i) => ({ i, resto: d === null ? -1 : d - Math.floor(d) }))
+    .filter((x) => x.resto >= 0)
+    .sort((a, b) => b.resto - a.resto)
+
+  const ajustadas = [...truncadas]
+  let faltan = objetivo - yaRepartido
+  for (const { i } of porResto) {
+    if (faltan <= 0) break
+    ajustadas[i] = (ajustadas[i] ?? 0) + 1
+    faltan -= 1
+  }
+
+  return ajustadas.map((d) => (d === null ? null : d / 100))
+}
+
 /*
  * Presentación
  * ============
