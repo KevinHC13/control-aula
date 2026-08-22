@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 
 import type { CalificacionDeAlumno } from '@/application/calificaciones'
 import { CAMPOS_CON_NOMBRE } from '@/application/evaluacion'
-import { comoCalificacion } from '@/domain/calculo'
+import { aportacionAlFinal, comoCalificacion } from '@/domain/calculo'
 import type { Trimestre } from '@/domain/entities'
 import type { CampoFormativo } from '@/domain/values'
 import { IconoAtras } from '@/ui/components/iconos'
@@ -158,6 +158,7 @@ export function ReporteDelTrimestre({
                           clave: `${c.nombre}-${i}`,
                           corto: c.nombre,
                           largo: `${c.nombre}, ${c.peso}% del trimestre`,
+                          peso: c.peso,
                           valor: (a: CalificacionDeAlumno) => a.criterios[i]?.general ?? null,
                         }))
                   }
@@ -176,6 +177,8 @@ interface Columna {
   clave: string
   corto: string
   largo: string
+  /** El porcentaje del trimestre, cuando la columna es un criterio. */
+  peso?: number
   valor: (alumno: CalificacionDeAlumno) => number | null
 }
 
@@ -212,10 +215,15 @@ function TablaDelGrupo({
               <th
                 key={c.clave}
                 scope="col"
-                title={c.largo}
-                className="px-2 pb-1 text-right text-[13px] font-medium text-tinta-2"
+                className="px-2 pb-1 align-bottom text-right text-[13px] font-medium text-tinta-2"
               >
-                {c.corto}
+                <span className="block leading-tight">{c.corto}</span>
+                {/* El peso, a la vista. Antes vivía en un `title=` —un tooltip— y en
+                    iPad no hay hover: en el dispositivo de destino no existía, y sin
+                    él la fila «10.0 · 0.0 · 2.0 → 4.6» no se puede entender. */}
+                {c.peso !== undefined && (
+                  <span className="cifra block font-normal text-tinta-2/70">{c.peso}%</span>
+                )}
               </th>
             ))}
             <th scope="col" className="px-2 pb-1 text-right text-[13px] font-medium text-tinta">
@@ -246,11 +254,27 @@ function TablaDelGrupo({
                   </span>
                 </button>
               </th>
-              {columnas.map((c) => (
-                <td key={c.clave} className="cifra px-2 text-right text-base text-tinta-2">
-                  {comoCalificacion(c.valor(a))}
-                </td>
-              ))}
+              {columnas.map((c) => {
+                const valor = c.valor(a)
+                return (
+                  <td
+                    key={c.clave}
+                    className={cn(
+                      'cifra px-2 text-right text-base',
+                      // Tres estados que se veían casi iguales: sin calificar es un
+                      // hueco y va tenue; el cero es un dato duro y va en rojo,
+                      // porque es el que hunde el promedio y hay que verlo.
+                      valor === null
+                        ? 'text-tinta-2/50'
+                        : valor === 0
+                          ? 'text-rojo'
+                          : 'text-tinta-2',
+                    )}
+                  >
+                    {comoCalificacion(valor)}
+                  </td>
+                )
+              })}
               <td className="cifra px-2 text-right text-base font-semibold text-tinta">
                 {comoCalificacion(a.general)}
                 {a.pesoConsiderado < 100 && a.general !== null && (
@@ -300,10 +324,17 @@ function DetalleDeAlumno({ alumno }: { alumno: CalificacionDeAlumno }) {
       <section aria-labelledby="desglose-criterios" className="flex flex-col">
         <h2
           id="desglose-criterios"
-          className="border-b border-linea pb-1 text-base font-medium text-tinta"
+          className="text-base font-medium text-tinta"
         >
           Por criterio
         </h2>
+        {/* Los encabezados de las dos cifras: sin ellos, «10.0» y «4.0» en la misma
+            fila parecen un error en vez de dos cosas distintas. */}
+        <div className="flex items-baseline gap-2 border-b border-linea pb-1">
+          <span className="min-w-0 flex-1 text-[13px] text-tinta-2">criterio</span>
+          <span className="w-14 text-right text-[13px] text-tinta-2">califica</span>
+          <span className="w-14 text-right text-[13px] text-tinta-2">aporta</span>
+        </div>
         <ul>
           {alumno.criterios.length === 0 && (
             <li className="py-2 text-base text-tinta-2">
@@ -313,15 +344,29 @@ function DetalleDeAlumno({ alumno }: { alumno: CalificacionDeAlumno }) {
           {alumno.criterios.map((c, i) => (
             <li key={`${c.nombre}-${i}`} className="border-b border-linea py-2">
               <div className="flex items-baseline gap-2">
-                <span className="min-w-0 flex-1 truncate text-base text-tinta">{c.nombre}</span>
-                <span className="cifra text-[13px] text-tinta-2">{c.peso}%</span>
+                <span className="min-w-0 flex-1 text-base text-tinta">
+                  {c.nombre}{' '}
+                  <span className="cifra text-[13px] text-tinta-2">{c.peso}%</span>
+                </span>
                 <span
                   className={cn(
-                    'cifra w-12 text-right text-base',
-                    c.general === null ? 'text-tinta-2' : 'font-semibold text-tinta',
+                    'cifra w-14 text-right text-base',
+                    c.general === null ? 'text-tinta-2/50' : 'text-tinta-2',
                   )}
                 >
                   {comoCalificacion(c.general)}
+                </span>
+                {/* Lo que este criterio pone en el final. La columna suma el final
+                    exacto, así que la cuenta se puede verificar sin hacerla. */}
+                <span
+                  className={cn(
+                    'cifra w-14 text-right text-base',
+                    c.general === null ? 'text-tinta-2/50' : 'font-semibold text-tinta',
+                  )}
+                >
+                  {comoCalificacion(
+                    aportacionAlFinal(c.general, c.peso, alumno.pesoConsiderado),
+                  )}
                 </span>
               </div>
               {c.general === null ? (
@@ -339,6 +384,21 @@ function DetalleDeAlumno({ alumno }: { alumno: CalificacionDeAlumno }) {
             </li>
           ))}
         </ul>
+
+        {/* El renglón que cierra la cuenta: la columna de la derecha suma esto, y
+            esto es el final de arriba. Sin decirlo, la relación entre las dos
+            cifras hay que descubrirla sumando de cabeza. */}
+        {alumno.criterios.length > 0 && alumno.general !== null && (
+          <div className="flex items-baseline gap-2 pt-2">
+            <span className="min-w-0 flex-1 text-[13px] text-tinta-2">
+              La columna de la derecha suma la calificación final
+            </span>
+            <span className="w-14 shrink-0" />
+            <span className="cifra w-14 shrink-0 text-right text-base font-semibold text-tinta">
+              {comoCalificacion(alumno.general)}
+            </span>
+          </div>
+        )}
       </section>
 
       {campos.length > 0 && (

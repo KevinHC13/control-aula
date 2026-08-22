@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   aBase10,
+  aportacionAlFinal,
   calificacionDeCriterio,
   calificacionDeTrimestre,
   comoCalificacion,
@@ -413,5 +414,56 @@ describe('valorParticipacion', () => {
     // El mismo alumno con la misma meta vale lo mismo, participe mucho o poco el
     // resto: un alumno muy participativo no hunde a los demás.
     expect(valorParticipacion(2, 5, 4)).toBe(valorParticipacion(2, 5, 400))
+  })
+})
+
+describe('aportacionAlFinal', () => {
+  it('las aportaciones suman exactamente el final', () => {
+    // El caso que se ve en la pantalla: pesos 40/30/30, conducta en 10, puntualidad
+    // en 0 y participación en 2 dan 4.6.
+    const criterios = [
+      { valor: 1, peso: 40 },
+      { valor: 0, peso: 30 },
+      { valor: 0.2, peso: 30 },
+    ]
+    const { valor, pesoConsiderado } = calificacionDeTrimestre(criterios)
+
+    const aportaciones = criterios.map((c) =>
+      aportacionAlFinal(c.valor, c.peso, pesoConsiderado),
+    )
+
+    expect(aportaciones.map((a) => comoCalificacion(a))).toEqual(['4.0', '0.0', '0.6'])
+    // Y suman el final, que es toda la razón de que esta función exista.
+    const suma = aportaciones.reduce<number>((total, a) => total + (a ?? 0), 0)
+    expect(comoCalificacion(suma)).toBe(comoCalificacion(valor))
+    expect(comoCalificacion(valor)).toBe('4.6')
+  })
+
+  it('suman el final también cuando falta capturar criterios', () => {
+    // Con media captura el final se normaliza sobre lo que aporta (D-019), así que
+    // las aportaciones se normalizan igual o la columna mentiría.
+    const criterios = [
+      { valor: 1, peso: 40 },
+      { valor: null, peso: 60 },
+    ]
+    const { valor, pesoConsiderado } = calificacionDeTrimestre(criterios)
+
+    expect(pesoConsiderado).toBe(40)
+    // El único que aporta se lleva el final completo.
+    expect(comoCalificacion(aportacionAlFinal(1, 40, pesoConsiderado))).toBe('10.0')
+    expect(comoCalificacion(valor)).toBe('10.0')
+  })
+
+  it('un criterio sin calificar no aporta', () => {
+    expect(aportacionAlFinal(null, 40, 100)).toBeNull()
+  })
+
+  it('un criterio con peso cero no aporta, aunque tenga calificación', () => {
+    // Pasa de verdad: un criterio recién agregado nace en 0 %.
+    expect(aportacionAlFinal(1, 0, 100)).toBeNull()
+  })
+
+  it('sin nada capturado no hay aportación que calcular', () => {
+    expect(aportacionAlFinal(1, 40, 0)).toBeNull()
   })
 })

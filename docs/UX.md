@@ -83,6 +83,36 @@ Un estado vacío es una invitación a actuar: *"Todavía no hay notas. La primer
 escribe arriba."* Un error dice qué pasó y qué hacer, en voz de la interfaz, no
 de una persona.
 
+## El reporte del trimestre: dos trabajos, dos vistas
+
+La pantalla hace dos cosas distintas y conviene no mezclarlas, porque cada una pide
+un formato:
+
+- **Comparar alumnos** —para transcribir la boleta y ver quién va mal— es lo que hace
+  la tabla. Ahí manda la columna: números alineados, una fila por alumno.
+- **Explicar de dónde sale un número** es lo que hace el desglose de un alumno. Ahí
+  manda la cuenta.
+
+De ahí tres reglas que salieron de leerla con datos reales el 2026-08-21:
+
+1. **El peso de cada criterio va escrito en el encabezado.** Estaba en un `title=`,
+   o sea un tooltip, y **en iPad no hay hover**: en el dispositivo de destino esa
+   información no existía, y sin ella la fila «10.0 · 0.0 · 2.0 → 4.6» es
+   indescifrable. Un dato que explica otro no puede vivir en un tooltip.
+2. **Un cero real, un hueco y una calificación se ven distintos.** El `0.0` va en
+   rojo porque es el dato que hunde el promedio; el `—` va tenue porque es ausencia.
+   Antes los tres compartían color y tamaño.
+3. **El desglose muestra la aportación, no solo la calificación.** «Conducta 40% →
+   10.0» y un final de «4.6» dejaban una multiplicación en medio que había que hacer
+   de cabeza. La columna *aporta* suma exactamente el final —y el último renglón lo
+   dice—, así que la cuenta se verifica sin hacerla.
+
+Lo que **no** se hizo, y por qué: cambiar la tabla para mostrar aportaciones en vez de
+calificaciones la habría hecho más reveladora, pero si la escuela le pide «la
+calificación de conducta» dejaría de verla. Y una barra proporcional por alumno se lee
+bonito y pierde lo único que una tabla sabe hacer: comparar treinta filas de un
+vistazo.
+
 ## Cómo se escriben los textos
 
 Salió de una lectura completa de la app el 2026-08-21, cuando ya estaban las

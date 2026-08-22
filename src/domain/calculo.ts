@@ -319,6 +319,33 @@ export function calificacionDeTrimestre(
   return { valor: suma / pesoConsiderado, pesoConsiderado }
 }
 
+/**
+ * Cuánto de la calificación final pone un criterio: su valor por la parte del
+ * trimestre que le toca.
+ *
+ * Existe porque el desglose por alumno mostraba «Conducta 40% → 10.0» y el final
+ * «4.6», y entre las dos cifras había una multiplicación que había que hacer de
+ * cabeza. Con esto la columna **suma exactamente el final**, y se puede verificar
+ * de un vistazo.
+ *
+ * Se divide entre `pesoConsiderado` y no entre 100, por la misma razón que la
+ * fórmula del trimestre: cuando falta capturar criterios, el final se normaliza
+ * sobre los que sí aportan (D-019), y las aportaciones tienen que sumar ese mismo
+ * final o la columna mentiría.
+ *
+ * `null` cuando el criterio no aporta —sin calificar, o con peso cero—: es lo
+ * mismo que devuelve el criterio, y así la pantalla lo pinta igual que el resto de
+ * lo que no hay.
+ */
+export function aportacionAlFinal(
+  valor: number | null,
+  peso: number,
+  pesoConsiderado: number,
+): number | null {
+  if (valor === null || peso <= 0 || pesoConsiderado <= 0) return null
+  return (valor * peso) / pesoConsiderado
+}
+
 /*
  * Presentación
  * ============
