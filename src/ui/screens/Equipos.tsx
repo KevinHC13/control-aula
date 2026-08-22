@@ -8,13 +8,24 @@ import {
 } from '@/application/equipos'
 import { IconoAtras } from '@/ui/components/iconos'
 import { Button } from '@/ui/components/ui/button'
+import { Input } from '@/ui/components/ui/input'
 import { useAsistenciaDelDia } from '@/ui/hooks/useAsistenciaDelDia'
 import { plural } from '@/ui/lib/plural'
 import { cn } from '@/ui/lib/utils'
 import { useInterfaz } from '@/ui/store/interfaz'
 
-/** Los repartos que se piden de verdad. Un campo libre para esto es un estorbo. */
-const OPCIONES = [2, 3, 4, 5, 6] as const
+/**
+ * Los repartos más pedidos, como atajo de un toque. No son las únicas opciones: al
+ * lado hay un campo para cualquier número.
+ *
+ * Los dos conviven porque esta pantalla se usa con los niños esperando: «cuatro
+ * equipos» es un toque, y escribirlo son tres. Quitar los atajos para ganar
+ * generalidad costaría tiempo en el caso común.
+ */
+const ATAJOS = [2, 3, 4, 5, 6] as const
+
+/** El tope del campo: con dos cifras se cubre cualquier salón. */
+const MAXIMO = 99
 
 /**
  * Formar equipos.
@@ -50,6 +61,9 @@ export function Equipos({ alVolver }: { alVolver: () => void }) {
   // en vez de pintar tarjetas vacías.
   const posibles = cuantosEquipos(alumnos.length, modo, cantidad)
   const pedidos = modo === 'equipos' ? cantidad : posibles
+  // El equipo más grande del reparto: es lo que hace visible que pedir «7 por
+  // equipo» pueda dar equipos de 6.
+  const mayorEquipo = equipos.reduce((mayor, e) => Math.max(mayor, e.integrantes.length), 0)
 
   return (
     <section aria-labelledby="titulo-equipos" className="flex flex-col gap-4">
@@ -88,28 +102,32 @@ export function Equipos({ alVolver }: { alVolver: () => void }) {
           ))}
         </div>
 
-        <div
-          role="group"
-          aria-label={modo === 'equipos' ? 'Cuántos equipos' : 'Cuántos niños por equipo'}
-          className="flex flex-wrap gap-2"
-        >
-          {OPCIONES.map((n) => (
-            <button
-              key={n}
-              type="button"
-              aria-pressed={cantidad === n}
-              onClick={() => setCantidad(n)}
-              className={cn(
-                'cifra h-11 min-w-11 rounded-md border px-3 text-base outline-none',
-                'focus-visible:ring-[3px] focus-visible:ring-ring/50',
-                cantidad === n
-                  ? 'border-azul bg-azul/10 text-tinta'
-                  : 'border-linea text-tinta-2 hover:bg-cuadro',
-              )}
-            >
-              {n}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-2">
+          <div
+            role="group"
+            aria-label={modo === 'equipos' ? 'Cuántos equipos' : 'Cuántos niños por equipo'}
+            className="flex flex-wrap gap-2"
+          >
+            {ATAJOS.map((n) => (
+              <button
+                key={n}
+                type="button"
+                aria-pressed={cantidad === n}
+                onClick={() => setCantidad(n)}
+                className={cn(
+                  'cifra h-11 min-w-11 rounded-md border px-3 text-base outline-none',
+                  'focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                  cantidad === n
+                    ? 'border-azul bg-azul/10 text-tinta'
+                    : 'border-linea text-tinta-2 hover:bg-cuadro',
+                )}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+
+          <CampoDeCantidad modo={modo} cantidad={cantidad} alCambiar={setCantidad} />
         </div>
 
         <button
@@ -146,6 +164,20 @@ export function Equipos({ alVolver }: { alVolver: () => void }) {
         {alumnos.length === 0 && !cargando && (
           <p className="text-base text-tinta-2">
             No hay a quién repartir. {soloPresentes ? 'Hoy no hay nadie presente.' : ''}
+          </p>
+        )}
+
+        {/* Pedir «7 por equipo» con 30 alumnos da 5 equipos de 6, no 4 de 7 y uno
+            de 2. Es la regla de repartir el sobrante, y sorprende lo suficiente
+            como para decirla: si no, parece que la app ignoró el número. */}
+        {modo === 'por_equipo' && equipos.length > 0 && mayorEquipo !== cantidad && (
+          <p className="text-base text-tinta-2">
+            Se pidieron <span className="cifra">{cantidad}</span> por equipo. Con{' '}
+            <span className="cifra">{alumnos.length}</span> alumnos salen{' '}
+            <span className="cifra">{equipos.length}</span>{' '}
+            {plural(equipos.length, 'equipo', 'equipos')} de{' '}
+            <span className="cifra">{mayorEquipo}</span>, para que ninguno quede con muy
+            pocos integrantes.
           </p>
         )}
 
@@ -187,5 +219,67 @@ export function Equipos({ alVolver }: { alVolver: () => void }) {
         </ul>
       )}
     </section>
+  )
+}
+
+/**
+ * Cualquier número de equipos, o de niños por equipo, escrito a mano.
+ *
+ * Campo de texto y no `type="number"`: en iPad el nativo abre el teclado con
+ * desplazamiento y arriesga el zoom de Safari, y además convierte los estados
+ * intermedios —el campo vacío mientras ella borra para escribir otra cifra— en
+ * `NaN`. Es el mismo patrón que el peso de un criterio.
+ *
+ * Mientras ella escribe manda el campo; al salir, manda el valor real. Sin eso,
+ * borrar el campo para teclear otro número lo repondría solo a media palabra.
+ */
+function CampoDeCantidad({
+  modo,
+  cantidad,
+  alCambiar,
+}: {
+  modo: ModoDeReparto
+  cantidad: number
+  alCambiar: (cantidad: number) => void
+}) {
+  const [texto, setTexto] = useState(String(cantidad))
+  const [editando, setEditando] = useState(false)
+
+  function escribir(valor: string) {
+    setEditando(true)
+    setTexto(valor)
+
+    const limpio = valor.replace(/[^\d]/g, '')
+    if (limpio === '') return
+    const numero = Number(limpio)
+    // Cero no se acepta —no hay cero equipos— y del tope para arriba tampoco:
+    // pedir más de los posibles ya lo dice la pantalla, pero un número de cuatro
+    // cifras solo puede ser un dedo resbalado.
+    if (numero < 1 || numero > MAXIMO) return
+    alCambiar(numero)
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <label htmlFor="cantidad-equipos" className="text-base text-tinta-2">
+        u otro:
+      </label>
+      <Input
+        id="cantidad-equipos"
+        type="text"
+        inputMode="numeric"
+        aria-label={
+          modo === 'equipos' ? 'Otro número de equipos' : 'Otro número de niños por equipo'
+        }
+        value={editando ? texto : String(cantidad)}
+        onChange={(e) => escribir(e.target.value)}
+        // Al enfocarlo se selecciona lo que hay, así que teclear reemplaza en vez
+        // de añadir. Sin esto, en un campo de dos cifras hay que borrar antes de
+        // escribir, y con los niños esperando eso son dos toques de más.
+        onFocus={(e) => e.currentTarget.select()}
+        onBlur={() => setEditando(false)}
+        className="cifra w-16 shrink-0 text-center"
+      />
+    </div>
   )
 }

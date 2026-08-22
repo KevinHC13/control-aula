@@ -1278,7 +1278,8 @@ la pestaña **Grupo**: es una herramienta sobre la composición del salón, no s
 día.
 
 **Aceptación**
-- [x] Se puede pedir por **número de equipos** o por **niños por equipo**
+- [x] Se puede pedir por **número de equipos** o por **niños por equipo**, con
+      atajos de un toque para 2 a 6 y un campo para cualquier otro número
 - [x] El sobrante se reparte: con 30 alumnos y 4 equipos toca 8, 8, 7 y 7
 - [x] Se arma con los presentes, y se puede pedir con todo el grupo
 - [x] «Volver a sortear» da un reparto distinto
