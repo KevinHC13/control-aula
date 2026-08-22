@@ -207,8 +207,8 @@ describe('sincronizarSiSePuede', () => {
 
 describe('entrar', () => {
   it('se niega sin correo o sin contraseña, sin llamar a la red', async () => {
-    await expect(entrar('  ', 'algo')).rejects.toThrow(/Faltan/)
-    await expect(entrar('maestra@escuela.mx', '')).rejects.toThrow(/Faltan/)
+    await expect(entrar('  ', 'algo')).rejects.toThrow(/correo y la contraseña/)
+    await expect(entrar('maestra@escuela.mx', '')).rejects.toThrow(/correo y la contraseña/)
   })
 
   it('recorta el correo', async () => {

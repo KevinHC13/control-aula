@@ -98,14 +98,14 @@ export function ReporteDelTrimestre({
             )}
           >
             {reporte.delSnapshot
-              ? 'Estas calificaciones son las del corte del trimestre. No cambian aunque se corrija un peso o se renombre un criterio.'
-              : 'El trimestre está abierto: estas calificaciones se recalculan con cada captura.'}
+              ? 'Estas son las calificaciones que quedaron guardadas al cerrar el trimestre. No cambian aunque después se modifique un criterio o su valor.'
+              : 'El trimestre está abierto: estas calificaciones se actualizan solas cada vez que se registra una evaluación.'}
           </p>
 
           {incompletos > 0 && (
             <p className="text-[13px] text-tinta-2">
               {incompletos === alumnos.length
-                ? 'Todavía falta capturar criterios completos: cada calificación está sacada solo de lo que ya se calificó, no del trimestre entero.'
+                ? 'Todavía hay criterios sin calificar. Cada calificación se obtiene solamente de lo que ya está evaluado, no del trimestre completo.'
                 : `${incompletos} de ${alumnos.length} alumnos tienen criterios sin capturar: su calificación sale solo de lo que ya se calificó.`}
             </p>
           )}
@@ -200,7 +200,8 @@ function TablaDelGrupo({
     <div className="-mx-4 overflow-x-auto">
       <table className="w-full border-collapse">
         <caption className="sr-only">
-          Calificaciones del grupo. Tocar un renglón abre el desglose del alumno.
+          Calificaciones del grupo. Seleccione un alumno para ver de dónde sale su
+          calificación.
         </caption>
         <thead>
           <tr className="border-b border-linea">
@@ -289,7 +290,7 @@ function DetalleDeAlumno({ alumno }: { alumno: CalificacionDeAlumno }) {
         </p>
         <p className="text-[13px] text-tinta-2">
           {alumno.general === null
-            ? 'Todavía no hay nada capturado para este alumno'
+            ? 'Este alumno todavía no tiene ninguna evaluación registrada'
             : alumno.pesoConsiderado < 100
               ? `Sacado de ${alumno.pesoConsiderado} de 100 del trimestre: el resto no se ha capturado`
               : 'Del trimestre completo'}

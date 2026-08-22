@@ -49,7 +49,7 @@ export async function sesion(): Promise<Sesion | null> {
 export async function entrar(correo: string, contrasena: string): Promise<Sesion> {
   const limpio = correo.trim()
   if (limpio === '' || contrasena === '') {
-    throw new Error('Faltan el correo o la contraseña')
+    throw new Error('Hay que escribir el correo y la contraseña')
   }
   return entrarALaNube(limpio, contrasena)
 }

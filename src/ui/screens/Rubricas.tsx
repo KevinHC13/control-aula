@@ -56,8 +56,10 @@ export function Rubricas({ alVolver }: { alVolver: () => void }) {
           </p>
         ) : rubricas.length === 0 ? (
           <p className="text-base text-tinta-2">
-            Todavía no hay rúbricas. La primera se crea abajo: un renglón por cosa que
-            observas, y qué significa cada nivel.
+            Todavía no hay rúbricas. Una rúbrica es la lista de aspectos que se observan al
+            revisar un trabajo, con la descripción de lo que significa cada nivel. Se usa al
+            calificar una actividad, y la misma puede reutilizarse en varias. La primera se
+            crea con el botón de abajo.
           </p>
         ) : (
           <ul className="border-t border-linea">
@@ -324,7 +326,7 @@ function Editor({
           {listo
             ? ''
             : pendientes > 0
-              ? 'Revisa lo marcado'
+              ? 'Revise lo marcado'
               : 'Falta el nombre de la rúbrica'}
         </p>
       </div>

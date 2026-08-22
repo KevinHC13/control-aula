@@ -140,8 +140,8 @@ export function Calificaciones() {
         </p>
       ) : !ciclo ? (
         <p className="text-base text-tinta-2">
-          Primero hay que abrir el ciclo escolar, en Grupo → Ajustes. Las actividades cuelgan
-          de un trimestre.
+          Primero hay que registrar el ciclo escolar, en Grupo → Ajustes → Ciclo escolar.
+          Cada actividad pertenece a un trimestre, así que no se pueden crear todavía.
         </p>
       ) : (
         <>
@@ -170,7 +170,7 @@ export function Calificaciones() {
 
           {grupos.length === 0 && examenes.length === 0 ? (
             <p className="text-base text-tinta-2">
-              Este trimestre todavía no tiene criterios que se capturen aquí. Se configuran en
+              Este trimestre todavía no tiene criterios con los que calificar. Se agregan en
               Grupo → Ajustes → Criterios y pesos.
             </p>
           ) : (
@@ -286,7 +286,7 @@ function FilaActividad({
   // binaria, y decirlo evita abrir la actividad para averiguarlo.
   const conQue =
     actividad.rubrica_id === null
-      ? 'entregada / no entregada'
+      ? 'entregado o no entregado'
       : rubricas.find((r) => r.rubrica.id === actividad.rubrica_id)?.rubrica.nombre
 
   return (
@@ -374,7 +374,7 @@ function FilaDeExamen({
         />
         <span className="flex min-w-0 flex-1 flex-col py-2">
           <span className="truncate text-base font-medium text-tinta">
-            {listo ? 'Capturar aciertos' : 'Decir cuántas preguntas trae'}
+            {listo ? 'Registrar los aciertos' : 'Indicar cuántas preguntas tiene'}
           </span>
           <span className="text-[13px] text-tinta-2">
             {listo ? (
@@ -382,7 +382,7 @@ function FilaDeExamen({
                 <span className="cifra">{preguntas}</span> preguntas en total
               </>
             ) : (
-              'El examen se captura por aciertos, no por actividades'
+              'Antes de registrar aciertos hay que indicar cuántas preguntas tiene el examen'
             )}
           </span>
         </span>

@@ -97,7 +97,7 @@ export async function alternarEntrega(
   fila: FilaEntrega,
 ): Promise<boolean> {
   if (!aceptaEscrituras(trimestre)) {
-    throw new Error('Un trimestre cerrado no admite capturar entregas')
+    throw new Error('Este trimestre está cerrado: ya no se pueden registrar entregas')
   }
 
   const entregada = !fila.entregada

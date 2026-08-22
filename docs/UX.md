@@ -83,6 +83,34 @@ Un estado vacío es una invitación a actuar: *"Todavía no hay notas. La primer
 escribe arriba."* Un error dice qué pasó y qué hacer, en voz de la interfaz, no
 de una persona.
 
+## Cómo se escriben los textos
+
+Salió de una lectura completa de la app el 2026-08-21, cuando ya estaban las
+dieciocho pantallas y se pudo leer de corrido. Aplica a todo lo que la maestra ve:
+títulos, botones, explicaciones, estados vacíos y **mensajes de error**.
+
+- **Trato impersonal.** «Se registra con la fecha del día», no «lo registras» ni
+  «regístrelo». Es el registro más formal sin caer en el *usted* de oficina, y no
+  hay que decidirlo cada vez.
+- **Nada de arquitectura.** «Cuelga de», «esquema», «peso», «denominador»,
+  «renglón», «normalizar», «se pisa» son palabras de dentro. Fuera dicen: «pertenece
+  a», «configuración», «porcentaje», «total de preguntas», «aspecto», «se reemplaza».
+- **El *por qué* se conserva, traducido.** Las líneas que evitan una duda real se
+  quedan, en llano: «cambiar esto no toca nada capturado» pasa a «este valor puede
+  cambiarse en cualquier momento y nada se pierde». Quitarlas dejaría a la maestra
+  sin saber si un cambio borra algo.
+- **Cada pantalla dice qué hacer.** Un contador no es una instrucción. Las de captura
+  llevan una línea que explica el gesto, y la de entregas dice lo que ninguna decía y
+  era lo más importante: *todos los alumnos aparecen como entregado*.
+- **Los errores dicen qué pasó y qué se puede hacer**, no lo que el sistema no
+  admite: «Este trimestre está cerrado: sus fechas ya no se pueden cambiar», no «Un
+  trimestre cerrado no admite cambios de fecha».
+- **Las palabras del oficio se respetan.** «Capturar», «campo formativo», «trimestre»
+  y «criterio» son suyas y se quedan; lo que se traduce es la jerga del programa.
+
+Ojo al cambiarlos: **varias pruebas fijaban la redacción** de los mensajes de error.
+Si se reescribe uno, `npm test` lo dice.
+
 ## Identidad visual
 
 El sistema de color viene del **lápiz bicolor rojo y azul** — el instrumento con

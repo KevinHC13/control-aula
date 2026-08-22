@@ -148,15 +148,15 @@ export async function guardarPreguntasExamen(
   preguntas: Partial<Record<CampoFormativo, number>>,
 ): Promise<void> {
   if (!aceptaEscrituras(trimestre)) {
-    throw new Error('Un trimestre cerrado no admite cambiar el examen')
+    throw new Error('Este trimestre está cerrado: el examen ya no se puede cambiar')
   }
   if (!examenConfigurado(preguntas)) {
-    throw new Error('El examen necesita preguntas en al menos un campo')
+    throw new Error('Hay que indicar cuántas preguntas tiene el examen en al menos un campo')
   }
 
   const resultados = await repos.evaluacion.resultadosDeExamen(examen.ponderado.id)
   if (camposQueQuedanFueraDeRango(resultados, preguntas).length > 0) {
-    throw new Error('Hay alumnos con más aciertos que las preguntas nuevas')
+    throw new Error('Hay alumnos con más aciertos que las preguntas que se quieren dejar. Primero hay que corregir sus aciertos')
   }
 
   await repos.evaluacion.guardarPreguntasExamen(examen.ponderado.id, preguntas)
@@ -178,7 +178,7 @@ export async function registrarAciertos(
   aciertos: number | null,
 ): Promise<void> {
   if (!aceptaEscrituras(trimestre)) {
-    throw new Error('Un trimestre cerrado no admite capturar el examen')
+    throw new Error('Este trimestre está cerrado: ya no se pueden registrar aciertos')
   }
   if (aciertos !== null && !aciertosEnRango(aciertos, campo.preguntas)) {
     throw new Error(

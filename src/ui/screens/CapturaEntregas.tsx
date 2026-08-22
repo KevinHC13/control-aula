@@ -81,6 +81,15 @@ export function CapturaEntregas({
         </p>
       </div>
 
+      {/* Lo más importante de la pantalla, y no estaba escrito: al abrirla todos
+          quedan como entregado. Sin decirlo, se guarda un diez sin querer. */}
+      {abierto && total > 0 && (
+        <p className="text-[13px] text-tinta-2">
+          Todos los alumnos aparecen como entregado. Toque el nombre de quien no entregó
+          para marcarlo. Los cambios se guardan solos.
+        </p>
+      )}
+
       {!abierto && (
         <p className="text-[13px] text-tinta-2">
           Este trimestre está cerrado: se puede consultar, no cambiar.

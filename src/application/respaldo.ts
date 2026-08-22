@@ -67,11 +67,11 @@ export function leerRespaldo(texto: string, esquemaLocal: number): ArchivoDeResp
   try {
     crudo = JSON.parse(texto)
   } catch {
-    throw new Error('El archivo no es un JSON válido')
+    throw new Error('El archivo está dañado o no es un respaldo de Palomita')
   }
 
   if (typeof crudo !== 'object' || crudo === null) {
-    throw new Error('El archivo no es un respaldo de Palomita')
+    throw new Error('Este archivo no es un respaldo de Palomita')
   }
 
   const posible = crudo as Partial<ArchivoDeRespaldo>
@@ -81,7 +81,7 @@ export function leerRespaldo(texto: string, esquemaLocal: number): ArchivoDeResp
   }
 
   if (typeof posible.esquema !== 'number') {
-    throw new Error('El respaldo no dice de qué versión de la app viene')
+    throw new Error('El respaldo no indica de qué versión de la aplicación viene')
   }
 
   if (posible.esquema > esquemaLocal) {
@@ -99,7 +99,7 @@ export function leerRespaldo(texto: string, esquemaLocal: number): ArchivoDeResp
     posible.tablas === null ||
     Object.values(posible.tablas).some((filas) => !Array.isArray(filas))
   ) {
-    throw new Error('El respaldo no trae las tablas en el formato esperado')
+    throw new Error('El respaldo está incompleto o dañado')
   }
 
   return {

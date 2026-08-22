@@ -472,7 +472,7 @@ describe('reabrirTrimestre', () => {
     await cerrarTrimestre(trimestre, [{ peso: 100 }])
     const cerrado = (await db.trimestres.get(trimestre.id))!
 
-    await expect(reabrirTrimestre(cerrado)).rejects.toThrow(/reportaron/)
+    await expect(reabrirTrimestre(cerrado)).rejects.toThrow(/se descartan las calificaciones/)
     expect((await db.trimestres.get(trimestre.id))!.estado).toBe('cerrado')
   })
 

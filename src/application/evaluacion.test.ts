@@ -222,7 +222,7 @@ describe('abrirTrimestreSiguiente', () => {
 
     await expect(
       abrirTrimestreSiguiente(ciclo, { numero: 2, inicio: '2026-11-01', fin: '2027-03-19' }),
-    ).rejects.toThrow(/traslapa/)
+    ).rejects.toThrow(/se enciman/)
     expect((await cicloEnCurso())?.trimestres).toHaveLength(1)
   })
 
@@ -270,7 +270,7 @@ describe('revisarNuevoTrimestre', () => {
     const ciclo = (await cicloEnCurso())!
     expect(
       revisarNuevoTrimestre(ciclo, { numero: 2, inicio: '2026-02-31', fin: '2027-03-19' }),
-    ).toBe('La fecha debe ser AAAA-MM-DD')
+    ).toBe('La fecha se escribe como AAAA-MM-DD')
   })
 })
 
@@ -313,7 +313,7 @@ describe('revisarPeriodos', () => {
 
   it('marca el que le faltan fechas', () => {
     const revisados = revisarPeriodos([...BUENOS.slice(0, 2), { numero: 3, inicio: '', fin: '' }])
-    expect(revisados[2]?.problema).toBe('Faltan las fechas')
+    expect(revisados[2]?.problema).toBe('Faltan las fechas de inicio y fin')
     // Y no contagia a los que están bien.
     expect(revisados[0]?.problema).toBeUndefined()
   })
@@ -323,7 +323,7 @@ describe('revisarPeriodos', () => {
       { numero: 1, inicio: '2026-02-31', fin: '2026-11-27' },
       ...BUENOS.slice(1),
     ])
-    expect(revisados[0]?.problema).toBe('La fecha debe ser AAAA-MM-DD')
+    expect(revisados[0]?.problema).toBe('La fecha se escribe como AAAA-MM-DD')
   })
 
   it('marca el que termina antes de empezar', () => {
@@ -331,7 +331,7 @@ describe('revisarPeriodos', () => {
       { numero: 1, inicio: '2026-11-27', fin: '2026-08-24' },
       ...BUENOS.slice(1),
     ])
-    expect(revisados[0]?.problema).toBe('Termina antes de empezar')
+    expect(revisados[0]?.problema).toBe('La fecha de fin es anterior a la de inicio')
   })
 
   it('marca el traslape en las dos filas y dice con cuál choca', () => {
@@ -342,8 +342,8 @@ describe('revisarPeriodos', () => {
       { numero: 2, inicio: '2026-11-30', fin: '2027-03-19' },
       BUENOS[2]!,
     ])
-    expect(revisados[0]?.problema).toBe('Se traslapa con el trimestre 2')
-    expect(revisados[1]?.problema).toBe('Se traslapa con el trimestre 1')
+    expect(revisados[0]?.problema).toBe('Estas fechas se enciman con las del trimestre 2')
+    expect(revisados[1]?.problema).toBe('Estas fechas se enciman con las del trimestre 1')
   })
 
   it('corregir el traslape apaga las dos marcas', () => {
@@ -448,14 +448,14 @@ describe('abrirCicloEscolar', () => {
   it('no abre un ciclo con un rango invertido', async () => {
     await expect(
       abrirCicloEscolar('2026–2027', { numero: 1, inicio: '2026-11-27', fin: '2026-08-24' }),
-    ).rejects.toThrow(/antes de empezar/)
+    ).rejects.toThrow(/anterior a la de inicio/)
     expect(await cicloEnCurso()).toBeNull()
   })
 
   it('no abre un segundo ciclo mientras haya uno en curso', async () => {
     await abrirCicloEscolar('2026–2027', BUENOS[0]!)
     // Dos ciclos abiertos harían ambigua la atribución de una fecha.
-    await expect(abrirCicloEscolar('2027–2028', BUENOS[0]!)).rejects.toThrow(/abierto/)
+    await expect(abrirCicloEscolar('2027–2028', BUENOS[0]!)).rejects.toThrow(/Ya hay un ciclo escolar registrado/)
     expect(await db.ciclos.count()).toBe(1)
   })
 })
@@ -488,7 +488,7 @@ describe('ajustarFechasTrimestre', () => {
     const primero = (await cicloEnCurso())!.trimestres[0]!
     await expect(
       ajustarFechasTrimestre(primero, '2026-12-04', '2026-08-25'),
-    ).rejects.toThrow(/antes de empezar/)
+    ).rejects.toThrow(/anterior a la de inicio/)
   })
 })
 
@@ -834,7 +834,7 @@ describe('revisarRubrica', () => {
       nombre: 'Trabajo escrito',
       renglones: [{ nombre: '  ', descriptores: DESCRIPTORES }],
     })
-    expect(revisada.renglones[0]?.problema).toBe('Falta el nombre del renglón')
+    expect(revisada.renglones[0]?.problema).toBe('Falta el nombre de este aspecto')
   })
 
   it('dice de qué niveles falta el descriptor, por nombre', () => {
@@ -844,7 +844,7 @@ describe('revisarRubrica', () => {
     })
     // Decir «faltan 2» obligaría a buscar cuáles; decir cuáles es la diferencia
     // entre un aviso y una instrucción.
-    expect(revisada.renglones[0]?.problema).toBe('Falta el descriptor de Bien, Mal')
+    expect(revisada.renglones[0]?.problema).toBe('Falta describir el nivel Bien, Mal')
   })
 
   it('marca solo el renglón que está mal', () => {
@@ -918,7 +918,7 @@ describe('guardarRubrica', () => {
         nombre: 'Trabajo escrito',
         renglones: [{ nombre: 'Ortografía', descriptores: ['a', '', 'c', 'd'] }],
       }),
-    ).rejects.toThrow(/descriptor/)
+    ).rejects.toThrow(/descripción de algún nivel/)
     expect(await rubricas()).toEqual([])
   })
 
@@ -970,7 +970,7 @@ describe('desactivar y borrar', () => {
     const enUso = (await rubricas())[0]!
     // Borrarla dejaría a esa actividad apuntando a nada y su captura pasaría a
     // binaria de un día para otro, cambiando calificaciones ya dadas.
-    await expect(borrarRubrica(enUso)).rejects.toThrow(/en uso/)
+    await expect(borrarRubrica(enUso)).rejects.toThrow(/no se puede borrar/)
     expect(await rubricas()).toHaveLength(1)
 
     await desactivarRubrica(rubricaId)
@@ -1155,7 +1155,7 @@ describe('crearActividad', () => {
         fecha: '2026-09-15',
         rubrica_id: null,
       }),
-    ).rejects.toThrow(/no se llena con actividades/)
+    ).rejects.toThrow(/no se califica con actividades/)
   })
 
   it('rechaza una rúbrica que ya no existe', async () => {
@@ -1385,7 +1385,7 @@ describe('borrarActividad', () => {
 
     // Se va con las calificaciones de los 30 alumnos: eso no puede pasar por un
     // toque de más.
-    await expect(borrarActividad(trimestre, actual)).rejects.toThrow(/ya está calificada/)
+    await expect(borrarActividad(trimestre, actual)).rejects.toThrow(/ya tiene alumnos calificados/)
     expect((await actividadesDelTrimestre(trimestre.id))[0]?.actividades).toHaveLength(1)
 
     await borrarActividad(trimestre, actual, true)
@@ -1469,7 +1469,7 @@ describe('criterios automáticos en el trimestre', () => {
       (await esquemaDelTrimestre(t1.id))!.criterios[0]!.ponderado.meta_participacion,
     ).toBe(8)
 
-    await expect(fijarMetaParticipacion(t1, ponderado, 0)).rejects.toThrow(/de 1 para arriba/)
+    await expect(fijarMetaParticipacion(t1, ponderado, 0)).rejects.toThrow(/al menos 1/)
   })
 
   it('los retardos por falta se fijan y se pueden dejar en «no cuentan»', async () => {

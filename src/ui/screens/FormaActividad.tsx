@@ -152,7 +152,9 @@ export function FormaActividad({
           <Input
             id="nombre-actividad"
             value={nombre}
-            placeholder={campo === null ? 'Elige antes el campo formativo' : 'Cuento de terror…'}
+            placeholder={
+              campo === null ? 'Seleccione primero el campo formativo' : 'Cuento de terror…'
+            }
             disabled={campo === null}
             onChange={(e) => setNombre(e.target.value)}
           />
@@ -186,7 +188,7 @@ export function FormaActividad({
               'outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
             )}
           >
-            <option value="">Entregada / no entregada</option>
+            <option value="">Solo entregado o no entregado</option>
             {ofrecidas.map((r) => (
               <option key={r.rubrica.id} value={r.rubrica.id}>
                 {r.rubrica.nombre}
@@ -196,7 +198,8 @@ export function FormaActividad({
           </select>
           {!editando && rubricaPorOmision !== null && (
             <p className="text-[13px] text-tinta-2">
-              Viene de la actividad anterior de este criterio. Se puede cambiar.
+              Se propone la misma de la actividad anterior de este criterio. Puede
+              cambiarse.
             </p>
           )}
           {perderia && (
@@ -255,7 +258,7 @@ export function FormaActividad({
           >
             <p className="text-base text-tinta">
               {confirmando === 'captura'
-                ? `Se van a borrar ${actual?.registros} registros ya calificados en esta actividad. No se pueden recuperar.`
+                ? `Esta actividad ya tiene ${actual?.registros} alumnos calificados. Al borrarla se pierden sus calificaciones y no se pueden recuperar.`
                 : `«${actual?.actividad.nombre}» ya está calificada: se va con sus ${actual?.registros} registros. No se pueden recuperar.`}
             </p>
             <div className="flex gap-2">

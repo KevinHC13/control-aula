@@ -107,7 +107,8 @@ function Apertura() {
     <div className="flex flex-col gap-4 pt-4">
       <p className="text-base text-tinta-2">
         Con las fechas del primer trimestre basta para empezar. Los otros dos se abren cuando
-        la escuela publique su calendario, y lo que hayas capturado antes se acomoda solo.
+        la escuela publique su calendario, y lo ya registrado se asigna solo al trimestre
+        que le corresponda.
       </p>
 
       <div className="flex flex-col gap-1.5">
@@ -215,7 +216,7 @@ function Configurado({ ciclo }: { ciclo: CicloEnCurso }) {
         {/* aria-live: guardar no mueve el foco, así que el resultado tiene que
             anunciarse solo. */}
         <p className="text-base text-tinta-2" aria-live="polite">
-          {guardado ? 'Guardado' : pendientes > 0 ? 'Revisa lo marcado' : ''}
+          {guardado ? 'Guardado' : pendientes > 0 ? 'Revise lo marcado' : ''}
         </p>
       </div>
 
@@ -223,7 +224,7 @@ function Configurado({ ciclo }: { ciclo: CicloEnCurso }) {
 
       {ciclo.trimestres.some((t) => t.estado === 'cerrado') && (
         <p className="text-[13px] text-tinta-2">
-          Un trimestre cerrado no admite cambios de fecha: sus calificaciones ya se
+          Un trimestre cerrado no permite cambiar sus fechas: sus calificaciones ya se
           reportaron.
         </p>
       )}
@@ -263,8 +264,8 @@ function Siguiente({ ciclo, numero }: { ciclo: CicloEnCurso; numero: 1 | 2 | 3 }
         Abrir el trimestre {numero}
       </h2>
       <p className="text-base text-tinta-2">
-        Cuando tengas sus fechas. Los días que ya hayas capturado y caigan dentro se cuentan
-        en él automáticamente.
+        Se abre cuando la escuela publique sus fechas. Los días ya registrados que caigan
+        dentro de ese periodo se cuentan en él automáticamente.
       </p>
 
       <div className="flex flex-wrap items-center gap-2">

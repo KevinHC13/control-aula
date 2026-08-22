@@ -123,8 +123,9 @@ export function Nube({ alVolver }: { alVolver: () => void }) {
 
       {!hayNube() ? (
         <p className="text-base text-tinta-2">
-          Este dispositivo no tiene configurada la copia en la nube. La app funciona igual
-          sin ella; el respaldo en archivo sigue disponible en Ajustes → Respaldo.
+          Este dispositivo no tiene configurada la copia en la nube. La aplicación funciona
+          igual sin ella, y el respaldo en archivo sigue disponible en Grupo → Ajustes →
+          Respaldo.
         </p>
       ) : revisandoSesion ? (
         <p className="text-base text-tinta-2" aria-live="polite">
@@ -139,8 +140,9 @@ export function Nube({ alVolver }: { alVolver: () => void }) {
           }}
         >
           <p className="text-base text-tinta-2">
-            La cuenta se pide solo para subir o restaurar, y se queda guardada: esto se hace
-            una vez. Todo lo demás de la app funciona sin entrar.
+            La cuenta solo se necesita para subir o restaurar la información. Se pide una
+            sola vez y queda guardada en este dispositivo. Todo lo demás de la aplicación
+            funciona sin iniciar sesión.
           </p>
           <label htmlFor="correo" className="text-base font-medium text-tinta">
             Correo
@@ -175,7 +177,7 @@ export function Nube({ alVolver }: { alVolver: () => void }) {
         <>
           <div className="flex flex-wrap items-baseline gap-2">
             <p className="text-base text-tinta">
-              Conectada como <strong className="font-medium">{sesion.correo}</strong>
+              Sesión iniciada como <strong className="font-medium">{sesion.correo}</strong>
             </p>
             <Button
               variant="ghost"
@@ -195,7 +197,7 @@ export function Nube({ alVolver }: { alVolver: () => void }) {
             </p>
             <p className="text-[13px] text-tinta-2">
               {porSubir === 0
-                ? 'todo está subido'
+                ? 'toda la información está respaldada'
                 : `${plural(porSubir ?? 0, 'cambio', 'cambios')} en espera · se suben en lotes, y cada lote sale de la cola solo cuando el servidor confirma`}
             </p>
             <Button
@@ -212,9 +214,8 @@ export function Nube({ alVolver }: { alVolver: () => void }) {
               Restaurar de la nube
             </h2>
             <p className="text-base text-tinta-2">
-              Trae todo lo que hay en la nube y lo escribe encima de lo que tenga este
-              iPad. Es para un dispositivo nuevo o una reinstalación, no para todos los
-              días: lo que esté aquí y no allá <strong className="font-medium">no</strong>{' '}
+              Trae toda la información guardada en la nube a este iPad. Está pensado para
+              un dispositivo nuevo o una reinstalación, no para el uso diario: lo que esté aquí y no allá <strong className="font-medium">no</strong>{' '}
               se borra, pero lo que esté en las dos partes queda como diga la nube.
             </p>
 
@@ -225,8 +226,9 @@ export function Nube({ alVolver }: { alVolver: () => void }) {
                 className="flex flex-col gap-3 rounded-md border-l-[7px] border-rojo bg-rojo/5 px-4 py-3"
               >
                 <p className="text-base text-tinta">
-                  Si este iPad tiene captura más nueva que la nube y todavía no la has
-                  subido, restaurar la va a pisar. ¿Subir primero?
+                  Si este iPad tiene información más reciente que la copia en la nube y
+                  todavía no se ha subido, al restaurar se reemplazará. Conviene subir
+                  primero.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <Button variant="destructive" onClick={() => void restaurar()}>

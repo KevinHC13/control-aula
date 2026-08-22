@@ -65,7 +65,7 @@ describe('leerRespaldo', () => {
 
   it('rechaza un archivo que no es JSON', () => {
     // El caso real: eligió el PDF de la lista en lugar del respaldo.
-    expect(() => leerRespaldo('%PDF-1.7 …', 3)).toThrow(/no es un JSON válido/)
+    expect(() => leerRespaldo('%PDF-1.7 …', 3)).toThrow(/dañado o no es un respaldo/)
   })
 
   it('rechaza un respaldo sin versión de esquema', () => {
@@ -75,7 +75,7 @@ describe('leerRespaldo', () => {
 
   it('rechaza tablas que no son listas de filas', () => {
     const roto = { ...archivo(), tablas: { alumnos: { id: 'alumno-1' } } }
-    expect(() => leerRespaldo(JSON.stringify(roto), 3)).toThrow(/formato esperado/)
+    expect(() => leerRespaldo(JSON.stringify(roto), 3)).toThrow(/incompleto o dañado/)
   })
 
   it('un respaldo sin fecha se puede leer: la fecha es adorno, las tablas no', () => {

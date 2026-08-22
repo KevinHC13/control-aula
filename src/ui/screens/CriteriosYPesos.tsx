@@ -68,8 +68,8 @@ export function CriteriosYPesos({ alVolver }: { alVolver: () => void }) {
     return (
       <Marco alVolver={alVolver}>
         <p className="pt-6 text-base text-tinta-2">
-          Primero hay que abrir el ciclo escolar. Los criterios cuelgan de un trimestre, y
-          todavía no hay trimestres.
+          Primero hay que registrar el ciclo escolar, en Grupo → Ajustes → Ciclo escolar.
+          Los criterios se definen por trimestre, y todavía no hay ninguno.
         </p>
       </Marco>
     )
@@ -115,17 +115,18 @@ export function CriteriosYPesos({ alVolver }: { alVolver: () => void }) {
           </p>
           <p className="text-base text-tinta-2" aria-live="polite">
             {reparto.cierra
-              ? 'El reparto cuadra'
+              ? 'Los valores suman 100: el trimestre ya se puede cerrar'
               : reparto.faltan > 0
-                ? `Faltan ${reparto.faltan} para cerrar el trimestre`
-                : `Sobran ${-reparto.faltan} para cerrar el trimestre`}
+                ? `Faltan ${reparto.faltan} puntos por repartir`
+                : `Sobran ${-reparto.faltan} puntos: hay que bajar algún criterio`}
           </p>
         </div>
 
         {!reparto.cierra && (
           <p className="text-[13px] text-tinta-2">
-            Los cambios se guardan solos aunque el reparto no cuadre. Los 100 se piden al
-            cerrar el trimestre, no antes.
+            Cada criterio recibe un porcentaje, y entre todos deben sumar 100. Los cambios
+            se guardan automáticamente, así que puede dejarse a medias y continuar después:
+            los 100 solo se exigen al cerrar el trimestre.
           </p>
         )}
 
@@ -134,11 +135,12 @@ export function CriteriosYPesos({ alVolver }: { alVolver: () => void }) {
         {abierto && trimestre && origen && esquema?.criterios.length === 0 && (
           <div className="flex flex-col items-start gap-2 border-t border-linea pt-3">
             <p className="text-base text-tinta-2">
-              O copia el reparto del trimestre {origen.numero}: trae sus criterios y sus
-              pesos, no sus actividades ni sus calificaciones.
+              También puede copiarse la configuración del trimestre {origen.numero}: se
+              traen sus criterios y sus porcentajes, pero no sus actividades ni sus
+              calificaciones.
             </p>
             <Button variant="outline" onClick={() => void copiarEsquemaDe(origen, trimestre)}>
-              Copiar del trimestre {origen.numero}
+              Copiar la configuración del trimestre {origen.numero}
             </Button>
           </div>
         )}
@@ -177,7 +179,8 @@ function Reparto({
   if (criterios.length === 0) {
     return (
       <p className="text-base text-tinta-2">
-        Todavía no hay criterios en este trimestre. El primero se agrega abajo.
+        Todavía no hay criterios en este trimestre. El primero se agrega en el formulario
+        de abajo.
       </p>
     )
   }
@@ -297,8 +300,9 @@ function ParametrosAutomaticos({
     // falta configurarla.
     return (
       <p className="pb-3 pl-[15px] text-[13px] text-tinta-2">
-        Sale de los reportes de la bitácora. Uno no baja nada, dos valen la mitad y tres o
-        más la anulan. No hay nada que configurar.
+        Esta calificación se obtiene de los reportes anotados en la Bitácora. Un solo
+        reporte no la baja; dos la dejan en cinco y tres o más la dejan en cero. No hay nada
+        que configurar aquí.
       </p>
     )
   }
@@ -307,7 +311,8 @@ function ParametrosAutomaticos({
     return (
       <div className="flex flex-col gap-1 pb-3 pl-[15px]">
         <p className="text-[13px] text-tinta-2">
-          Sale de la asistencia del trimestre. ¿Cuántos retardos hacen una falta?
+          Esta calificación se obtiene de la asistencia del trimestre. ¿Cuántos retardos
+          equivalen a una falta?
         </p>
         <div role="group" aria-label="Retardos por falta" className="flex flex-wrap gap-2">
           {([null, 1, 2, 3, 4] as const).map((opcion) => (
@@ -331,8 +336,9 @@ function ParametrosAutomaticos({
           ))}
         </div>
         <p className="text-[13px] text-tinta-2">
-          Una falta justificada nunca penaliza. Cambiar esto no toca nada capturado: la
-          puntualidad se calcula de la asistencia cada vez que se lee.
+          Las faltas justificadas nunca bajan esta calificación. Este valor puede cambiarse
+          en cualquier momento y nada se pierde: la puntualidad se vuelve a calcular sola a
+          partir de la asistencia registrada.
         </p>
       </div>
     )
@@ -379,11 +385,12 @@ function MetaDeParticipacion({
   return (
     <div className="flex flex-col gap-1 pb-3 pl-[15px]">
       <p className="text-[13px] text-tinta-2">
-        Sale de las participaciones marcadas en la pantalla de asistencia.
+        Esta calificación se obtiene de las participaciones registradas en la pantalla de
+        Asistencia.
       </p>
       <div className="flex flex-wrap items-center gap-2">
         <label htmlFor={`meta-${ponderado.id}`} className="text-base text-tinta">
-          Participaciones para el diez
+          Participaciones necesarias para obtener diez
         </label>
         <Input
           id={`meta-${ponderado.id}`}
@@ -398,8 +405,8 @@ function MetaDeParticipacion({
       </div>
       <p className={cn('text-[13px]', incompleto ? 'text-rojo' : 'text-tinta-2')}>
         {incompleto
-          ? 'Sin meta, la participación no califica.'
-          : 'Menos que la meta vale lo proporcional, y de la meta para arriba vale diez.'}
+          ? 'Falta indicar este número. Sin él, la participación no se puede calificar.'
+          : 'Quien alcance esa cantidad obtiene diez; con menos, la calificación es proporcional.'}
       </p>
     </div>
   )
@@ -429,7 +436,7 @@ function Alta({ trimestre }: { trimestre: Trimestre }) {
       }}
     >
       <label htmlFor="nombre-criterio" className="text-base font-medium text-tinta">
-        Agregar criterio
+        Agregar un criterio
       </label>
       <div className="flex flex-wrap items-center gap-2">
         <Input
@@ -534,8 +541,9 @@ function CierreDelTrimestre({
     return (
       <div className="flex flex-col gap-2 border-t border-linea pt-3">
         <p className="text-base text-tinta">
-          Este trimestre está <strong>cerrado</strong>: sus criterios y pesos ya no cambian, y
-          sus calificaciones vienen del corte, no de recalcular.
+          Este trimestre está <strong>cerrado</strong>. Sus criterios y porcentajes ya no
+          pueden cambiarse, y las calificaciones son las que quedaron guardadas al
+          cerrarlo.
         </p>
 
         {confirmando === 'reabrir' ? (
@@ -545,8 +553,9 @@ function CierreDelTrimestre({
             className="flex flex-col gap-3 rounded-md border-l-[7px] border-rojo bg-rojo/5 px-4 py-3"
           >
             <p className="text-base text-tinta">
-              Al reabrirlo se borra el corte y las calificaciones vuelven a calcularse de lo
-              capturado. Si ya entregaste boletas, pueden dejar de coincidir con el papel.
+              Al reabrirlo se descartan las calificaciones guardadas y vuelven a calcularse
+              con lo que esté registrado. Si las boletas ya se entregaron, los resultados
+              pueden dejar de coincidir con ellas.
             </p>
             <div className="flex gap-2">
               <Button variant="destructive" onClick={() => void reabrir()}>
@@ -571,8 +580,9 @@ function CierreDelTrimestre({
   return (
     <div className="flex flex-col gap-2 border-t border-linea pt-3">
       <p className="text-base text-tinta-2">
-        Cerrar el trimestre congela sus pesos y guarda la calificación de cada alumno como
-        quedó. Después de cerrarlo, capturar deja de ser posible.
+        Al cerrar el trimestre se guarda la calificación de cada alumno tal como está en
+        este momento, y ya no podrán registrarse más evaluaciones ni modificarse los
+        porcentajes.
       </p>
 
       {confirmando === 'cerrar' && (
@@ -582,7 +592,8 @@ function CierreDelTrimestre({
           className="flex flex-col gap-3 rounded-md border-l-[7px] border-rojo bg-rojo/5 px-4 py-3"
         >
           <p className="text-base text-tinta">
-            {problema}. Se guardan sin calificación, y eso es lo que va a decir el corte.
+            {problema}. Se guardarán sin calificación, y así aparecerán en el resultado del
+            trimestre.
           </p>
           <div className="flex gap-2">
             <Button variant="destructive" onClick={() => void cerrar(true)}>
@@ -605,7 +616,7 @@ function CierreDelTrimestre({
 
       {!reparto.cierra && (
         <p className="text-[13px] text-tinta-2">
-          Para cerrarlo, los pesos tienen que sumar 100.
+          Para cerrar el trimestre, los porcentajes de los criterios deben sumar 100.
         </p>
       )}
 

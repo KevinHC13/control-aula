@@ -110,8 +110,9 @@ export function CargarLista({ alVolver }: { alVolver: () => void }) {
             </p>
           )}
           <p className="text-base text-tinta-2">
-            Sube la lista oficial del grupo en PDF, o tómale una foto. Este paso necesita
-            conexión; el resto de la app no.
+            Seleccione la lista oficial del grupo en PDF, o una fotografía de ella. Los
+            nombres se leen automáticamente y después se pueden corregir. Este es el único
+            paso que necesita conexión a internet.
           </p>
           <div className="flex flex-col gap-2 pt-2">
             <ElegirArchivo
@@ -136,7 +137,7 @@ export function CargarLista({ alVolver }: { alVolver: () => void }) {
             Leyendo la lista…
           </p>
           <p className="text-[13px] text-tinta-2">
-            Puede tardar unos segundos. No cierres la app.
+            Puede tardar unos segundos. No cierre la aplicación mientras termina.
           </p>
           <Button variant="outline" onClick={() => cancelacion.current?.abort()}>
             Cancelar
@@ -152,7 +153,7 @@ export function CargarLista({ alVolver }: { alVolver: () => void }) {
             </p>
             <p className="text-[13px] text-tinta-2" aria-live="polite">
               {pendientes === 0 ? (
-                'Revísalos antes de guardar. Toca un dato para corregirlo.'
+                'Revise los datos antes de guardar. Seleccione cualquier dato para corregirlo.'
               ) : (
                 <span className="text-rojo">
                   {pendientes === 1
@@ -197,7 +198,7 @@ export function CargarLista({ alVolver }: { alVolver: () => void }) {
               onClick={() => void guardar()}
               disabled={pendientes > 0 || filas.length === 0}
             >
-              {pendientes > 0 ? 'Corrige lo marcado para guardar' : `Guardar ${filas.length} alumnos`}
+              {pendientes > 0 ? 'Corrija lo marcado para poder guardar' : `Guardar ${filas.length} alumnos`}
             </Button>
           </div>
         </>
@@ -209,7 +210,8 @@ export function CargarLista({ alVolver }: { alVolver: () => void }) {
             {filas.length} <span className="font-sans text-base text-tinta-2">alumnos guardados</span>
           </p>
           <p className="text-[13px] text-tinta-2">
-            Ya aparecen en Asistencia. Puedes volver a cargar el archivo cuando cambie.
+            Ya aparecen en la pantalla de Asistencia. Si la lista cambia, puede volver a
+            cargarse: los alumnos que ya existen se actualizan y no se duplican.
           </p>
           <Button onClick={alVolver}>Volver a Ajustes</Button>
         </div>

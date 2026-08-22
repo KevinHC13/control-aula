@@ -108,7 +108,7 @@ export async function calificarRenglon(
   nivel: Nivel,
 ): Promise<void> {
   if (!aceptaEscrituras(trimestre)) {
-    throw new Error('Un trimestre cerrado no admite calificar')
+    throw new Error('Este trimestre está cerrado: ya no se pueden registrar calificaciones')
   }
 
   await repos.evaluacion.calificarRenglon(

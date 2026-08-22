@@ -117,9 +117,9 @@ export function Respaldo({ alVolver }: { alVolver: () => void }) {
           Guardar una copia
         </h2>
         <p className="text-base text-tinta-2">
-          Un archivo con todo lo capturado: la lista, la asistencia, las actividades, las
-          calificaciones, los cortes de trimestre y la bitácora. Conviene guardarlo fuera del
-          iPad —en Archivos, en el correo— al terminar cada trimestre.
+          Se genera un archivo con toda la información registrada: la lista del grupo, la
+          asistencia, las actividades, las calificaciones y la bitácora. Conviene guardarlo
+          fuera del iPad —en Archivos o enviándolo por correo— al terminar cada trimestre.
         </p>
         <Button onClick={() => void exportar()} disabled={guardando} className="self-start">
           {guardando ? 'Generando…' : 'Guardar el respaldo'}
@@ -136,10 +136,11 @@ export function Respaldo({ alVolver }: { alVolver: () => void }) {
           Restaurar desde un archivo
         </h2>
         <p className="text-base text-tinta-2">
-          Se lee el archivo, se dice qué trae y hasta entonces se escribe. Restaurar{' '}
+          Al seleccionar un archivo se indica cuánta información contiene, y nada se guarda
+          hasta confirmarlo. Restaurar{' '}
           <strong className="font-medium text-tinta">agrega</strong>: lo que ya está en el
-          iPad no se borra, y un registro que venga en el archivo se actualiza con lo que
-          diga el archivo.
+          iPad no se borra, y la información que venga repetida se actualiza con la del
+          archivo.
         </p>
 
         {/* Un input de archivo de verdad, no un botón que lo simula: en iPadOS es
@@ -148,7 +149,7 @@ export function Respaldo({ alVolver }: { alVolver: () => void }) {
           htmlFor="archivo-respaldo"
           className="text-base font-medium text-azul underline decoration-2 underline-offset-4"
         >
-          Elegir un archivo de respaldo
+          Seleccionar un archivo de respaldo
         </label>
         <input
           ref={entrada}

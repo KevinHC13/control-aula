@@ -108,6 +108,14 @@ export function CapturaRubrica({
         <span className="cifra">{total}</span> calificados
       </p>
 
+      {abierto && total > 0 && (
+        <p className="text-[13px] text-tinta-2">
+          Seleccione un alumno y marque el nivel que le corresponde en cada aspecto de la
+          rúbrica. Los cambios se guardan solos, y un alumno cuenta como calificado cuando
+          tiene todos sus aspectos marcados.
+        </p>
+      )}
+
       {!abierto && (
         <p className="text-[13px] text-tinta-2">
           Este trimestre está cerrado: se puede consultar, no cambiar.
@@ -164,7 +172,7 @@ export function CapturaRubrica({
             <p className="text-[13px] text-tinta-2">
               {fila.completa
                 ? 'Calificado'
-                : `${fila.capturados} de ${renglones.length} renglones`}
+                : `${fila.capturados} de ${renglones.length} aspectos`}
             </p>
           </div>
 
@@ -278,7 +286,7 @@ function FilaCalificacionAlumno({
         fila.completa
           ? 'calificado'
           : aMedias
-            ? `${fila.capturados} de ${renglones} renglones`
+            ? `${fila.capturados} de ${renglones} aspectos`
             : 'sin calificar'
       }`}
       className={cn(

@@ -97,11 +97,12 @@ export function Sorteo({ fecha, trimestre }: { fecha: Fecha; trimestre: Trimestr
     return (
       <div className="flex flex-col gap-2 py-6">
         <p className="text-base text-tinta">
-          No hay nadie a quien sortear: hoy no hay ningún alumno presente en la lista.
+          No hay alumnos entre los que sortear: hoy ninguno está registrado como presente.
         </p>
         <p className="text-[13px] text-tinta-2">
-          El sorteo va entre los que están en el salón —presentes y retardos—. Una falta
-          justificada cuenta como asistencia, pero el niño no está.
+          Participan en el sorteo los alumnos que están en el salón, es decir los presentes
+          y los que llegaron con retardo. Las faltas justificadas cuentan como asistencia,
+          pero el alumno no está para pasar al frente.
         </p>
       </div>
     )
@@ -133,8 +134,8 @@ export function Sorteo({ fecha, trimestre }: { fecha: Fecha; trimestre: Trimestr
         <>
           <p className="text-base text-tinta-2" aria-live="polite">
             {resuelto.participo
-              ? 'Anotada su participación de hoy.'
-              : 'No se anotó nada.'}
+              ? 'Se registró su participación de hoy.'
+              : 'No se registró nada.'}
           </p>
           <Button onClick={otraVez} className="self-start">
             Sortear otra vez
@@ -146,7 +147,7 @@ export function Sorteo({ fecha, trimestre }: { fecha: Fecha; trimestre: Trimestr
         </Button>
       ) : (
         <>
-          <p className="text-base text-tinta">¿Participó?</p>
+          <p className="text-base text-tinta">¿Participó este alumno?</p>
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => void confirmar(true)}>Sí, participó</Button>
             <Button variant="outline" onClick={() => void confirmar(false)}>
@@ -162,9 +163,9 @@ export function Sorteo({ fecha, trimestre }: { fecha: Fecha; trimestre: Trimestr
       {/* Se dice que el sorteo no es uniforme: es la mitad de para qué sirve, y
           se puede decir en voz alta —«le toca a quien menos ha pasado»—. */}
       <p className="border-t border-linea pt-3 text-[13px] text-tinta-2">
-        Sale más seguido quien menos ha participado en el trimestre. Entran{' '}
-        <span className="cifra">{candidatos.length}</span> alumnos: los que están en el
-        salón.
+        El sorteo favorece a quienes menos han participado en el trimestre, para que el turno
+        no recaiga siempre en los mismos. Participan{' '}
+        <span className="cifra">{candidatos.length}</span> alumnos: los presentes de hoy.
       </p>
     </div>
   )

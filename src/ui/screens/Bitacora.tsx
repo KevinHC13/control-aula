@@ -66,8 +66,8 @@ export function Bitacora() {
         {/* La consecuencia va arriba y no en letra chica al final: es lo que
             distingue esta pantalla de un anecdotario. */}
         <p className="mt-1 text-[13px] text-tinta-2">
-          Lo que se anota aquí es un reporte y baja la calificación de conducta. El primero
-          no cuenta; dos la dejan a la mitad y tres la anulan.
+          Cada anotación cuenta como un reporte de conducta y afecta esa calificación. Un
+          solo reporte no la baja; dos la dejan en cinco y tres o más la dejan en cero.
         </p>
       </div>
 
@@ -77,8 +77,8 @@ export function Bitacora() {
         </p>
       ) : !ciclo ? (
         <p className="text-base text-tinta-2">
-          Primero hay que abrir el ciclo escolar, en Grupo → Ajustes. Un reporte pertenece
-          al trimestre que contiene su fecha.
+          Primero hay que registrar el ciclo escolar, en Grupo → Ajustes → Ciclo escolar.
+          Cada reporte se asigna al trimestre que corresponde a su fecha.
         </p>
       ) : (
         <>
@@ -264,23 +264,24 @@ function DetalleAlumno({
           />
           <div className="flex items-center gap-3">
             <Button onClick={() => void guardar()} disabled={!puedeGuardar}>
-              Guardar el reporte
+              Registrar el reporte
             </Button>
             <span className="text-[13px] text-tinta-2">
-              con fecha de hoy, <span className="cifra">{hoy}</span>
+              Se registrará con la fecha de hoy, <span className="cifra">{hoy}</span>
             </span>
           </div>
         </div>
       ) : (
         <p className="text-base text-tinta-2">
-          Este trimestre no está corriendo: un reporte se anota con la fecha del día y
-          quedaría fuera de su rango. Aquí solo se consulta.
+          Los reportes se registran siempre con la fecha del día, y hoy no
+          corresponde a este trimestre. Aquí se pueden consultar los reportes ya
+          registrados, pero para anotar uno nuevo hay que abrir el trimestre en curso.
         </p>
       )}
 
       {fila.reportes.length === 0 ? (
         <p className="text-base text-tinta-2">
-          Sin reportes en el trimestre. Para la conducta, eso es un diez.
+          Sin reportes en este trimestre. Su calificación de conducta es diez.
         </p>
       ) : (
         <ul>
@@ -313,13 +314,13 @@ function FilaDeReporte({ reporte }: { reporte: Reporte }) {
           className="shrink-0 text-rojo"
           onClick={() => void quitarReporte(reporte.id)}
         >
-          ¿Quitar?
+          ¿Eliminar?
         </Button>
       ) : (
         <Button
           size="icon"
           variant="ghost"
-          aria-label="Quitar el reporte"
+          aria-label="Eliminar el reporte"
           className="shrink-0"
           onClick={() => setConfirmando(true)}
         >

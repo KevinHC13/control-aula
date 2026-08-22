@@ -142,11 +142,12 @@ export function CapturaExamen({
         <>
           <div>
             <h2 className="text-base font-medium text-tinta">
-              ¿Cuántas preguntas trae cada campo?
+              ¿Cuántas preguntas tiene el examen en cada campo?
             </h2>
             <p className="mt-1 text-[13px] text-tinta-2">
-              Los campos que el examen no evalúa se dejan en blanco. El total de cada campo
-              es el denominador de su calificación, y bajarlo no borra lo capturado.
+              Los campos que el examen no evalúa se dejan en blanco. La calificación de cada
+              campo se obtiene de los aciertos sobre el total de preguntas. Este total puede
+              corregirse después sin perder los aciertos ya registrados.
             </p>
           </div>
 
@@ -180,7 +181,7 @@ export function CapturaExamen({
               medio teclear no debe quedar guardado. */}
           <div className="flex gap-2">
             <Button className="flex-1" disabled={!abierto} onClick={() => void guardar()}>
-              Guardar preguntas
+              Guardar
             </Button>
             {listo && (
               <Button

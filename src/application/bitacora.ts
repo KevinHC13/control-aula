@@ -63,7 +63,7 @@ export async function registrarReporte(
   texto: string,
 ): Promise<Id> {
   if (!textoDeReporteValido(texto)) {
-    throw new Error('Un reporte sin texto no dice qué pasó')
+    throw new Error('Falta escribir qué pasó')
   }
   return repos.bitacora.registrar(alumnoId, fecha, texto.trim())
 }

@@ -34,12 +34,12 @@ export function EtiquetaTrimestre({
   if (cargando) return null
 
   const texto = !hayCiclo
-    ? 'Sin ciclo escolar configurado'
+    ? 'Falta registrar el ciclo escolar'
     : trimestre
       ? `Trimestre ${trimestre.numero}`
       : sinAbrir
-        ? 'El trimestre de este día no se ha abierto'
-        : 'Fuera de los trimestres'
+        ? 'El trimestre de este día todavía no se ha registrado'
+        : 'Día sin trimestre asignado'
 
   return (
     <p className="text-base text-tinta-2">

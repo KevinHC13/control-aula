@@ -120,16 +120,16 @@ export function revisarPeriodos(periodos: Periodo[]): Periodo[] {
 }
 
 function revisar(periodo: Periodo, completos: Periodo[]): string | undefined {
-  if (periodo.inicio === '' || periodo.fin === '') return 'Faltan las fechas'
+  if (periodo.inicio === '' || periodo.fin === '') return 'Faltan las fechas de inicio y fin'
   if (!fechaValida(periodo.inicio) || !fechaValida(periodo.fin)) {
-    return 'La fecha debe ser AAAA-MM-DD'
+    return 'La fecha se escribe como AAAA-MM-DD'
   }
-  if (!rangoValido(periodo)) return 'Termina antes de empezar'
+  if (!rangoValido(periodo)) return 'La fecha de fin es anterior a la de inicio'
 
   const choque = completos.find(
     (otro) => otro.numero !== periodo.numero && seTraslapan(periodo, otro),
   )
-  if (choque) return `Se traslapa con el trimestre ${choque.numero}`
+  if (choque) return `Estas fechas se enciman con las del trimestre ${choque.numero}`
 
   return undefined
 }
@@ -186,10 +186,10 @@ export async function abrirCicloEscolar(nombre: string, primero: Periodo): Promi
   if (!revisado || revisado.problema !== undefined) {
     throw new Error(revisado?.problema ?? 'El primer trimestre necesita sus fechas')
   }
-  if (nombre.trim() === '') throw new Error('El ciclo necesita un nombre')
+  if (nombre.trim() === '') throw new Error('Falta el nombre del ciclo escolar')
 
   if ((await repos.evaluacion.cicloEnCurso()) !== null) {
-    throw new Error('Ya hay un ciclo escolar abierto')
+    throw new Error('Ya hay un ciclo escolar registrado. Para empezar otro hay que cerrar el actual')
   }
 
   await repos.evaluacion.abrirCiclo(nombre.trim(), [
@@ -226,7 +226,7 @@ export async function abrirTrimestreSiguiente(
   periodo: Periodo,
 ): Promise<void> {
   const numero = siguienteNumero(ciclo)
-  if (numero === null) throw new Error('El ciclo ya tiene sus tres trimestres')
+  if (numero === null) throw new Error('El ciclo ya tiene sus tres trimestres registrados')
   if (periodo.numero !== numero) {
     throw new Error(`El siguiente trimestre por abrir es el ${numero}`)
   }
@@ -256,13 +256,13 @@ export async function ajustarFechasTrimestre(
   fin: Fecha,
 ): Promise<void> {
   if (!aceptaEscrituras(trimestre)) {
-    throw new Error('Un trimestre cerrado no admite cambios de fecha')
+    throw new Error('Este trimestre está cerrado: sus fechas ya no se pueden cambiar')
   }
   if (!fechaValida(inicio) || !fechaValida(fin)) {
-    throw new Error('Las fechas deben ser AAAA-MM-DD')
+    throw new Error('Las fechas se escriben como AAAA-MM-DD')
   }
   if (!rangoValido({ inicio, fin })) {
-    throw new Error('El trimestre no puede terminar antes de empezar')
+    throw new Error('La fecha de fin del trimestre no puede ser anterior a la de inicio')
   }
 
   await repos.evaluacion.ajustarFechas(trimestre.id, inicio, fin)
@@ -283,7 +283,7 @@ export async function guardarFechas(
   const abiertos = new Set(ciclo.trimestres.map((t) => t.numero))
   const revisados = revisarPeriodos(periodos.filter((p) => abiertos.has(p.numero)))
   if (!periodosCompletos(revisados)) {
-    throw new Error('Los trimestres tienen fechas inválidas o traslapadas')
+    throw new Error('Las fechas de los trimestres están mal escritas o se encima una con otra')
   }
 
   for (const periodo of revisados) {
@@ -391,10 +391,10 @@ export async function agregarCriterio(
   tipo: TipoCriterio,
 ): Promise<void> {
   if (!aceptaEscrituras(trimestre)) {
-    throw new Error('Un trimestre cerrado no admite criterios nuevos')
+    throw new Error('Este trimestre está cerrado: ya no se le pueden agregar criterios')
   }
   const limpio = nombre.trim().replace(/\s+/g, ' ')
-  if (limpio === '') throw new Error('El criterio necesita un nombre')
+  if (limpio === '') throw new Error('Falta el nombre del criterio')
 
   if (esAutomatico(tipo)) {
     // Un criterio automático aparece **a lo más una vez por trimestre**: dos
@@ -430,10 +430,10 @@ export async function fijarMetaParticipacion(
   meta: number,
 ): Promise<void> {
   if (!aceptaEscrituras(trimestre)) {
-    throw new Error('Un trimestre cerrado no admite cambios de configuración')
+    throw new Error('Este trimestre está cerrado: su configuración ya no se puede cambiar')
   }
   if (!metaParticipacionValida(meta)) {
-    throw new Error('La meta es un número entero de 1 para arriba')
+    throw new Error('Las participaciones necesarias para obtener diez deben ser un número entero, al menos 1')
   }
 
   await repos.evaluacion.ajustarParametros(ponderado.id, {
@@ -456,7 +456,7 @@ export async function fijarRetardosPorFalta(
     throw new Error('Un trimestre cerrado no admite cambios de configuración')
   }
   if (!retardosPorFaltaValido(valor)) {
-    throw new Error('Los retardos por falta son un entero de 1 para arriba, o ninguno')
+    throw new Error('Los retardos que equivalen a una falta deben ser un número entero, al menos 1')
   }
 
   await repos.evaluacion.ajustarParametros(ponderado.id, {
@@ -483,10 +483,10 @@ export async function ajustarPeso(
   peso: number,
 ): Promise<void> {
   if (!aceptaEscrituras(trimestre)) {
-    throw new Error('Un trimestre cerrado no admite cambios de peso')
+    throw new Error('Este trimestre está cerrado: los porcentajes ya no se pueden cambiar')
   }
   if (!Number.isFinite(peso) || peso < 0 || peso > 100) {
-    throw new Error('El peso va de 0 a 100')
+    throw new Error('El porcentaje de un criterio va de 0 a 100')
   }
 
   await repos.evaluacion.ajustarPeso(criterioTrimestreId, peso)
@@ -497,7 +497,7 @@ export async function quitarCriterio(
   criterioTrimestreId: Id,
 ): Promise<void> {
   if (!aceptaEscrituras(trimestre)) {
-    throw new Error('Un trimestre cerrado no admite quitar criterios')
+    throw new Error('Este trimestre está cerrado: sus criterios ya no se pueden quitar')
   }
   await repos.evaluacion.quitarCriterio(criterioTrimestreId)
 }
@@ -514,11 +514,11 @@ export async function copiarEsquemaDe(
   destino: Trimestre,
 ): Promise<void> {
   if (!aceptaEscrituras(destino)) {
-    throw new Error('Un trimestre cerrado no admite copiar un esquema')
+    throw new Error('Este trimestre está cerrado: ya no se le puede copiar la configuración de otro')
   }
-  if (origen.id === destino.id) throw new Error('No se copia un trimestre sobre sí mismo')
+  if (origen.id === destino.id) throw new Error('No se puede copiar la configuración de un trimestre sobre sí mismo')
   if (origen.ciclo_id !== destino.ciclo_id) {
-    throw new Error('Solo se copia entre trimestres del mismo ciclo')
+    throw new Error('La configuración solo se puede copiar entre trimestres del mismo ciclo escolar')
   }
 
   await repos.evaluacion.copiarEsquema(origen.id, destino.id)
@@ -597,13 +597,13 @@ export function revisarRubrica(rubrica: RubricaEnEdicion): RubricaEnEdicion {
       delete limpio.problema
 
       if (renglon.nombre.trim() === '') {
-        return { ...limpio, problema: 'Falta el nombre del renglón' }
+        return { ...limpio, problema: 'Falta el nombre de este aspecto' }
       }
       if (!descriptoresCompletos(renglon.descriptores)) {
         const faltan = renglon.descriptores
           .map((d, i) => (d.trim() === '' ? NIVELES[i] : null))
           .filter((n): n is (typeof NIVELES)[number] => n !== null)
-        return { ...limpio, problema: `Falta el descriptor de ${faltan.join(', ')}` }
+        return { ...limpio, problema: `Falta describir el nivel ${faltan.join(', ')}` }
       }
       return limpio
     }),
@@ -628,7 +628,7 @@ export async function rubricas(): Promise<RubricaConCriterios[]> {
  */
 export async function guardarRubrica(rubrica: RubricaEnEdicion): Promise<Id> {
   if (!rubricaLista(rubrica)) {
-    throw new Error('La rúbrica necesita nombre y un descriptor por nivel en cada renglón')
+    throw new Error('A la rúbrica le falta el nombre, o la descripción de algún nivel en alguno de sus aspectos')
   }
 
   return repos.evaluacion.guardarRubrica(
@@ -663,7 +663,7 @@ export async function activarRubrica(rubricaId: Id): Promise<void> {
  */
 export async function borrarRubrica(rubrica: RubricaConCriterios): Promise<void> {
   if (rubrica.enUso) {
-    throw new Error('Esta rúbrica está en uso: se puede desactivar, no borrar')
+    throw new Error('Esta rúbrica ya se usó para calificar, así que no se puede borrar. Se puede desactivar para que deje de ofrecerse')
   }
   await repos.evaluacion.borrarRubrica(rubrica.rubrica.id)
 }
@@ -746,21 +746,21 @@ async function revisarDatos(
   datos: DatosActividad,
 ): Promise<DatosActividad> {
   if (!aceptaEscrituras(trimestre)) {
-    throw new Error('Un trimestre cerrado no admite cambios en sus actividades')
+    throw new Error('Este trimestre está cerrado: sus actividades ya no se pueden cambiar')
   }
   if (!admiteActividades(criterio.tipo)) {
-    throw new Error('Este criterio no se llena con actividades')
+    throw new Error('Este criterio no se califica con actividades')
   }
 
   const nombre = limpiarNombre(datos.nombre)
-  if (nombre === '') throw new Error('La actividad necesita un nombre')
+  if (nombre === '') throw new Error('Falta el nombre de la actividad')
   if (!fechaValida(datos.fecha)) throw new Error('La fecha debe ser AAAA-MM-DD')
 
   if (datos.rubrica_id !== null) {
     const rubrica = (await repos.evaluacion.rubricas()).find(
       (r) => r.rubrica.id === datos.rubrica_id,
     )
-    if (!rubrica) throw new Error('Esa rúbrica ya no existe')
+    if (!rubrica) throw new Error('La rúbrica que se eligió ya no existe')
   }
 
   return { ...datos, nombre }
@@ -829,10 +829,10 @@ export async function borrarActividad(
   confirmado = false,
 ): Promise<void> {
   if (!aceptaEscrituras(trimestre)) {
-    throw new Error('Un trimestre cerrado no admite borrar actividades')
+    throw new Error('Este trimestre está cerrado: sus actividades ya no se pueden borrar')
   }
   if (estaCalificada(actividad) && !confirmado) {
-    throw new Error('Esta actividad ya está calificada: borrarla pierde lo capturado')
+    throw new Error('Esta actividad ya tiene alumnos calificados. Hay que confirmar para borrarla')
   }
 
   await repos.evaluacion.borrarActividad(actividad.actividad.id)

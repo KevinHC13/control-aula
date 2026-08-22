@@ -392,11 +392,11 @@ export async function cerrarTrimestre(
   confirmado = false,
 ): Promise<void> {
   if (!puedeCerrarse(trimestre, criterios)) {
-    throw new Error('Para cerrar el trimestre los pesos tienen que sumar 100')
+    throw new Error('Para cerrar el trimestre, los porcentajes de los criterios deben sumar 100')
   }
 
   const reporte = await reporteDeTrimestre(trimestre.id)
-  if (!reporte) throw new Error('No existe el trimestre que se quiere cerrar')
+  if (!reporte) throw new Error('El trimestre que se quiere cerrar ya no existe')
 
   const faltan = sinCalificacion(reporte.alumnos)
   if (faltan > 0 && !confirmado) {
@@ -424,7 +424,7 @@ export async function reabrirTrimestre(
     throw new Error('Este trimestre no está cerrado')
   }
   if (!confirmado) {
-    throw new Error('Reabrir el trimestre borra las calificaciones que ya se reportaron')
+    throw new Error('Al reabrir el trimestre se descartan las calificaciones guardadas. Hay que confirmar')
   }
 
   await repos.evaluacion.reabrirTrimestre(trimestre.id)

@@ -46,7 +46,7 @@ export function Ajustes({
           >
             <span className="text-base font-medium text-tinta">Cargar lista de alumnos</span>
             <span className="text-base text-tinta-2">
-              Desde un PDF o una foto de la lista oficial
+              Se leen los nombres de un PDF o de una fotografía de la lista oficial
             </span>
           </button>
         </li>
@@ -58,7 +58,7 @@ export function Ajustes({
           >
             <span className="text-base font-medium text-tinta">Ciclo escolar</span>
             <span className="text-base text-tinta-2">
-              Las fechas de los tres trimestres
+              Las fechas de inicio y fin de cada trimestre
             </span>
           </button>
         </li>
@@ -70,7 +70,7 @@ export function Ajustes({
           >
             <span className="text-base font-medium text-tinta">Criterios y pesos</span>
             <span className="text-base text-tinta-2">
-              Con qué se evalúa cada trimestre y cuánto vale
+              Qué se toma en cuenta para calificar y cuánto vale cada cosa
             </span>
           </button>
         </li>
@@ -82,7 +82,8 @@ export function Ajustes({
           >
             <span className="text-base font-medium text-tinta">Rúbricas</span>
             <span className="text-base text-tinta-2">
-              Qué significa cada nivel al calificar un trabajo
+              Los aspectos que se observan al revisar un trabajo y qué significa cada
+              nivel
             </span>
           </button>
         </li>
@@ -94,7 +95,7 @@ export function Ajustes({
           >
             <span className="text-base font-medium text-tinta">Respaldo</span>
             <span className="text-base text-tinta-2">
-              Guardar una copia de todo en un archivo, o restaurarla
+              Guardar toda la información en un archivo, o recuperarla
             </span>
           </button>
         </li>
@@ -106,7 +107,7 @@ export function Ajustes({
           >
             <span className="text-base font-medium text-tinta">Copia en la nube</span>
             <span className="text-base text-tinta-2">
-              Subir lo capturado o traerlo a un iPad nuevo
+              Respaldar la información en internet, o traerla a un iPad nuevo
             </span>
           </button>
         </li>

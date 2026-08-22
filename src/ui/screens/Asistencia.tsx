@@ -102,8 +102,9 @@ export function Asistencia() {
           <DialogHeader>
             <DialogTitle>Calendario</DialogTitle>
             <DialogDescription>
-              Un día azul se capturó completo; uno rojo tiene faltas; uno hueco todavía no se
-              pasa. Toca un día para verlo.
+              Azul: el día se pasó completo y sin faltas. Rojo: hay faltas registradas.
+              Sin color: la lista de ese día todavía no se pasa. Seleccione un día para
+              abrirlo.
             </DialogDescription>
           </DialogHeader>
 
@@ -161,7 +162,8 @@ export function Asistencia() {
           <DialogHeader>
             <DialogTitle>¿Quién pasa?</DialogTitle>
             <DialogDescription>
-              Sale un nombre y tú dices si participó. Salir sorteado no anota nada.
+              Aparece un nombre al azar entre los alumnos presentes. Después se indica si
+              participó: solo entonces se registra.
             </DialogDescription>
           </DialogHeader>
 
@@ -193,6 +195,15 @@ export function Asistencia() {
               sinAbrir={faltaAbrirTrimestre(diaSeleccionado, ciclo)}
               cargando={cargandoCiclo}
             />
+            {/* La instrucción de la pantalla más usada de la app. No cuesta un
+                toque —es texto— y sin ella el ciclo de cuatro estados hay que
+                descubrirlo tocando. */}
+            {filas.length > 0 && (
+              <p className="text-[13px] text-tinta-2">
+                Todos los alumnos empiezan como presentes. Toque el nombre de quien faltó
+                para ir cambiando su estado: ausente, retardo y falta justificada.
+              </p>
+            )}
           </div>
 
           {/* -mx-4 para que la barra de color toque el borde de la pantalla: es lo
@@ -209,7 +220,8 @@ export function Asistencia() {
 
       {!cargando && filas.length === 0 && (
         <p className="text-base text-tinta-2">
-          Todavía no hay alumnos. La lista se carga desde el archivo del grupo.
+          Todavía no hay alumnos registrados. La lista del grupo se carga en Grupo →
+          Ajustes → Cargar lista de alumnos.
         </p>
       )}
     </section>
