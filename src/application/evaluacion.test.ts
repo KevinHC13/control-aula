@@ -786,7 +786,7 @@ describe('TIPOS_OFRECIDOS', () => {
   })
 
   it('los automáticos traen nombre sugerido y los demás no', () => {
-    expect(nombreSugerido('auto_puntualidad')).toBe('Puntualidad')
+    expect(nombreSugerido('auto_puntualidad')).toBe('Puntualidad y asistencia')
     expect(nombreSugerido('auto_conducta')).toBe('Conducta')
     expect(nombreSugerido('auto_participacion')).toBe('Participación')
     // «Tareas» o «Portafolio» sí es una decisión suya.

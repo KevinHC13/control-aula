@@ -326,9 +326,12 @@ export const TIPOS_OFRECIDOS = [
   { tipo: 'examen', etiqueta: 'Examen', ayuda: 'Aciertos por campo formativo' },
   {
     tipo: 'auto_puntualidad',
-    etiqueta: 'Puntualidad',
-    ayuda: 'Se calcula de la asistencia',
-    nombreSugerido: 'Puntualidad',
+    // «Puntualidad y asistencia», no solo puntualidad: la fórmula resta las faltas
+    // y además convierte los retardos, así que califica las dos cosas. Llamarla
+    // solo puntualidad hacía pensar que las faltas no contaban.
+    etiqueta: 'Puntualidad y asistencia',
+    ayuda: 'Se calcula de las faltas y los retardos del trimestre',
+    nombreSugerido: 'Puntualidad y asistencia',
   },
   {
     tipo: 'auto_conducta',

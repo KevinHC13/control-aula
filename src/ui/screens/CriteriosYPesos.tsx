@@ -311,8 +311,8 @@ function ParametrosAutomaticos({
     return (
       <div className="flex flex-col gap-1 pb-3 pl-[15px]">
         <p className="text-[13px] text-tinta-2">
-          Esta calificación se obtiene de la asistencia del trimestre. ¿Cuántos retardos
-          equivalen a una falta?
+          Esta calificación se obtiene de la asistencia del trimestre: cada falta la baja.
+          ¿Cuántos retardos equivalen a una falta?
         </p>
         <div role="group" aria-label="Retardos por falta" className="flex flex-wrap gap-2">
           {([null, 1, 2, 3, 4] as const).map((opcion) => (
