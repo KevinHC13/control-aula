@@ -2,6 +2,7 @@ import { lazy, Suspense, useState } from 'react'
 
 import { IconoEngrane } from '@/ui/components/iconos'
 import { Button } from '@/ui/components/ui/button'
+import { AdministrarAlumnos } from '@/ui/screens/AdministrarAlumnos'
 import { Ajustes } from '@/ui/screens/Ajustes'
 import { CiclosAnteriores } from '@/ui/screens/CiclosAnteriores'
 import { CargarLista } from '@/ui/screens/CargarLista'
@@ -29,6 +30,7 @@ type Vista =
   | 'resumen'
   | 'ajustes'
   | 'cargar'
+  | 'alumnos'
   | 'ciclo'
   | 'criterios'
   | 'rubricas'
@@ -45,6 +47,7 @@ export function Grupo() {
       <Ajustes
         alVolver={() => setVista('resumen')}
         alCargarLista={() => setVista('cargar')}
+        alAdministrarAlumnos={() => setVista('alumnos')}
         alConfigurarCiclo={() => setVista('ciclo')}
         alConfigurarCriterios={() => setVista('criterios')}
         alConfigurarRubricas={() => setVista('rubricas')}
@@ -57,6 +60,10 @@ export function Grupo() {
 
   if (vista === 'cargar') {
     return <CargarLista alVolver={() => setVista('ajustes')} />
+  }
+
+  if (vista === 'alumnos') {
+    return <AdministrarAlumnos alVolver={() => setVista('ajustes')} />
   }
 
   if (vista === 'ciclo') {

@@ -69,6 +69,7 @@ deshacer (D-022).
 | 6 · Herramientas de aula | Sorteo de participación y formar equipos | ✅ Terminada: C30 y C31 |
 | 4 · Evaluación | Ciclo, trimestres, criterios, rúbricas, cálculo | ✅ Terminada: C18–C24 y C27–C29 |
 | 7 · Datos reales | Fuera la semilla, y varios ciclos guardados | ✅ Terminada: C32–C36 |
+| 8 · Administrar el grupo | Alta, corrección y baja de alumnos | ✅ Terminada: C37 |
 
 ## Lo que existe y funciona
 
@@ -315,6 +316,25 @@ ningún dato.
 vez. Cerrar el ciclo ya hace lo que hacía falta de verdad, así que en cuanto la base
 esté como debe, este botón se va —está marcado con `TEMPORAL` en los seis archivos que
 toca—.
+
+## Alcance nuevo: administrar el grupo (2026-08-24)
+
+Lo pidió el usuario: poder agregar, corregir y dar de baja alumnos. Revierte a
+sabiendas la regla de que «no hay CRUD de alumnos en la v1» (D-026), porque un grupo
+real se mueve durante el año y volver a cargar la lista entera no sabe dar de baja a
+nadie.
+
+Está en *Ajustes → Alumnos*, fuera del camino diario. La baja es suave y reversible, y
+**un dado de baja sigue apareciendo en los trimestres ya cerrados**: darlo de baja en
+noviembre no puede cambiar la boleta de octubre que ya se entregó.
+
+Verificado en el navegador: alta con el número propuesto, aviso de número repetido
+mientras se escribe, corrección conservando el `id`, baja que desaparece de la pantalla
+de asistencia sin borrar la fila, y reactivar.
+
+**Lo que conviene saber:** volver a cargar la lista con IA **revive** a un alumno dado
+de baja si viene en el archivo nuevo. Es correcto —si la escuela lo trae en la lista
+oficial, está inscrito— pero sorprende si no se espera.
 
 ## Supuestos que siguen abiertos
 

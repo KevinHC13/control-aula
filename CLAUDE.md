@@ -30,7 +30,7 @@ Existen y funcionan:
   `rubrica_criterios`, `actividades`, `entregas`, `eval_rubrica`, `examen_config`,
   `resultados_examen` y `cierres`. **Las dieciséis tablas están en uso**:
   `participaciones` entró con el modo de participación (C25).
-- **`application/`**: `asistencia.ts`, `importacion.ts`, `historico.ts`,
+- **`application/`**: `asistencia.ts`, `importacion.ts`, `historico.ts`, `alumnos.ts`,
   `evaluacion.ts`, `entregas.ts`, `calificacion.ts`, `examen.ts`,
   `calificaciones.ts` —el reporte del trimestre y su cierre—, `bitacora.ts`,
   `participacion.ts` y `respaldo.ts` —el archivo JSON con todo, C14—. `armarReporte` es la
@@ -258,6 +258,13 @@ y fórmulas en `docs/DATA-MODEL.md`; lo que no se negocia al escribir código:
   cerrados y **no borra nada**. `asistencia`, `bitacora` y `participaciones` no llevan
   ciclo: cuelgan de `alumno_id` y se atribuyen por fecha. `criterios` es catálogo global
   a propósito.
+- **Los alumnos se administran uno por uno** desde *Ajustes → Alumnos* (D-026), sin que
+  eso quite a la carga con IA su papel de meter la lista completa. La baja es **suave y
+  reversible**, no borra nada suyo, y un dado de baja **sigue apareciendo en los
+  trimestres ya cerrados**: quién entra al reporte lo decide `armarReporte` —cerrado,
+  todos; abierto, solo los vigentes—, en el mismo sitio donde ya se decide entre el
+  snapshot y el cálculo. El `numero_lista` es único **dentro del ciclo y contando a los
+  dados de baja**, no se recicla y no se recorre a nadie.
 - La atribución al trimestre es **por fecha y nunca manual**: no existe ni debe
   existir un selector de trimestre en el camino diario. Una fecha fuera de todo
   rango devuelve `null`, que es un resultado normal —vacaciones, puentes— y no un

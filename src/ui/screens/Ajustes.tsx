@@ -12,6 +12,7 @@ import { Button } from '@/ui/components/ui/button'
 export function Ajustes({
   alVolver,
   alCargarLista,
+  alAdministrarAlumnos,
   alConfigurarCiclo,
   alConfigurarCriterios,
   alConfigurarRubricas,
@@ -21,6 +22,7 @@ export function Ajustes({
 }: {
   alVolver: () => void
   alCargarLista: () => void
+  alAdministrarAlumnos: () => void
   alConfigurarCiclo: () => void
   alConfigurarCriterios: () => void
   alConfigurarRubricas: () => void
@@ -49,6 +51,19 @@ export function Ajustes({
             <span className="text-base font-medium text-tinta">Cargar lista de alumnos</span>
             <span className="text-base text-tinta-2">
               Se leen los nombres de un PDF o de una fotografía de la lista oficial
+            </span>
+          </button>
+        </li>
+        <li>
+          <button
+            type="button"
+            onClick={alAdministrarAlumnos}
+            className="flex w-full flex-col items-start gap-0.5 px-4 py-3 text-left"
+          >
+            <span className="text-base font-medium text-tinta">Alumnos</span>
+            <span className="text-base text-tinta-2">
+              Agregar a quien llegó después, corregir un nombre o dar de baja a quien se
+              fue
             </span>
           </button>
         </li>

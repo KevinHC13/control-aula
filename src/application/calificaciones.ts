@@ -322,6 +322,15 @@ export function reporteDeCierres(
  * la usan las dos entradas —la lectura de una sola vez y el hook reactivo—. Con la
  * decisión repetida, cualquier pantalla podría recalcular un trimestre cerrado por
  * descuido, y ese descuido cambiaría una calificación ya reportada.
+ *
+ * `alumnos` llega **con los dados de baja**, y aquí se decide quién entra, que es
+ * la misma bifurcación y por eso vive en el mismo sitio (D-026):
+ *
+ * - Trimestre **cerrado**: entran todos, bajas incluidas. Un alumno que se fue en
+ *   noviembre tiene su snapshot en el trimestre que se cerró en octubre, y darlo
+ *   de baja no puede cambiar una boleta que ya se entregó.
+ * - Trimestre **abierto**: solo los vigentes. Calcular a quien ya no está sería
+ *   ponerlo en una boleta que nadie va a recibir.
  */
 export function armarReporte(
   capturas: CapturasDelTrimestre,
@@ -339,7 +348,10 @@ export function armarReporte(
   return {
     trimestre: capturas.trimestre,
     delSnapshot: false,
-    alumnos: reporteDeCapturas(capturas, alumnos),
+    alumnos: reporteDeCapturas(
+      capturas,
+      alumnos.filter((a) => a.deleted_at === null),
+    ),
   }
 }
 
@@ -351,7 +363,9 @@ export async function reporteDeTrimestre(
   if (!capturas) return null
 
   const [alumnos, cierres] = await Promise.all([
-    repos.alumnos.lista(),
+    // Con las bajas: quién entra al reporte lo decide `armarReporte`, según el
+    // trimestre esté cerrado o abierto.
+    repos.alumnos.conBajas(),
     repos.evaluacion.cierresDeTrimestre(trimestreId),
   ])
 

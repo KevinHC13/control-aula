@@ -10,6 +10,7 @@ import type { Alumno, CierreTrimestre, TipoCriterio, Trimestre } from '@/domain/
 import type { CampoFormativo, EstadoAsistencia, Id, Nivel } from '@/domain/values'
 
 import {
+  armarReporte,
   cerrarTrimestre,
   reabrirTrimestre,
   reporteDeCapturas,
@@ -670,5 +671,71 @@ describe('criterios automáticos en el reporte', () => {
 
     expect(comoCalificacion(reporteDeCapturas(conUnDia, DOS)[0]!.criterios[0]!.general)).toBe('10.0')
     expect(comoCalificacion(reporteDeCapturas(conUnaFalta, DOS)[0]!.criterios[0]!.general)).toBe('5.0')
+  })
+})
+
+/**
+ * Quién entra al reporte cuando hay alumnos dados de baja (D-026).
+ *
+ * Es la misma bifurcación que decide entre el snapshot y el cálculo, y por eso
+ * vive en `armarReporte`: repetirla fuera sería tenerla mal en uno de los dos
+ * sitios.
+ */
+describe('armarReporte con alumnos dados de baja', () => {
+  const seFue: Alumno = {
+    ...alumno(2),
+    deleted_at: '2026-11-01T00:00:00.000Z',
+  }
+  const conBajas = [alumno(1), seFue]
+
+  const cierre = (alumnoId: Id, final: number): CierreTrimestre => ({
+    id: `cierre-${alumnoId}`,
+    ...base,
+    trimestre_id: 'trimestre-1',
+    alumno_id: alumnoId,
+    final,
+    desglose: [{ criterio: 'Tareas', peso: 100, calificacion: final, porCampo: {} }],
+  })
+
+  it('en un trimestre cerrado el dado de baja sigue apareciendo', () => {
+    // Se fue en noviembre, pero el trimestre 1 se cerró en octubre y su
+    // calificación ya se reportó. Darlo de baja no puede cambiar esa boleta.
+    const cerrado = { ...trimestre, estado: 'cerrado' as const }
+
+    const reporte = armarReporte(
+      capturas({ trimestre: cerrado }),
+      [cierre('alumno-1', 0.9), cierre('alumno-2', 0.8)],
+      conBajas,
+    )
+
+    expect(reporte.delSnapshot).toBe(true)
+    expect(reporte.alumnos).toHaveLength(2)
+    expect(reporte.alumnos[1]?.general).toBe(0.8)
+  })
+
+  it('la pantalla puede marcarlo: el alumno llega con su deleted_at', () => {
+    const cerrado = { ...trimestre, estado: 'cerrado' as const }
+
+    const reporte = armarReporte(capturas({ trimestre: cerrado }), [], conBajas)
+
+    expect(reporte.alumnos[1]?.alumno.deleted_at).not.toBeNull()
+  })
+
+  it('en un trimestre abierto el dado de baja queda fuera', () => {
+    // Calcular a quien ya no está sería ponerlo en una boleta que nadie va a
+    // recibir.
+    const reporte = armarReporte(capturas(), [], conBajas)
+
+    expect(reporte.delSnapshot).toBe(false)
+    expect(reporte.alumnos).toHaveLength(1)
+    expect(reporte.alumnos[0]?.alumno.id).toBe('alumno-1')
+  })
+
+  it('sin bajas, cerrado y abierto ven al mismo grupo', () => {
+    expect(armarReporte(capturas(), [], DOS).alumnos).toHaveLength(2)
+    expect(
+      armarReporte(capturas({ trimestre: { ...trimestre, estado: 'cerrado' } }), [], DOS)
+        .alumnos,
+    ).toHaveLength(2)
   })
 })

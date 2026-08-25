@@ -1037,5 +1037,20 @@ arrancar. Se retiró al empezar el uso real (D-024): con la carga por IA ya
 construida no sostenía nada, y un `grupo.ts` olvidado en el disco repoblaba la
 base en cualquier arranque.
 
-No hay CRUD de alumnos en la v1: no existe alta, baja ni edición uno por uno. La
-lista entra completa o no entra.
+Encima de eso hay **alta, corrección y baja uno por uno** (D-026), porque un grupo
+real se mueve durante el año: llega alguien en noviembre, otro se cambia de
+escuela, y un apellido que el OCR leyó mal no se arregla volviendo a cargar la
+lista entera. Vive en *Ajustes → Alumnos*, fuera del camino diario.
+
+Tres reglas que no se negocian ahí:
+
+- **La baja es suave**, `deleted_at`, y no borra nada suyo: su asistencia y sus
+  calificaciones se quedan, y su `id` sigue siendo válido.
+- **Un dado de baja sigue apareciendo en los trimestres ya cerrados.** Quién entra
+  al reporte lo decide `armarReporte`, en el mismo sitio donde ya se decide entre
+  el snapshot y el cálculo: cerrado, entran todos; abierto, solo los vigentes.
+- **El número de lista es único dentro del ciclo, contando a los dados de baja**, y
+  no se recicla ni se recorre a nadie. `sembrar()` fusiona por ese número sobre
+  todos los del ciclo, borrados incluidos —así revive a quien vuelve—, así que dos
+  alumnos con el mismo número harían que recargar la lista escribiera sobre
+  cualquiera de los dos.

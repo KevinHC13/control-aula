@@ -21,6 +21,11 @@ interface Emision {
  * los cierres solo al cerrar. Quién manda —el cálculo o el snapshot— lo decide
  * `armarReporte`, que es la única que sabe elegir.
  *
+ * En los dos casos el grupo llega **con los dados de baja**: quién entra al
+ * reporte lo decide `armarReporte` según el trimestre esté cerrado o abierto
+ * (D-026), y repetir esa decisión aquí sería tenerla mal en uno de los dos
+ * sitios.
+ *
  * `cicloId` sirve para consultar un ciclo **cerrado** (D-025). Con él, el grupo
  * se lee una sola vez y de ese ciclo, en vez de suscribirse al de hoy: los
  * cierres del año pasado apuntan a alumnos que ya no están en la lista diaria, y
@@ -54,14 +59,14 @@ export function useReporteDeTrimestre(
 
     const subAlumnos =
       cicloId === null
-        ? repos.alumnos.observarLista().subscribe((valor) => {
+        ? repos.alumnos.observarConBajas().subscribe((valor) => {
             alumnos = valor
             emitir()
           })
         : { unsubscribe: () => {} }
 
     if (cicloId !== null) {
-      void repos.alumnos.deCiclo(cicloId).then((valor) => {
+      void repos.alumnos.deCicloConBajas(cicloId).then((valor) => {
         alumnos = valor
         emitir()
       })

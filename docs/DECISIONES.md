@@ -886,3 +886,68 @@ prueba propia en `migracion-ciclo.test.ts`, que levanta una base v3 con su ciclo
 abre— y una columna nueva en Supabase. La migración asigna los alumnos al único ciclo
 que haya, que es el caso real del iPad; con dos o más no adivina y los deja en `null`,
 que es visible y corregible, en vez de repartidos mal y en silencio.
+
+---
+
+## D-026 · Administrar alumnos uno por uno
+
+**Estado:** aceptada — 2026-08-24. Decisión del usuario. Revierte una parte de
+[D-009](#d-009--capa-de-aplicación-y-puertos-aun-siendo-sobredimensionado).
+
+El proyecto decía, y estaba escrito en el puerto y en `docs/DATA-MODEL.md`: «no hay
+CRUD de alumnos en la v1; la lista entra completa o no entra». La razón era buena —un
+CRUD de treinta filas es una pantalla que se usa una vez al año y que hay que mantener
+todo el año— y la carga asistida por IA (D-014) la hacía innecesaria para el caso
+normal.
+
+**Por qué se revierte.** Porque el caso normal no es el único. Un grupo de primaria se
+mueve durante el año: llega alguien en noviembre, otro se cambia de escuela en febrero.
+Y hay un tercero que la carga tampoco resuelve: el apellido que el OCR leyó mal y nadie
+notó hasta diciembre. Para las tres cosas, la única respuesta que había era volver a
+cargar la lista entera, que es desproporcionado y además no sabe dar de baja a nadie —
+`sembrar()` no borra, a propósito—.
+
+**Lo que cuesta.** Una pantalla más que mantener, seis métodos más en el puerto, y la
+regla «la lista entra completa» deja de ser cierta, así que ya no se puede razonar
+sobre el grupo asumiendo que viene de un solo sitio. Se acepta a sabiendas.
+
+**Lo que no cambia.** *Cargar lista de alumnos* sigue siendo el camino para meter
+treinta nombres sin teclear ninguno, y esta pantalla lo dice en su primera línea. Nada
+de esto entra al camino diario: vive en Ajustes, como todo lo que se hace dos veces al
+año.
+
+**Las tres decisiones que tuvo dentro:**
+
+1. **La baja es suave y no borra nada suyo.** `deleted_at`, como todo en el proyecto.
+   Su asistencia y sus calificaciones se quedan, y su `id` sigue siendo válido: dar de
+   baja significa «ya no está en el grupo», no «nunca estuvo».
+
+2. **Un dado de baja sigue apareciendo en los trimestres ya cerrados.** Es la
+   consecuencia menos obvia y la que más importa. Con el filtro de siempre, dar de baja
+   en noviembre habría borrado a ese alumno del trimestre 1 que se cerró en octubre y
+   cuya boleta ya se entregó — la app habría dejado de coincidir con el papel, que es
+   justo lo que el cierre con snapshot existe para evitar. La decisión de quién entra
+   vive en **`armarReporte`**, en el mismo sitio donde ya se decide entre el snapshot y
+   el cálculo, porque es la misma bifurcación: cerrado, entran todos; abierto, solo los
+   vigentes. Repetirla fuera sería tenerla mal en uno de los dos sitios. El precio son
+   dos métodos de lectura más en el puerto —`conBajas()` y `deCicloConBajas()`—, que
+   entregan el conjunto completo para que esa decisión no se reparta.
+
+3. **El número de lista no se recicla ni se recorre a nadie.** Al agregar se propone el
+   siguiente al más alto y ella puede cambiarlo; si el que escribe ya está tomado, se lo
+   dice y no guarda. Único **dentro del ciclo y contando a los dados de baja**, porque
+   `sembrar()` fusiona por ese número sobre todos los del ciclo, borrados incluidos —así
+   es como revive a quien vuelve—, de modo que dos alumnos con el mismo número harían
+   que recargar la lista escribiera sobre cualquiera de los dos, al azar. Y no se
+   recorre a los demás al insertar: el alumno 14 sigue siendo el 14 todo el año, porque
+   ella pasa lista por esos números.
+
+**Un botón de Guardar, al revés que en las pantallas de captura.** La regla «cada toque
+escribe» es de la captura diaria, donde el dato es un estado y el toque es la captura
+entera. Un nombre a medio escribir no es un dato, y escribir en cada tecla llenaría la
+`outbox` de versiones intermedias de un apellido.
+
+**Lo que sigue pendiente y no es un fallo:** volver a cargar la lista con IA **revive**
+a un alumno dado de baja si aparece en el archivo nuevo. Es el comportamiento correcto
+—si la escuela lo trae en la lista oficial, está inscrito— pero conviene saberlo antes
+de que sorprenda.

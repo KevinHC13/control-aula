@@ -243,3 +243,173 @@ describe('el grupo se acota al ciclo abierto', () => {
     expect((await db.alumnos.get('alumno-1'))?.nombre).toBe('Del año pasado')
   })
 })
+
+/**
+ * Alta, corrección y baja uno por uno (D-026). La lista completa sigue entrando
+ * por `sembrar()`; esto es lo que aquella no puede cubrir.
+ */
+describe('administrar alumnos', () => {
+  beforeEach(async () => {
+    await db.ciclos.clear()
+    await db.outbox.clear()
+  })
+
+  const DATOS = { nombre: 'Llegó Después, Ana', numero_lista: 31, fecha_nacimiento: null }
+
+  it('agregar da de alta con id, updated_at y sin baja', async () => {
+    await repo.agregar(DATOS)
+
+    const lista = await repo.lista()
+    expect(lista).toHaveLength(1)
+    expect(lista[0]?.id).toMatch(/^[0-9a-f-]{36}$/)
+    expect(lista[0]?.updated_at).toMatch(/Z$/)
+    expect(lista[0]?.deleted_at).toBeNull()
+  })
+
+  it('agregar encola en la outbox', async () => {
+    await repo.agregar(DATOS)
+
+    const pendientes = await db.outbox.toArray()
+    expect(pendientes.filter((c) => c.tabla === 'alumnos')).toHaveLength(1)
+  })
+
+  it('agregar estampa el ciclo abierto', async () => {
+    await db.ciclos.put({
+      id: 'ciclo-a',
+      nombre: 'ciclo-a',
+      estado: 'abierto',
+      updated_at: '2026-08-01T00:00:00.000Z',
+      deleted_at: null,
+    })
+
+    await repo.agregar(DATOS)
+
+    expect((await repo.lista())[0]?.ciclo_id).toBe('ciclo-a')
+  })
+
+  it('agregar se niega si el número ya está tomado', async () => {
+    await repo.agregar(DATOS)
+
+    await expect(repo.agregar({ ...DATOS, nombre: 'Otro, Otro' })).rejects.toThrow(
+      /ya está ocupado/,
+    )
+    expect(await repo.lista()).toHaveLength(1)
+  })
+
+  it('agregar se niega aunque el que ocupa el número esté dado de baja', async () => {
+    // `sembrar()` fusiona por número de lista sobre todos los del ciclo,
+    // borrados incluidos: dos con el mismo número harían que recargar la lista
+    // escribiera sobre cualquiera de los dos.
+    await repo.agregar(DATOS)
+    const id = (await repo.lista())[0]!.id
+    await repo.darDeBaja(id)
+
+    await expect(repo.agregar({ ...DATOS, nombre: 'Otro, Otro' })).rejects.toThrow(
+      /ya está ocupado/,
+    )
+  })
+
+  it('editar corrige conservando el id, que es de donde cuelga su historia', async () => {
+    await repo.agregar(DATOS)
+    const original = (await repo.lista())[0]!
+
+    await repo.editar(original.id, { ...DATOS, nombre: 'Corregido, Nombre' })
+
+    const lista = await repo.lista()
+    expect(lista[0]?.id).toBe(original.id)
+    expect(lista[0]?.nombre).toBe('Corregido, Nombre')
+  })
+
+  it('editar deja cambiar el número al que ya tenía', async () => {
+    // Su propio número no puede contar como repetido.
+    await repo.agregar(DATOS)
+    const id = (await repo.lista())[0]!.id
+
+    await expect(
+      repo.editar(id, { ...DATOS, nombre: 'Mismo número, otro nombre' }),
+    ).resolves.toBeUndefined()
+  })
+
+  it('editar se niega ante el número de otro', async () => {
+    await repo.agregar(DATOS)
+    await repo.agregar({ ...DATOS, numero_lista: 32, nombre: 'Otra, Otra' })
+    const segundo = (await repo.lista())[1]!
+
+    await expect(repo.editar(segundo.id, { ...DATOS, numero_lista: 31 })).rejects.toThrow(
+      /ya está ocupado/,
+    )
+  })
+
+  it('editar no muda de ciclo', async () => {
+    await db.alumnos.put({
+      id: 'a-1',
+      ciclo_id: 'ciclo-viejo',
+      nombre: 'Del año pasado',
+      numero_lista: 1,
+      fecha_nacimiento: null,
+      updated_at: '2025-08-25T00:00:00.000Z',
+      deleted_at: null,
+    })
+
+    await repo.editar('a-1', {
+      nombre: 'Corregido',
+      numero_lista: 1,
+      fecha_nacimiento: null,
+    })
+
+    expect((await db.alumnos.get('a-1'))?.ciclo_id).toBe('ciclo-viejo')
+  })
+
+  it('dar de baja lo saca de la lista sin borrar la fila', async () => {
+    await repo.agregar(DATOS)
+    const id = (await repo.lista())[0]!.id
+
+    await repo.darDeBaja(id)
+
+    expect(await repo.lista()).toHaveLength(0)
+    expect(await db.alumnos.count()).toBe(1)
+    expect((await db.alumnos.get(id))?.deleted_at).toMatch(/Z$/)
+  })
+
+  it('la baja se encola como upsert, no como delete', async () => {
+    // El borrado es suave: lo que viaja es la fila con su `deleted_at` puesto.
+    // Un delete en el servidor perdería la baja al restaurar.
+    await repo.agregar(DATOS)
+    const id = (await repo.lista())[0]!.id
+    await db.outbox.clear()
+
+    await repo.darDeBaja(id)
+
+    const pendientes = await db.outbox.toArray()
+    expect(pendientes).toHaveLength(1)
+    expect(pendientes[0]?.op).toBe('upsert')
+    expect(pendientes[0]?.registro_id).toBe(id)
+  })
+
+  it('reactivar deshace la baja', async () => {
+    await repo.agregar(DATOS)
+    const id = (await repo.lista())[0]!.id
+    await repo.darDeBaja(id)
+
+    await repo.reactivar(id)
+
+    expect(await repo.lista()).toHaveLength(1)
+    expect((await db.alumnos.get(id))?.deleted_at).toBeNull()
+  })
+
+  it('conBajas trae a los dos, ordenados por número', async () => {
+    await repo.agregar({ ...DATOS, numero_lista: 2, nombre: 'Sigue, Aquí' })
+    await repo.agregar({ ...DATOS, numero_lista: 1, nombre: 'Se, Fue' })
+    const seFue = (await repo.lista()).find((a) => a.numero_lista === 1)!
+    await repo.darDeBaja(seFue.id)
+
+    const todos = await repo.conBajas()
+    expect(todos.map((a) => a.numero_lista)).toEqual([1, 2])
+    expect(await repo.lista()).toHaveLength(1)
+  })
+
+  it('editar y dar de baja se niegan ante un alumno que no existe', async () => {
+    await expect(repo.editar('no-existe', DATOS)).rejects.toThrow(/No existe el alumno/)
+    await expect(repo.darDeBaja('no-existe')).rejects.toThrow(/No existe el alumno/)
+  })
+})

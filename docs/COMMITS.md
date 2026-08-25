@@ -1375,3 +1375,21 @@ cerrado no cambia mientras se mira.
 - [x] Revierte `C32b` entero, ni una línea de más
 
 Terminar el ciclo deja la app limpia sin borrar nada, que es lo que se quería de verdad.
+
+### ✅ C37 · `feat(grupo): administrar alumnos uno por uno`
+
+- [x] *Ajustes → Alumnos*: agregar, corregir y dar de baja
+- [x] La baja es suave y no borra nada suyo; se puede deshacer
+- [x] Un dado de baja **sigue** en los trimestres ya cerrados, y desaparece del diario
+- [x] El número de lista es único en el ciclo, bajas incluidas, y no se recorre a nadie
+- [x] Se propone el siguiente libre y se avisa del repetido mientras se escribe
+- [x] Corregir un nombre **conserva el `id`**, y con él su asistencia y sus calificaciones
+
+Revierte una parte de D-009 a sabiendas (D-026). La carga con IA sigue siendo el camino
+para meter treinta nombres; esto cubre lo que aquella no puede: el que llega en
+noviembre, el que se va en febrero, y el apellido que el OCR leyó mal.
+
+Lo menos obvio es el punto tres: con el filtro de siempre, dar de baja en noviembre
+habría borrado a ese alumno del trimestre 1 cerrado en octubre, cuya boleta ya se
+entregó. Quién entra al reporte se decide en `armarReporte`, donde ya se decide entre el
+snapshot y el cálculo, porque es la misma bifurcación.
