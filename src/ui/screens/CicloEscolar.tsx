@@ -3,7 +3,9 @@ import { useMemo, useState } from 'react'
 import {
   abrirCicloEscolar,
   abrirTrimestreSiguiente,
+  cerrarCicloEscolar,
   guardarFechas,
+  loQueFaltaParaCerrarCiclo,
   nombreDeCicloEn,
   type Periodo,
   periodoVacio,
@@ -228,7 +230,87 @@ function Configurado({ ciclo }: { ciclo: CicloEnCurso }) {
           reportaron.
         </p>
       )}
+
+      <Terminar ciclo={ciclo} />
     </div>
+  )
+}
+
+/**
+ * Terminar el ciclo y dejar la app lista para el grupo que llega.
+ *
+ * Es la pantalla donde más importa decir qué **no** pasa: cerrar no borra nada, y
+ * quien lo aprieta tiene que saberlo antes, no después. Por eso el aviso habla de
+ * lo que se conserva tanto como de lo que desaparece de la vista.
+ */
+function Terminar({ ciclo }: { ciclo: CicloEnCurso }) {
+  const [confirmando, setConfirmando] = useState(false)
+  const [cerrando, setCerrando] = useState(false)
+  const [error, setError] = useState('')
+
+  const falta = loQueFaltaParaCerrarCiclo(ciclo)
+
+  async function cerrar() {
+    setCerrando(true)
+    setError('')
+    try {
+      await cerrarCicloEscolar(ciclo)
+      // Sin navegar a ninguna parte: `useCicloEnCurso` deja de ver este ciclo y
+      // la pantalla vuelve sola a ofrecer abrir el siguiente.
+    } catch (fallo) {
+      setError(fallo instanceof Error ? fallo.message : 'No se pudo cerrar el ciclo')
+      setConfirmando(false)
+    } finally {
+      setCerrando(false)
+    }
+  }
+
+  return (
+    <section aria-labelledby="titulo-terminar" className="flex flex-col gap-2 border-t border-linea pt-4">
+      <h2 id="titulo-terminar" className="text-base font-medium text-tinta">
+        Terminar el ciclo escolar
+      </h2>
+      <p className="text-base text-tinta-2">
+        Al terminarlo, la aplicación queda lista para el grupo que llega: la lista, la
+        asistencia y las actividades de este ciclo dejan de aparecer en las pantallas de
+        todos los días.{' '}
+        <strong className="font-medium text-tinta">Nada se borra</strong>: las
+        calificaciones de este ciclo se siguen consultando en Ajustes → Ciclos
+        anteriores.
+      </p>
+
+      {falta !== undefined ? (
+        <p className="text-base text-tinta-2">
+          {falta}. Un trimestre sin cerrar no guarda sus calificaciones definitivas, y
+          después ya no se podrían volver a calcular.
+        </p>
+      ) : confirmando ? (
+        <div
+          role="alertdialog"
+          aria-label="Confirmar el cierre del ciclo escolar"
+          className="flex flex-col gap-3 rounded-md border-l-[7px] border-rojo bg-rojo/5 px-4 py-3"
+        >
+          <p className="text-base text-tinta">
+            Se va a cerrar «{ciclo.ciclo.nombre}». Después habrá que cargar la lista del
+            grupo nuevo, y este ciclo ya no se podrá reabrir desde aquí.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="destructive" disabled={cerrando} onClick={() => void cerrar()}>
+              {cerrando ? 'Cerrando…' : 'Terminar el ciclo'}
+            </Button>
+            <Button variant="outline" onClick={() => setConfirmando(false)}>
+              Cancelar
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <Button variant="outline" className="self-start" onClick={() => setConfirmando(true)}>
+          Terminar el ciclo escolar
+        </Button>
+      )}
+
+      {error && <Aviso>{error}</Aviso>}
+    </section>
   )
 }
 

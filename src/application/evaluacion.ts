@@ -177,9 +177,14 @@ export async function cicloEnCurso(): Promise<CicloEnCurso | null> {
  * para poder empezar sería hacerla inventarlas. Los siguientes entran con
  * `abrirTrimestreSiguiente` cuando la escuela publica su calendario.
  *
- * Se niega si ya hay un ciclo abierto: dos ciclos abiertos harían ambigua la
- * atribución de una fecha. Cambiar de ciclo es cerrar el anterior, y eso llega con
- * el cierre de trimestre (C27).
+ * Se niega si ya hay un ciclo **abierto**: dos abiertos harían ambigua la
+ * atribución de una fecha. Cerrados puede haber los que sean; para empezar otro
+ * hay que cerrar el actual, con `cerrarCicloEscolar`.
+ *
+ * La comprobación lee **todos** los ciclos y no `cicloEnCurso()`. No es lo mismo:
+ * `cicloEnCurso()` solo ve el abierto, así que preguntarle «¿hay ya un ciclo?»
+ * respondía que no en cuanto existiera uno cerrado, y dejaba abrir el segundo
+ * ciclo abierto justo el día en que la app empieza a tener historia.
  */
 export async function abrirCicloEscolar(nombre: string, primero: Periodo): Promise<void> {
   const [revisado] = revisarPeriodos([{ ...primero, numero: 1 }])
@@ -188,13 +193,66 @@ export async function abrirCicloEscolar(nombre: string, primero: Periodo): Promi
   }
   if (nombre.trim() === '') throw new Error('Falta el nombre del ciclo escolar')
 
-  if ((await repos.evaluacion.cicloEnCurso()) !== null) {
-    throw new Error('Ya hay un ciclo escolar registrado. Para empezar otro hay que cerrar el actual')
+  const ciclos = await repos.evaluacion.ciclos()
+  if (ciclos.some((c) => c.ciclo.estado === 'abierto')) {
+    throw new Error('Ya hay un ciclo escolar abierto. Para empezar otro hay que cerrar el actual')
+  }
+  if (ciclos.some((c) => c.ciclo.nombre === nombre.trim())) {
+    throw new Error(`Ya hubo un ciclo llamado «${nombre.trim()}»`)
+  }
+
+  // El traslape con un ciclo anterior sí importa, y no lo cubre `revisarPeriodos`:
+  // `traslapes()` compara solo dentro del mismo ciclo, a propósito. Con dos
+  // ciclos guardados deja de ser inocuo, porque la asistencia y la bitácora se
+  // atribuyen **por fecha**: un rango repetido contaría los días del año pasado
+  // dentro del trimestre de este.
+  const chocaCon = ciclos.find((c) =>
+    c.trimestres.some((t) => revisado.inicio <= t.fin && t.inicio <= revisado.fin),
+  )
+  if (chocaCon) {
+    throw new Error(
+      `Esas fechas se enciman con el ciclo «${chocaCon.ciclo.nombre}». ` +
+        'Un día pertenece a un solo trimestre.',
+    )
   }
 
   await repos.evaluacion.abrirCiclo(nombre.trim(), [
     { numero: 1, inicio: revisado.inicio, fin: revisado.fin },
   ])
+}
+
+/**
+ * Qué falta para poder cerrar el ciclo, o `undefined` si ya se puede.
+ *
+ * Exige **todos sus trimestres cerrados**, y no es burocracia: la calificación de
+ * un trimestre abierto se calcula al vuelo desde los criterios y los pesos del
+ * ciclo en curso, así que un ciclo cerrado con trimestres abiertos dentro tendría
+ * calificaciones que ninguna pantalla podría volver a producir. El snapshot del
+ * cierre es lo que las vuelve consultables para siempre.
+ *
+ * Devuelve el mensaje para enseñarlo tal cual: aquí no hay nadie leyendo consola.
+ */
+export function loQueFaltaParaCerrarCiclo(ciclo: CicloEnCurso): string | undefined {
+  const abiertos = ciclo.trimestres.filter((t) => t.estado !== 'cerrado')
+  if (abiertos.length === 0) return undefined
+
+  const numeros = abiertos.map((t) => t.numero).sort()
+  return numeros.length === 1
+    ? `Falta cerrar el trimestre ${numeros[0]}`
+    : `Faltan por cerrar los trimestres ${numeros.join(' y ')}`
+}
+
+/**
+ * Cierra el ciclo escolar. Nada se borra: el grupo, su asistencia y sus
+ * calificaciones se quedan enteros y se consultan desde Ajustes; lo que cambia es
+ * que las pantallas del camino diario amanecen limpias, listas para el grupo que
+ * llega (D-025).
+ */
+export async function cerrarCicloEscolar(ciclo: CicloEnCurso): Promise<void> {
+  const falta = loQueFaltaParaCerrarCiclo(ciclo)
+  if (falta !== undefined) throw new Error(falta)
+
+  await repos.evaluacion.cerrarCiclo(ciclo.ciclo.id)
 }
 
 /**

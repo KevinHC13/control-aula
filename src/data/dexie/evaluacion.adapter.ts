@@ -141,6 +141,51 @@ export class DexieEvaluacionRepo implements EvaluacionRepo {
     )
   }
 
+  /**
+   * Cierra el ciclo. Nada se borra: los alumnos, la asistencia y las
+   * calificaciones se quedan, y dejan de verse porque las pantallas diarias leen
+   * el ciclo abierto (D-025).
+   *
+   * Es la primera escritura sobre `ciclos` que no es el `add` de abrirlo: hasta
+   * hoy `Ciclo.estado` se escribía una vez, al nacer, y `'cerrado'` era un valor
+   * inalcanzable.
+   */
+  async cerrarCiclo(cicloId: Id): Promise<void> {
+    await db.transaction('rw', db.ciclos, db.outbox, async () => {
+      const ciclo = await db.ciclos.get(cicloId)
+      if (!ciclo) throw new Error(`No existe el ciclo ${cicloId}`)
+
+      const momento = ahora()
+      await db.ciclos.put({ ...ciclo, estado: 'cerrado', updated_at: momento })
+      await db.outbox.add({
+        tabla: 'ciclos',
+        registro_id: ciclo.id,
+        op: 'upsert',
+        at: momento,
+      })
+    })
+  }
+
+  /** Del más reciente al más viejo, por el inicio de su primer trimestre. */
+  async ciclos(): Promise<CicloEnCurso[]> {
+    const ciclos = (await db.ciclos.toArray()).filter((c) => c.deleted_at === null)
+    const trimestres = (await db.trimestres.toArray()).filter((t) => t.deleted_at === null)
+
+    const armados = ciclos.map((ciclo) => ({
+      ciclo,
+      trimestres: trimestres
+        .filter((t) => t.ciclo_id === ciclo.id)
+        .sort((a, b) => a.numero - b.numero),
+    }))
+
+    // Por fecha de inicio y no por `updated_at`: ajustar una fecha del ciclo
+    // viejo no lo debe saltar por encima del nuevo en la lista. Un ciclo sin
+    // trimestres ordena al final, que es donde estorba menos.
+    const inicioDe = (c: CicloEnCurso) => c.trimestres[0]?.inicio ?? ''
+
+    return armados.sort((a, b) => inicioDe(b).localeCompare(inicioDe(a)))
+  }
+
   async abrirTrimestre(cicloId: Id, periodo: PeriodoNuevo): Promise<void> {
     await db.transaction('rw', db.trimestres, db.outbox, async () => {
       const momento = ahora()

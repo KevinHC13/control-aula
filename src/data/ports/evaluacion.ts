@@ -221,6 +221,30 @@ export interface EvaluacionRepo {
   abrirCiclo(nombre: string, periodos: PeriodoNuevo[]): Promise<void>
 
   /**
+   * Cierra el ciclo: deja de ser el que está en curso y pasa a ser historia
+   * consultable. Sus alumnos, su asistencia y sus calificaciones **no se
+   * borran**; simplemente dejan de aparecer en las pantallas del camino diario,
+   * que leen siempre el ciclo abierto (D-025).
+   *
+   * Quien llama ya verificó que todos sus trimestres están cerrados: la regla
+   * vive en el caso de uso. Sin esa condición, un ciclo cerrado tendría
+   * calificaciones sin snapshot que ninguna pantalla podría volver a calcular,
+   * porque calcularlas exige los criterios y los pesos del ciclo en curso.
+   */
+  cerrarCiclo(cicloId: Id): Promise<void>
+
+  /**
+   * Todos los ciclos con sus trimestres, del más reciente al más viejo.
+   *
+   * `cicloEnCurso()` no sirve para esto: solo ve el abierto. Trae los trimestres
+   * y no solo los ciclos porque los dos usos los necesitan —consultar un ciclo
+   * anterior, y negarse a abrir uno cuyas fechas se traslapen con otro— y un
+   * ciclo sin sus trimestres no significa nada (la misma razón por la que existe
+   * `CicloEnCurso`).
+   */
+  ciclos(): Promise<CicloEnCurso[]>
+
+  /**
    * Abre un trimestre más en un ciclo que ya existe.
    *
    * Quien llama ya verificó que el número no está tomado y que el rango no se

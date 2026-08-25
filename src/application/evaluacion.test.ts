@@ -20,6 +20,7 @@ import {
   borrarRubrica,
   cambiaLaCaptura,
   CAMPOS_CON_NOMBRE,
+  cerrarCicloEscolar,
   cicloEnCurso,
   copiarEsquemaDe,
   crearActividad,
@@ -28,6 +29,7 @@ import {
   EJES_ARTICULADORES,
   esquemaDelTrimestre,
   estaCalificada,
+  loQueFaltaParaCerrarCiclo,
   estadoDelReparto,
   guardarFechas,
   guardarRubrica,
@@ -452,11 +454,111 @@ describe('abrirCicloEscolar', () => {
     expect(await cicloEnCurso()).toBeNull()
   })
 
-  it('no abre un segundo ciclo mientras haya uno en curso', async () => {
+  it('no abre un segundo ciclo mientras haya uno abierto', async () => {
     await abrirCicloEscolar('2026–2027', BUENOS[0]!)
     // Dos ciclos abiertos harían ambigua la atribución de una fecha.
-    await expect(abrirCicloEscolar('2027–2028', BUENOS[0]!)).rejects.toThrow(/Ya hay un ciclo escolar registrado/)
+    await expect(abrirCicloEscolar('2027–2028', BUENOS[0]!)).rejects.toThrow(
+      /Ya hay un ciclo escolar abierto/,
+    )
     expect(await db.ciclos.count()).toBe(1)
+  })
+
+  it('con el anterior cerrado sí abre el siguiente', async () => {
+    // La guarda vieja preguntaba por `cicloEnCurso()`, que solo ve los abiertos,
+    // así que este caso no se podía distinguir del de arriba.
+    await abrirCicloEscolar('2026–2027', BUENOS[0]!)
+    const enCurso = await cicloEnCurso()
+    await repos.evaluacion.cerrarTrimestre(enCurso!.trimestres[0]!.id, [])
+    await cerrarCicloEscolar((await cicloEnCurso())!)
+
+    await abrirCicloEscolar('2027–2028', {
+      numero: 1,
+      inicio: '2027-08-23',
+      fin: '2027-11-26',
+    })
+
+    expect(await db.ciclos.count()).toBe(2)
+    expect((await cicloEnCurso())?.ciclo.nombre).toBe('2027–2028')
+  })
+
+  it('se niega a repetir el nombre de un ciclo anterior', async () => {
+    await abrirCicloEscolar('2026–2027', BUENOS[0]!)
+    const enCurso = await cicloEnCurso()
+    await repos.evaluacion.cerrarTrimestre(enCurso!.trimestres[0]!.id, [])
+    await cerrarCicloEscolar((await cicloEnCurso())!)
+
+    await expect(
+      abrirCicloEscolar('2026–2027', { numero: 1, inicio: '2027-08-23', fin: '2027-11-26' }),
+    ).rejects.toThrow(/Ya hubo un ciclo llamado/)
+  })
+
+  it('se niega si las fechas se encaraman con un ciclo anterior', async () => {
+    // No lo cubre `revisarPeriodos`: `traslapes()` compara solo dentro del mismo
+    // ciclo. Y aquí sí importa, porque la asistencia se atribuye por fecha y el
+    // rango repetido contaría los días del año pasado en el trimestre de este.
+    await abrirCicloEscolar('2026–2027', BUENOS[0]!)
+    const enCurso = await cicloEnCurso()
+    await repos.evaluacion.cerrarTrimestre(enCurso!.trimestres[0]!.id, [])
+    await cerrarCicloEscolar((await cicloEnCurso())!)
+
+    await expect(
+      abrirCicloEscolar('2027–2028', {
+        numero: 1,
+        inicio: BUENOS[0]!.fin,
+        fin: '2027-03-19',
+      }),
+    ).rejects.toThrow(/se enciman con el ciclo/)
+  })
+})
+
+describe('cerrarCicloEscolar', () => {
+  it('no cierra el ciclo con un trimestre abierto dentro', async () => {
+    // La calificación de un trimestre abierto se calcula al vuelo; sin su
+    // snapshot, un ciclo cerrado tendría números que nadie podría reproducir.
+    await abrirCicloEscolar('2026–2027', BUENOS[0]!)
+    const ciclo = await cicloEnCurso()
+
+    await expect(cerrarCicloEscolar(ciclo!)).rejects.toThrow(/Falta cerrar el trimestre 1/)
+    expect((await cicloEnCurso())?.ciclo.estado).toBe('abierto')
+  })
+
+  it('dice cuáles faltan cuando son varios', async () => {
+    await abrirCicloEscolar('2026–2027', BUENOS[0]!)
+    await abrirTrimestreSiguiente((await cicloEnCurso())!, BUENOS[1]!)
+
+    expect(loQueFaltaParaCerrarCiclo((await cicloEnCurso())!)).toMatch(
+      /Faltan por cerrar los trimestres 1 y 2/,
+    )
+  })
+
+  it('con todos los trimestres cerrados, cierra y deja de estar en curso', async () => {
+    await abrirCicloEscolar('2026–2027', BUENOS[0]!)
+    const ciclo = await cicloEnCurso()
+    await repos.evaluacion.cerrarTrimestre(ciclo!.trimestres[0]!.id, [])
+
+    await cerrarCicloEscolar((await cicloEnCurso())!)
+
+    expect(await cicloEnCurso()).toBeNull()
+    // Y sigue estando: cerrar no borra, deja de ser el de hoy.
+    expect(await db.ciclos.count()).toBe(1)
+    expect((await db.ciclos.get(ciclo!.ciclo.id))?.estado).toBe('cerrado')
+  })
+
+  it('el grupo del ciclo cerrado desaparece de la lista diaria, sin borrarse', async () => {
+    // Es todo el punto: la app amanece limpia para el grupo que llega, y el año
+    // pasado sigue entero debajo (D-025).
+    await abrirCicloEscolar('2026–2027', BUENOS[0]!)
+    const ciclo = await cicloEnCurso()
+    await repos.alumnos.sembrar([
+      { numero_lista: 1, nombre: 'Del año pasado', fecha_nacimiento: null },
+    ])
+    expect(await repos.alumnos.lista()).toHaveLength(1)
+
+    await repos.evaluacion.cerrarTrimestre(ciclo!.trimestres[0]!.id, [])
+    await cerrarCicloEscolar((await cicloEnCurso())!)
+
+    expect(await repos.alumnos.lista()).toHaveLength(0)
+    expect(await db.alumnos.count()).toBe(1)
   })
 })
 
