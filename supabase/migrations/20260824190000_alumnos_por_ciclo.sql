@@ -1,0 +1,23 @@
+-- Los alumnos pasan a colgar de un ciclo escolar (docs/DECISIONES.md D-025).
+--
+-- Es lo que permite guardar varias generaciones sin mezclarlas: la lista diaria
+-- son los alumnos del ciclo abierto, y los del año pasado siguen enteros para
+-- consultar sus calificaciones.
+--
+-- Sin esta columna aquí, la sincronía subiría filas con `ciclo_id` y PostgREST
+-- las rechazaría: el cliente escribe la columna desde `version(4)` del esquema
+-- local.
+--
+-- Nullable a propósito, y no `not null` con default: `null` significa «capturado
+-- antes de que hubiera ciclo», que es un estado legítimo —se pasa lista el
+-- primer día y el ciclo se configura después— y lo resuelve el cliente al abrir
+-- el ciclo, adoptándolos.
+--
+-- Sin llave foránea a `ciclos`: el orden en que la outbox sube las filas no está
+-- garantizado, y un alumno que llegue antes que su ciclo no es un error, es una
+-- carrera normal de la sincronía. La integridad la sostiene el cliente, que es
+-- la única fuente de verdad (docs/ARCHITECTURE.md).
+alter table public.alumnos add column if not exists ciclo_id text;
+
+-- Las políticas de RLS son por `owner` y no cambian: la columna nueva viaja
+-- dentro de filas que ya estaban acotadas a su dueña.

@@ -53,7 +53,7 @@ export type TablaSincronizable = (typeof TABLAS_SINCRONIZABLES)[number]
  * escrito a mano en el respaldo: el archivo lo lleva dentro para poder rechazar
  * uno hecho con una versión más nueva de la app (C14).
  */
-export const VERSION_ESQUEMA = 3
+export const VERSION_ESQUEMA = 4
 
 /**
  * Una fila de la bitácora de cambios por subir. Vive en la capa de datos y no
@@ -170,7 +170,7 @@ db.version(2)
  * campo, no un índice: Dexie no lo declara y las filas viejas lo leen como
  * `undefined`, que el cálculo trata igual que `null` —un retardo no penaliza—.
  */
-db.version(VERSION_ESQUEMA)
+db.version(3)
   .stores({
     notas: null,
     bitacora: 'id, alumno_id, fecha, deleted_at',
@@ -182,6 +182,50 @@ db.version(VERSION_ESQUEMA)
 
     await tx.table('bitacora').bulkAdd(viejas)
     console.warn(`[palomita] version(3) movió ${viejas.length} notas a bitacora.`)
+  })
+
+/**
+ * Los alumnos pasan a colgar de un ciclo (docs/DECISIONES.md D-025).
+ *
+ * Es lo que permite que la app guarde varias generaciones sin mezclarlas: la
+ * lista diaria son los alumnos del ciclo abierto, y los del año pasado siguen
+ * enteros para consultar sus calificaciones. Sin esto, abrir un ciclo nuevo y
+ * cargar la lista nueva **reasignaría** los alumnos viejos por coincidencia de
+ * `numero_lista` —`sembrar()` fusiona por ahí, conservando el `id`— y con el
+ * `id` se llevaría su asistencia y sus calificaciones. No es un hueco de
+ * funcionalidad: es corrupción silenciosa de historia.
+ *
+ * Por eso el índice compuesto `[ciclo_id+numero_lista]`: la identidad de un
+ * alumno para fusionar deja de ser su número de lista y pasa a ser su número de
+ * lista **dentro de su ciclo**.
+ *
+ * `ciclo_id` es un campo nuevo, así que las filas viejas lo leen como
+ * `undefined`. El `upgrade` las escribe explícitamente: si hay un solo ciclo,
+ * son suyas —es el caso real, un iPad con el ciclo en curso—; si no hay
+ * ninguno, quedan en `null` y las adopta el ciclo que se abra. Con dos o más
+ * ciclos no se adivina: quedan en `null`, que es visible y corregible, en vez de
+ * repartidas mal y en silencio.
+ */
+db.version(VERSION_ESQUEMA)
+  .stores({
+    alumnos: 'id, numero_lista, deleted_at, ciclo_id, [ciclo_id+numero_lista]',
+  })
+  .upgrade(async (tx) => {
+    const ciclos = (await tx.table('ciclos').toArray()).filter(
+      (c: { deleted_at: string | null }) => c.deleted_at === null,
+    )
+    const unico: string | null = ciclos.length === 1 ? ciclos[0].id : null
+
+    if (ciclos.length > 1) {
+      console.warn(
+        `[palomita] version(4) encontró ${ciclos.length} ciclos: los alumnos ` +
+          'quedan sin ciclo hasta que se les asigne uno.',
+      )
+    }
+
+    await tx.table('alumnos').toCollection().modify((alumno: { ciclo_id: string | null }) => {
+      alumno.ciclo_id = unico
+    })
   })
 
 /**

@@ -8,7 +8,14 @@ import type { Suscribible } from '@/domain/values'
  * declara solo lo que alguna pantalla usa hoy (docs/DECISIONES.md D-009).
  */
 export interface AlumnosRepo {
-  /** El grupo en el orden de la lista oficial, sin los borrados. */
+  /**
+   * El grupo en el orden de la lista oficial, sin los borrados.
+   *
+   * **Son los alumnos del ciclo abierto** (D-025). No recibe el ciclo por
+   * parámetro a propósito: no existe un «ver el grupo de otro ciclo» en el
+   * camino diario, y que el repositorio lo resuelva es lo que impide que una
+   * pantalla se salte el acote por olvido.
+   */
   lista(): Promise<Alumno[]>
 
   /** Lo mismo, reactivo: emite de nuevo cuando el grupo cambia. */
@@ -23,7 +30,10 @@ export interface AlumnosRepo {
    *
    * No borra: un alumno que ya no está en el archivo se queda en la base. Dar
    * de baja es una decisión con datos de por medio, no un efecto secundario de
-   * arrancar la app.
+   * cargar una lista.
+   *
+   * La identidad es el número de lista **dentro del ciclo abierto**: cargar la
+   * lista del año nuevo crea alumnos nuevos, no reescribe los del anterior.
    */
   sembrar(datos: DatosAlumno[]): Promise<void>
 }

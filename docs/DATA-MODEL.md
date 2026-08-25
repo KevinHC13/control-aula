@@ -774,7 +774,8 @@ que el esquema cambie la semana siguiente: son las **dieciséis** tablas de ahor
 `version(1)` es lo que está desplegado en el iPad: cinco tablas de dominio más la
 `outbox`. Las tablas de evaluación entran en `version(2)`, y es una migración
 sobre datos reales del salón, así que se hace una sola vez, completa (C18).
-`version(3)` renombra `notas` y agrega `participaciones` (C12).
+`version(3)` renombra `notas` y agrega `participaciones` (C12). `version(4)` ata
+los alumnos a un ciclo (C33).
 
 ```ts
 // data/dexie/db.ts
@@ -818,7 +819,18 @@ db.version(3).stores({
   bitacora:         'id, alumno_id, fecha, deleted_at',
   participaciones:  'id, fecha, alumno_id, [fecha+alumno_id], deleted_at',
 })
+
+db.version(4).stores({
+  alumnos:          'id, numero_lista, deleted_at, ciclo_id, [ciclo_id+numero_lista]',
+})
 ```
+
+`version(4)` es la que permite guardar varias generaciones (D-025). El índice
+compuesto no es de rendimiento: es la **identidad** de un alumno al fusionar la
+lista. Con `numero_lista` a secas, cargar la lista del ciclo nuevo reescribiría
+al alumno 1 del anterior conservando su `id` —y con el `id`, su asistencia y sus
+calificaciones—. Su `upgrade` asigna los alumnos existentes al único ciclo que
+haya; sin ciclos quedan en `null`, y los adopta el primero que se abra.
 
 `version(2)` **elimina** `calificaciones` y redefine `actividades`: la
 `Actividad` del prototipo no tenía `criterio_trimestre_id`, así que ninguna fila

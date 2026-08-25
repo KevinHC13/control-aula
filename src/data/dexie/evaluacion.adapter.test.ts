@@ -37,6 +37,7 @@ beforeEach(async () => {
   await db.asistencia.clear()
   await db.bitacora.clear()
   await db.participaciones.clear()
+  await db.alumnos.clear()
   await db.outbox.clear()
 })
 
@@ -182,6 +183,66 @@ describe('abrirCiclo', () => {
     const pendientes = await db.outbox.toArray()
     expect(pendientes.filter((c) => c.tabla === 'ciclos')).toHaveLength(1)
     expect(pendientes.filter((c) => c.tabla === 'trimestres')).toHaveLength(3)
+  })
+
+  it('adopta a los alumnos que todavía no tenían ciclo', async () => {
+    // El caso real: se pasa lista el primer día y el ciclo se configura después.
+    // Sin la adopción, el grupo entero desaparecería de la pantalla diaria
+    // teniendo los datos intactos debajo (D-025).
+    await db.alumnos.bulkPut([
+      {
+        id: 'alumno-1',
+        ciclo_id: null,
+        nombre: 'Aguilar, Bruno',
+        numero_lista: 1,
+        fecha_nacimiento: null,
+        updated_at: '2026-08-17T00:00:00.000Z',
+        deleted_at: null,
+      },
+    ])
+
+    await repo.abrirCiclo('2026–2027', PERIODOS)
+    const enCurso = await repo.cicloEnCurso()
+
+    expect((await db.alumnos.get('alumno-1'))?.ciclo_id).toBe(enCurso?.ciclo.id)
+  })
+
+  it('la adopción encola a los alumnos que tocó, y solo a esos', async () => {
+    await db.alumnos.bulkPut([
+      {
+        id: 'sin-ciclo',
+        ciclo_id: null,
+        nombre: 'Aguilar, Bruno',
+        numero_lista: 1,
+        fecha_nacimiento: null,
+        updated_at: '2026-08-17T00:00:00.000Z',
+        deleted_at: null,
+      },
+      {
+        id: 'de-otro-ciclo',
+        ciclo_id: 'ciclo-viejo',
+        nombre: 'Del año pasado',
+        numero_lista: 1,
+        fecha_nacimiento: null,
+        updated_at: '2025-08-17T00:00:00.000Z',
+        deleted_at: null,
+      },
+    ])
+
+    await repo.abrirCiclo('2026–2027', PERIODOS)
+
+    const encolados = (await db.outbox.toArray()).filter((c) => c.tabla === 'alumnos')
+    expect(encolados.map((c) => c.registro_id)).toEqual(['sin-ciclo'])
+    // El del ciclo anterior se queda donde estaba: cambiar de ciclo no es
+    // reasignar historia.
+    expect((await db.alumnos.get('de-otro-ciclo'))?.ciclo_id).toBe('ciclo-viejo')
+  })
+
+  it('sin alumnos sueltos no encola nada de alumnos', async () => {
+    await repo.abrirCiclo('2026–2027', PERIODOS)
+
+    const pendientes = await db.outbox.toArray()
+    expect(pendientes.filter((c) => c.tabla === 'alumnos')).toHaveLength(0)
   })
 
   it('no deja un ciclo a medias si la transacción falla', async () => {

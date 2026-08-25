@@ -70,42 +70,75 @@ export class DexieEvaluacionRepo implements EvaluacionRepo {
     return liveQuery(() => this.cicloEnCurso())
   }
 
+  /**
+   * Abrir el ciclo **adopta a los alumnos que todavía no tienen ninguno**.
+   *
+   * Es la misma idea que la atribución de fechas a trimestre (D-017): lo que se
+   * capturó antes de configurar el periodo que lo contiene se acomoda solo en
+   * cuanto ese periodo existe, sin migración ni recálculo. Sin esto, pasar lista
+   * el primer día y abrir el ciclo el segundo dejaría al grupo entero fuera de
+   * la lista, que es la manera más rápida de que la app pierda la confianza.
+   *
+   * Solo los de `ciclo_id` nulo: los de un ciclo anterior se quedan donde están.
+   */
   async abrirCiclo(nombre: string, periodos: PeriodoNuevo[]): Promise<void> {
-    await db.transaction('rw', db.ciclos, db.trimestres, db.outbox, async () => {
-      const momento = ahora()
+    await db.transaction(
+      'rw',
+      db.ciclos,
+      db.trimestres,
+      db.alumnos,
+      db.outbox,
+      async () => {
+        const momento = ahora()
 
-      const ciclo: Ciclo = {
-        id: nuevoId(),
-        nombre,
-        estado: 'abierto',
-        updated_at: momento,
-        deleted_at: null,
-      }
+        const ciclo: Ciclo = {
+          id: nuevoId(),
+          nombre,
+          estado: 'abierto',
+          updated_at: momento,
+          deleted_at: null,
+        }
 
-      const trimestres: Trimestre[] = periodos.map((periodo) => ({
-        id: nuevoId(),
-        ciclo_id: ciclo.id,
-        numero: periodo.numero,
-        inicio: periodo.inicio,
-        fin: periodo.fin,
-        estado: 'abierto',
-        cerrado_en: null,
-        updated_at: momento,
-        deleted_at: null,
-      }))
+        const trimestres: Trimestre[] = periodos.map((periodo) => ({
+          id: nuevoId(),
+          ciclo_id: ciclo.id,
+          numero: periodo.numero,
+          inicio: periodo.inicio,
+          fin: periodo.fin,
+          estado: 'abierto',
+          cerrado_en: null,
+          updated_at: momento,
+          deleted_at: null,
+        }))
 
-      await db.ciclos.add(ciclo)
-      await db.trimestres.bulkAdd(trimestres)
-      await db.outbox.bulkAdd([
-        { tabla: 'ciclos', registro_id: ciclo.id, op: 'upsert', at: momento },
-        ...trimestres.map((t) => ({
-          tabla: 'trimestres' as const,
-          registro_id: t.id,
-          op: 'upsert' as const,
-          at: momento,
-        })),
-      ])
-    })
+        const huerfanos = (await db.alumnos.toArray()).filter(
+          (a) => (a.ciclo_id ?? null) === null,
+        )
+
+        await db.ciclos.add(ciclo)
+        await db.trimestres.bulkAdd(trimestres)
+        if (huerfanos.length > 0) {
+          await db.alumnos.bulkPut(
+            huerfanos.map((a) => ({ ...a, ciclo_id: ciclo.id, updated_at: momento })),
+          )
+        }
+        await db.outbox.bulkAdd([
+          { tabla: 'ciclos', registro_id: ciclo.id, op: 'upsert', at: momento },
+          ...trimestres.map((t) => ({
+            tabla: 'trimestres' as const,
+            registro_id: t.id,
+            op: 'upsert' as const,
+            at: momento,
+          })),
+          ...huerfanos.map((a) => ({
+            tabla: 'alumnos' as const,
+            registro_id: a.id,
+            op: 'upsert' as const,
+            at: momento,
+          })),
+        ])
+      },
+    )
   }
 
   async abrirTrimestre(cicloId: Id, periodo: PeriodoNuevo): Promise<void> {

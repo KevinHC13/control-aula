@@ -7,6 +7,7 @@ import { filasDeParticipacion, totalDelDia } from './participacion'
 const alumno = (n: number): Alumno => ({
   id: `alumno-${n}`,
   nombre: `Apellido${n}, Nombre`,
+  ciclo_id: null,
   numero_lista: n,
   fecha_nacimiento: null,
   updated_at: '2026-08-24T00:00:00.000Z',

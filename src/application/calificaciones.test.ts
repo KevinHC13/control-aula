@@ -36,6 +36,7 @@ const alumno = (i: number): Alumno => ({
   id: `alumno-${i}`,
   ...base,
   nombre: `Apellido${i}, Nombre`,
+  ciclo_id: null,
   numero_lista: i,
   fecha_nacimiento: null,
 })

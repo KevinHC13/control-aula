@@ -14,6 +14,7 @@ const repo = new DexieAlumnosRepo()
 const alumno = (numero_lista: number, nombre: string, deleted_at: string | null = null): Alumno => ({
   id: `alumno-${numero_lista}`,
   nombre,
+  ciclo_id: null,
   numero_lista,
   fecha_nacimiento: null,
   updated_at: '2026-08-18T08:00:00.000Z',
@@ -157,5 +158,88 @@ describe('sembrar', () => {
     const lista = await repo.lista()
     expect(lista).toHaveLength(LISTA.length)
     expect(lista.find((a) => a.numero_lista === 1)?.id).toBe(primero?.id)
+  })
+})
+
+/**
+ * El grupo cuelga del ciclo abierto (D-025). Es lo que permite guardar varias
+ * generaciones sin que la pantalla diaria las mezcle.
+ */
+describe('el grupo se acota al ciclo abierto', () => {
+  const ciclo = (id: string, estado: 'abierto' | 'cerrado', updated_at: string) => ({
+    id,
+    nombre: id,
+    estado,
+    updated_at,
+    deleted_at: null,
+  })
+
+  beforeEach(async () => {
+    await db.ciclos.clear()
+    await db.outbox.clear()
+  })
+
+  it('sin ciclo configurado devuelve los alumnos que no tienen ninguno', async () => {
+    // El primer día: se pasa lista antes de haber configurado nada.
+    await db.alumnos.bulkPut([alumno(1, 'Aguilar, Bruno'), alumno(2, 'Barrera, Diego')])
+
+    expect(await repo.lista()).toHaveLength(2)
+  })
+
+  it('con un ciclo abierto devuelve solo a los suyos', async () => {
+    await db.ciclos.put(ciclo('ciclo-a', 'abierto', '2026-08-01T00:00:00.000Z'))
+    await db.alumnos.bulkPut([
+      { ...alumno(1, 'Del ciclo abierto'), ciclo_id: 'ciclo-a' },
+      { ...alumno(2, 'Del ciclo pasado'), ciclo_id: 'ciclo-viejo' },
+      alumno(3, 'Sin ciclo'),
+    ])
+
+    const lista = await repo.lista()
+    expect(lista).toHaveLength(1)
+    expect(lista[0]?.nombre).toBe('Del ciclo abierto')
+  })
+
+  it('los alumnos del ciclo cerrado no aparecen, pero siguen en la base', async () => {
+    // No se borran: consultarlos es justo lo que hace falta para una aclaración
+    // de boleta del año pasado.
+    await db.ciclos.bulkPut([
+      ciclo('ciclo-viejo', 'cerrado', '2026-07-01T00:00:00.000Z'),
+      ciclo('ciclo-nuevo', 'abierto', '2026-08-01T00:00:00.000Z'),
+    ])
+    await db.alumnos.bulkPut([
+      { ...alumno(1, 'Del año pasado'), ciclo_id: 'ciclo-viejo' },
+      { ...alumno(2, 'De este año'), ciclo_id: 'ciclo-nuevo' },
+    ])
+
+    expect((await repo.lista()).map((a) => a.nombre)).toEqual(['De este año'])
+    expect(await db.alumnos.count()).toBe(2)
+  })
+
+  it('sembrar estampa el ciclo abierto', async () => {
+    await db.ciclos.put(ciclo('ciclo-a', 'abierto', '2026-08-01T00:00:00.000Z'))
+
+    await repo.sembrar([
+      { numero_lista: 1, nombre: 'Aguilar, Bruno', fecha_nacimiento: null },
+    ])
+
+    expect((await repo.lista())[0]?.ciclo_id).toBe('ciclo-a')
+  })
+
+  it('el número de lista identifica dentro del ciclo, no entre ciclos', async () => {
+    // La corrupción que esto evita: sin acotar, el alumno 1 del ciclo nuevo
+    // reutilizaría el `id` del alumno 1 del anterior, y con él se llevaría su
+    // asistencia y sus calificaciones.
+    await db.alumnos.put({ ...alumno(1, 'Del año pasado'), ciclo_id: 'ciclo-viejo' })
+    await db.ciclos.put(ciclo('ciclo-nuevo', 'abierto', '2026-08-01T00:00:00.000Z'))
+
+    await repo.sembrar([
+      { numero_lista: 1, nombre: 'De este año', fecha_nacimiento: null },
+    ])
+
+    const nuevo = (await repo.lista())[0]
+    expect(nuevo?.nombre).toBe('De este año')
+    expect(nuevo?.id).not.toBe('alumno-1')
+    // Y el del año pasado sigue intacto, con su nombre y su id.
+    expect((await db.alumnos.get('alumno-1'))?.nombre).toBe('Del año pasado')
   })
 })

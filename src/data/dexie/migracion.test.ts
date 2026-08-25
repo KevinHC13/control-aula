@@ -13,7 +13,7 @@ import { db } from './db'
  * en el estado exacto que tiene el dispositivo —esquema viejo, asistencia
  * capturada— y se abre con el esquema nuevo.
  *
- * Se prueba el salto completo, `version(1)` → `version(3)`, y no cada versión por
+ * Se prueba el salto completo, `version(1)` → `version(4)`, y no cada versión por
  * separado: es exactamente lo que le va a pasar al dispositivo, que se quedó en
  * la versión desplegada y va a subir de un jalón.
  *
@@ -83,9 +83,9 @@ afterAll(() => {
   db.close()
 })
 
-describe('version(1) → version(3)', () => {
-  it('sube a la versión 3', () => {
-    expect(db.verno).toBe(3)
+describe('version(1) → version(4)', () => {
+  it('sube a la versión 4', () => {
+    expect(db.verno).toBe(4)
   })
 
   it('no pierde un solo registro de asistencia', async () => {
@@ -103,6 +103,24 @@ describe('version(1) → version(3)', () => {
     expect(await db.alumnos.count()).toBe(ALUMNOS)
     // El id se conserva: de él cuelga toda la asistencia del alumno.
     expect((await db.alumnos.get('alumno-1'))?.numero_lista).toBe(1)
+  })
+
+  it('sin ciclos en la base, los alumnos quedan sin ciclo y siguen visibles', async () => {
+    // Es el caso de un dispositivo que pasó lista antes de configurar el ciclo:
+    // `ciclo_id: null` no es «huérfano», es «lo adopta el ciclo que se abra»
+    // (D-025). Que quede escrito y no `undefined` es lo que hace que el filtro
+    // de la lista diaria los encuentre.
+    const alumnos = await db.alumnos.toArray()
+    expect(alumnos.every((a) => a.ciclo_id === null)).toBe(true)
+  })
+
+  it('deja el índice compuesto de alumno por ciclo', () => {
+    // Es el que sostiene la identidad al fusionar: el alumno 1 de este ciclo no
+    // es el alumno 1 del anterior.
+    const compuestos = db.alumnos.schema.indexes
+      .filter((i) => i.compound)
+      .map((i) => i.name)
+    expect(compuestos).toContain('[ciclo_id+numero_lista]')
   })
 
   it('mueve las notas a bitacora sin perder ninguna', async () => {

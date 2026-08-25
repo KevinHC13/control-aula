@@ -49,6 +49,7 @@ const alumno = (i: number): Alumno => ({
   updated_at: '2026-08-17T00:00:00.000Z',
   deleted_at: null,
   nombre: `Apellido${String(i).padStart(2, '0')}, Nombre`,
+  ciclo_id: null,
   numero_lista: i,
   fecha_nacimiento: null,
 })

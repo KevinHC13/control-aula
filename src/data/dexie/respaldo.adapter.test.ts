@@ -11,6 +11,7 @@ const repo = new DexieRespaldoRepo()
 const alumno = (n: number) => ({
   id: `alumno-${n}`,
   nombre: `Apellido${n}, Nombre`,
+  ciclo_id: null,
   numero_lista: n,
   fecha_nacimiento: null,
   updated_at: '2026-08-24T00:00:00.000Z',
@@ -157,8 +158,8 @@ describe('vaciar', () => {
     await db.outbox.add({
       tabla: 'alumnos',
       registro_id: 'alumno-1',
-      operacion: 'upsert',
-      encolado_en: '2026-09-01T00:00:00.000Z',
+      op: 'upsert',
+      at: '2026-09-01T00:00:00.000Z',
     })
 
     await repo.vaciar()

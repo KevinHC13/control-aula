@@ -9,17 +9,29 @@ import type {
 } from './values'
 
 export interface Alumno extends Sincronizable {
+  /**
+   * El ciclo escolar al que pertenece. Es lo que permite guardar varias
+   * generaciones sin mezclarlas: la lista diaria son los alumnos del ciclo
+   * abierto, y los del año pasado siguen enteros y consultables (D-025).
+   *
+   * `null` significa «capturado antes de que hubiera ciclo», no «huérfano»:
+   * abrir un ciclo los adopta, igual que abrir un trimestre atribuye los días
+   * que ya estaban capturados (D-017). Es lo que permite pasar lista el primer
+   * día sin haber configurado nada.
+   */
+  ciclo_id: Id | null
   /** "Apellidos, Nombres" — el orden de la lista oficial */
   nombre: string
-  /** Orden en la lista, 1-based */
+  /** Orden en la lista, 1-based **dentro de su ciclo** */
   numero_lista: number
   fecha_nacimiento: Fecha | null
 }
 
 /**
  * Un alumno tal como viene de la lista oficial, sin los campos que genera el
- * dispositivo (`id`, `updated_at`, `deleted_at`). Es la forma en la que entra la
- * lista al cargarla desde Ajustes.
+ * dispositivo (`id`, `updated_at`, `deleted_at`, `ciclo_id`). Es la forma en la
+ * que entra la lista al cargarla desde Ajustes: el ciclo no viaja en el archivo,
+ * lo pone el repositorio con el que esté abierto.
  */
 export type DatosAlumno = Pick<Alumno, 'nombre' | 'numero_lista' | 'fecha_nacimiento'>
 

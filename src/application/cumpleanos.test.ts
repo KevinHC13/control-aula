@@ -8,6 +8,7 @@ import { cumpleanosDeHoy, cumpleanosProximos } from './cumpleanos'
 const alumno = (n: number, nacimiento: Fecha | null): Alumno => ({
   id: `alumno-${n}`,
   nombre: `Apellido${n}, Nombre${n}`,
+  ciclo_id: null,
   numero_lista: n,
   fecha_nacimiento: nacimiento,
   updated_at: '2026-08-24T00:00:00.000Z',
