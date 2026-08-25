@@ -129,3 +129,23 @@ export async function restaurarRespaldo(
 ): Promise<ConteoPorTabla> {
   return repos.respaldo.restaurar(archivo.tablas)
 }
+
+/**
+ * **TEMPORAL — se retira cuando cerrar el ciclo deje la app limpia por sí solo.**
+ *
+ * Deja el dispositivo en cero. Existe por un motivo concreto y acotado: en el
+ * iPad no hay consola con la que borrar IndexedDB a mano, y la app venía
+ * arrancando con un grupo de ejemplo que hay que sacar una vez antes de empezar
+ * con datos reales (D-024).
+ *
+ * No pide confirmación aquí. La pide la pantalla, que es quien puede explicar
+ * qué se pierde antes de que se pierda.
+ */
+export async function borrarTodo(): Promise<ConteoPorTabla> {
+  return repos.respaldo.vaciar()
+}
+
+/** Cuántas filas se borraron en total, para poder decirlo con un número. */
+export function totalBorrado(conteo: ConteoPorTabla): number {
+  return Object.values(conteo).reduce((total, filas) => total + filas, 0)
+}

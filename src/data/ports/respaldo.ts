@@ -46,4 +46,21 @@ export interface RespaldoRepo {
    * que el archivo no es de esta app.
    */
   restaurar(tablas: VolcadoDeTablas): Promise<ConteoPorTabla>
+
+  /**
+   * **TEMPORAL — se retira cuando cerrar el ciclo deje la app limpia por sí solo.**
+   *
+   * Deja el dispositivo en cero: borra las filas de todas las tablas, **incluida
+   * la `outbox`**. Devuelve cuántas se borraron por tabla, que es lo único que
+   * hace creíble un botón así.
+   *
+   * Es un borrado **duro**, contra la regla general de que aquí todo se borra
+   * suave con `deleted_at`, y a propósito: `deleted_at` significa «dada de baja»
+   * y se sincroniza; esto no es dar de baja a nadie, es empezar de cero.
+   *
+   * La `outbox` entra aunque no sea contenido —a diferencia de `volcar()`—
+   * porque dejarla con pendientes de registros que ya no existen haría que la
+   * siguiente sincronía subiera fantasmas.
+   */
+  vaciar(): Promise<ConteoPorTabla>
 }
