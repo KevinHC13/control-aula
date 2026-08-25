@@ -55,6 +55,12 @@ export class DexieAlumnosRepo implements AlumnosRepo {
     return liveQuery(() => this.lista())
   }
 
+  /** El grupo de un ciclo cualquiera, para consultar uno cerrado. */
+  async deCiclo(cicloId: string): Promise<Alumno[]> {
+    const todos = await db.alumnos.orderBy('numero_lista').toArray()
+    return vivos(todos).filter((a) => a.ciclo_id === cicloId)
+  }
+
   /**
    * La identidad para fusionar es `[ciclo, numero_lista]`, no `numero_lista` a
    * secas: con dos generaciones en la base, el alumno 1 del ciclo nuevo no es el

@@ -15,6 +15,7 @@ export function Ajustes({
   alConfigurarCiclo,
   alConfigurarCriterios,
   alConfigurarRubricas,
+  alConsultarAnteriores,
   alRespaldar,
   alSincronizar,
 }: {
@@ -23,6 +24,7 @@ export function Ajustes({
   alConfigurarCiclo: () => void
   alConfigurarCriterios: () => void
   alConfigurarRubricas: () => void
+  alConsultarAnteriores: () => void
   alRespaldar: () => void
   alSincronizar: () => void
 }) {
@@ -84,6 +86,18 @@ export function Ajustes({
             <span className="text-base text-tinta-2">
               Los aspectos que se observan al revisar un trabajo y qué significa cada
               nivel
+            </span>
+          </button>
+        </li>
+        <li>
+          <button
+            type="button"
+            onClick={alConsultarAnteriores}
+            className="flex w-full flex-col items-start gap-0.5 px-4 py-3 text-left"
+          >
+            <span className="text-base font-medium text-tinta">Ciclos anteriores</span>
+            <span className="text-base text-tinta-2">
+              Las calificaciones de los ciclos que ya terminaron, tal como se reportaron
             </span>
           </button>
         </li>

@@ -30,11 +30,18 @@ import { cn } from '@/ui/lib/utils'
 export function ReporteDelTrimestre({
   trimestre,
   alVolver,
+  cicloId = null,
 }: {
   trimestre: Trimestre
   alVolver: () => void
+  /**
+   * Solo para consultar un ciclo **cerrado**: el grupo se lee de ese ciclo y no
+   * del de hoy. En el camino diario no se pasa, y esa es la diferencia entre
+   * «las calificaciones» y «las calificaciones del año pasado».
+   */
+  cicloId?: string | null
 }) {
-  const { reporte, cargando } = useReporteDeTrimestre(trimestre.id)
+  const { reporte, cargando } = useReporteDeTrimestre(trimestre.id, cicloId)
   const [vista, setVista] = useState<'campo' | 'criterio'>('campo')
   const [abierto, setAbierto] = useState<string | null>(null)
 

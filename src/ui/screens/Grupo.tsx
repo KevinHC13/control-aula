@@ -3,6 +3,7 @@ import { lazy, Suspense, useState } from 'react'
 import { IconoEngrane } from '@/ui/components/iconos'
 import { Button } from '@/ui/components/ui/button'
 import { Ajustes } from '@/ui/screens/Ajustes'
+import { CiclosAnteriores } from '@/ui/screens/CiclosAnteriores'
 import { CargarLista } from '@/ui/screens/CargarLista'
 import { CicloEscolar } from '@/ui/screens/CicloEscolar'
 import { CriteriosYPesos } from '@/ui/screens/CriteriosYPesos'
@@ -31,6 +32,7 @@ type Vista =
   | 'ciclo'
   | 'criterios'
   | 'rubricas'
+  | 'anteriores'
   | 'respaldo'
   | 'equipos'
   | 'nube'
@@ -46,6 +48,7 @@ export function Grupo() {
         alConfigurarCiclo={() => setVista('ciclo')}
         alConfigurarCriterios={() => setVista('criterios')}
         alConfigurarRubricas={() => setVista('rubricas')}
+        alConsultarAnteriores={() => setVista('anteriores')}
         alRespaldar={() => setVista('respaldo')}
         alSincronizar={() => setVista('nube')}
       />
@@ -66,6 +69,10 @@ export function Grupo() {
 
   if (vista === 'rubricas') {
     return <Rubricas alVolver={() => setVista('ajustes')} />
+  }
+
+  if (vista === 'anteriores') {
+    return <CiclosAnteriores alVolver={() => setVista('ajustes')} />
   }
 
   if (vista === 'respaldo') {

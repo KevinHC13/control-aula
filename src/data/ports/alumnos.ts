@@ -1,5 +1,5 @@
 import type { Alumno, DatosAlumno } from '@/domain/entities'
-import type { Suscribible } from '@/domain/values'
+import type { Id, Suscribible } from '@/domain/values'
 
 /**
  * Contrato de lectura del grupo. Sin `alta`, `baja` ni `editar`: no hay CRUD de
@@ -20,6 +20,17 @@ export interface AlumnosRepo {
 
   /** Lo mismo, reactivo: emite de nuevo cuando el grupo cambia. */
   observarLista(): Suscribible<Alumno[]>
+
+  /**
+   * El grupo de un ciclo cualquiera, incluido uno cerrado. Es lo único que hace
+   * falta para consultar el año pasado (D-025), y por eso no es reactivo: la
+   * lista de un ciclo cerrado no cambia.
+   *
+   * Sin esto, el reporte de un trimestre de otro ciclo se armaría sobre los
+   * alumnos de **hoy** y saldría vacío: los cierres apuntan a ids que ya no
+   * están en la lista diaria.
+   */
+  deCiclo(cicloId: Id): Promise<Alumno[]>
 
   /**
    * Carga la lista oficial del archivo que la maestra subió desde Ajustes.

@@ -20,8 +20,17 @@ interface Emision {
  * capturas: el grupo cambia una vez al año, lo capturado cambia con cada toque y
  * los cierres solo al cerrar. Quién manda —el cálculo o el snapshot— lo decide
  * `armarReporte`, que es la única que sabe elegir.
+ *
+ * `cicloId` sirve para consultar un ciclo **cerrado** (D-025). Con él, el grupo
+ * se lee una sola vez y de ese ciclo, en vez de suscribirse al de hoy: los
+ * cierres del año pasado apuntan a alumnos que ya no están en la lista diaria, y
+ * armar el reporte sobre el grupo actual lo dejaría vacío. Un ciclo cerrado no
+ * cambia, así que no hay nada a lo que suscribirse.
  */
-export function useReporteDeTrimestre(trimestreId: Id | null): {
+export function useReporteDeTrimestre(
+  trimestreId: Id | null,
+  cicloId: Id | null = null,
+): {
   reporte: ReporteDeTrimestre | null
   cargando: boolean
 } {
@@ -43,10 +52,20 @@ export function useReporteDeTrimestre(trimestreId: Id | null): {
       })
     }
 
-    const subAlumnos = repos.alumnos.observarLista().subscribe((valor) => {
-      alumnos = valor
-      emitir()
-    })
+    const subAlumnos =
+      cicloId === null
+        ? repos.alumnos.observarLista().subscribe((valor) => {
+            alumnos = valor
+            emitir()
+          })
+        : { unsubscribe: () => {} }
+
+    if (cicloId !== null) {
+      void repos.alumnos.deCiclo(cicloId).then((valor) => {
+        alumnos = valor
+        emitir()
+      })
+    }
     const subCapturas = repos.evaluacion
       .observarCapturasDelTrimestre(trimestreId)
       .subscribe((valor) => {
@@ -66,7 +85,7 @@ export function useReporteDeTrimestre(trimestreId: Id | null): {
       subCapturas.unsubscribe()
       subCierres.unsubscribe()
     }
-  }, [trimestreId])
+  }, [trimestreId, cicloId])
 
   if (trimestreId === null) return { reporte: null, cargando: false }
 
