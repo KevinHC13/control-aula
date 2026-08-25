@@ -816,3 +816,73 @@ puerto, no la semilla.
 no versiona ninguna lista de alumnos, ni siquiera falsa; los nombres inventados que
 quedan viven dentro del archivo de prueba que los usa. La regla de «nada de nombres
 reales en el repositorio» deja de depender de acordarse de un `.gitignore`.
+
+---
+
+## D-025 · Varios ciclos guardados, uno abierto
+
+**Estado:** aceptada — 2026-08-24. Decisión del usuario al empezar el uso real.
+
+La app no soportaba un ciclo nuevo, y el hueco era más hondo de lo que parecía.
+`Ciclo.estado` admitía `'cerrado'` desde `C18`, pero **nada en el código lo escribía
+jamás**: `db.ciclos` solo recibía un `add`, así que ese valor era inalcanzable y la
+rama de apertura de `CicloEscolar` quedaba muerta para siempre en cuanto se abría el
+primer ciclo.
+
+**Lo que no se veía.** `Alumno` no tenía ningún campo que lo atara a un ciclo, y
+`lista()` devolvía la tabla entera. Con dos generaciones dentro, la pantalla diaria
+las habría mezclado —eso se nota—, pero lo grave es lo que no se nota: `sembrar()`
+fusiona **por `numero_lista` conservando el `id`**. Cargar la lista del año nuevo le
+habría colgado al alumno 1 de este año la asistencia y las calificaciones del alumno 1
+del anterior. No es un hueco de funcionalidad: es corrupción silenciosa de historia, y
+del tipo que solo aparece meses después, al no cuadrar una boleta.
+
+**Cómo queda.**
+
+- `Alumno.ciclo_id`, con el índice `[ciclo_id+numero_lista]` en `version(4)`. El índice
+  no es de rendimiento: es la **identidad** de un alumno al fusionar la lista.
+- El acote vive en el **adaptador**, no en el puerto ni en las pantallas. Todas leen el
+  grupo por `lista()`/`observarLista()`, así que acotarlo en un solo lugar las acota
+  todas y ninguna puede saltárselo por olvido. El precio es que el adaptador de alumnos
+  lee `db.ciclos`, que no es «su» tabla; es más barato que repartir la decisión por seis
+  pantallas.
+- `ciclo_id: null` significa «capturado antes de que hubiera ciclo», no «huérfano».
+  **Abrir un ciclo adopta a los sueltos**, que es la misma idea de [D-017](#d-017--el-ciclo-se-abre-con-un-solo-trimestre):
+  lo capturado antes de configurar el periodo que lo contiene se acomoda solo. Sin esto,
+  pasar lista el primer día y abrir el ciclo el segundo dejaría al grupo entero fuera de
+  la lista.
+- **Cerrar el ciclo exige todos sus trimestres cerrados.** La calificación de un
+  trimestre abierto se calcula al vuelo desde los criterios y los pesos del ciclo en
+  curso, así que un ciclo cerrado con trimestres abiertos dentro tendría números que
+  ninguna pantalla podría volver a producir. El snapshot del cierre es lo que los vuelve
+  consultables para siempre.
+- Cerrar **no borra nada**. Los alumnos, su asistencia y sus calificaciones se quedan
+  enteros; lo que cambia es que las pantallas del camino diario amanecen limpias.
+
+**Lo que no se ató a un ciclo, y por qué.** `asistencia`, `bitacora` y `participaciones`
+siguen sin campo de ciclo: cuelgan de `alumno_id`, que ahora sí es por ciclo, y su
+atribución al trimestre se **deriva por fecha** (D-017). Meterles un `ciclo_id` sería
+almacenar dos veces el mismo hecho. `criterios` sigue siendo catálogo global a
+propósito: existe justo para que «Tareas» sea el mismo criterio en los tres trimestres y
+en los ciclos que vengan.
+
+**Lo que sí hubo que cerrar.** La guarda de `abrirCicloEscolar` preguntaba
+`cicloEnCurso() !== null`, y `cicloEnCurso()` **solo ve los abiertos**: habría dejado
+abrir un segundo ciclo abierto justo el día en que la app empieza a tener historia. Y
+`traslapes()` salta a propósito los pares de ciclos distintos, lo cual era inocuo con un
+solo ciclo y deja de serlo con dos, porque la asistencia se atribuye por fecha: un rango
+repetido contaría los días del año pasado dentro del trimestre de este. Ahora abrir un
+ciclo rechaza el nombre repetido y el traslape con cualquier ciclo anterior.
+
+**El histórico se limita a calificaciones.** *Ajustes → Ciclos anteriores* enseña el
+reporte por trimestre desde el snapshot, y nada más: es lo que hace falta para una
+aclaración de boleta. Reutiliza `ReporteDelTrimestre` sin cambiarla —ya sabía pintar
+desde el snapshot— y **no toca ninguna de las cuatro pestañas**: el camino diario no
+puede pagar un selector de ciclo que se usa dos veces al año. Asistencia y bitácora del
+año pasado quedan fuera de alcance a sabiendas; si hicieran falta, salen del respaldo.
+
+**Lo que costó.** Una migración de esquema sobre datos reales —`version(4)`, con su
+prueba propia en `migracion-ciclo.test.ts`, que levanta una base v3 con su ciclo y la
+abre— y una columna nueva en Supabase. La migración asigna los alumnos al único ciclo
+que haya, que es el caso real del iPad; con dos o más no adivina y los deja en `null`,
+que es visible y corregible, en vez de repartidos mal y en silencio.

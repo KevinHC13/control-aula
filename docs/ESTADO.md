@@ -1,6 +1,9 @@
 # Estado del proyecto
 
-Actualizado el **2026-08-21**, con **los treinta y un commits del plan escritos**:
+Actualizado el **2026-08-24**, con **treinta y seis commits escritos**: los treinta y
+uno del plan, más la Fase 7 —el alcance que trajo el uso real— descrita abajo.
+
+Lo anterior, del 2026-08-21:
 la Fase 4 completa —C18 a C29, más los fixes C19b y C21c—, el alcance nuevo que la
 usuaria pidió ese mismo día —los tres criterios automáticos (D-020) y las dos
 herramientas de aula (D-021)— y lo que faltaba de la Fase 3: bitácora, respaldo,
@@ -65,6 +68,7 @@ deshacer (D-022).
 | 5 · Criterios automáticos | Puntualidad, conducta y participación | ✅ Terminada: C12, C25b, C25, C26 |
 | 6 · Herramientas de aula | Sorteo de participación y formar equipos | ✅ Terminada: C30 y C31 |
 | 4 · Evaluación | Ciclo, trimestres, criterios, rúbricas, cálculo | ✅ Terminada: C18–C24 y C27–C29 |
+| 7 · Datos reales | Fuera la semilla, y varios ciclos guardados | ✅ Terminada: C32–C36 |
 
 ## Lo que existe y funciona
 
@@ -274,6 +278,37 @@ lugar sin consecuencias para apuntar cosas, así que la pantalla tiene que decir
 reporte afecta la conducta; y el modo de participación hace que el mismo toque
 signifique dos cosas, así que tiene que verse imposible de ignorar, apagarse solo y
 poder deshacerse.
+
+## Alcance nuevo: empezar con datos reales (2026-08-24)
+
+Lo pidió el usuario al ir a usar la app de verdad: **quitar el grupo de ejemplo**. Al
+tirar de ese hilo apareció lo de fondo, que la app **no soportaba un ciclo nuevo**
+(D-025). Está todo hecho, C32 a C36.
+
+- **La semilla ya no existe.** `src/data/seed/` entera fuera, junto con `sembrarGrupo()`
+  y la llamada del arranque. La app arranca en cero alumnos y la lista entra por la
+  carga con IA o por un respaldo. El repositorio ya no versiona ninguna lista, ni
+  siquiera inventada.
+- **Los alumnos cuelgan de un ciclo**, con `version(4)` y el índice
+  `[ciclo_id+numero_lista]`. Es la corrección de un fallo que no se veía: `sembrar()`
+  fusiona por número de lista conservando el `id`, así que cargar la lista del año nuevo
+  le habría colgado al alumno 1 de este año la historia del alumno 1 del anterior.
+- **Se puede cerrar el ciclo y abrir el siguiente.** Hasta ahora `'cerrado'` era un
+  valor inalcanzable para la tabla `ciclos`. Cerrar exige todos sus trimestres cerrados
+  y **no borra nada**: las cuatro pestañas amanecen limpias y el año pasado sigue entero.
+- **Los ciclos anteriores se consultan** en *Ajustes → Ciclos anteriores*: el reporte por
+  trimestre desde el snapshot, con los nombres de entonces. Ninguna pestaña diaria se
+  tocó.
+
+Verificado en el navegador de escritorio, paso por paso: la migración con el ciclo ya
+configurado, la adopción de los alumnos sueltos al abrir el ciclo, el cierre del ciclo
+dejando las pantallas vacías con los datos intactos debajo, y el reporte histórico.
+**En el iPad, nada de esto se ha visto todavía** — como el resto de la Fase 4.
+
+Queda **una cosa sin hacer y es de servidor**: aplicar
+`supabase/migrations/20260824190000_alumnos_por_ciclo.sql` en el proyecto de Supabase.
+Sin esa columna, la sincronía subiría alumnos con un `ciclo_id` que el servidor no
+conoce.
 
 ## Supuestos que siguen abiertos
 

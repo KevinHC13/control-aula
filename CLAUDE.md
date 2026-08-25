@@ -20,7 +20,7 @@ Existen y funcionan:
   `values.ts`, `fechas.ts`, `rules.ts`, `evaluacion.ts` —la estructura de la
   evaluación— y `calculo.ts` —la cadena de cálculo, C28, más las tres fórmulas de
   los criterios automáticos, C26—, con pruebas.
-- **`data/`** con Dexie en `version(3)`: `db.ts` con las dieciséis tablas
+- **`data/`** con Dexie en `version(4)`: `db.ts` con las dieciséis tablas
   sincronizables, adaptadores de alumnos, asistencia, evaluación y bitácora, sus
   puertos y la `outbox`. **Ya no hay semilla** (D-024): la app arranca vacía y la
   lista entra por la carga con IA o por un respaldo. `bitacora` reemplazó a
@@ -30,7 +30,7 @@ Existen y funcionan:
   `rubrica_criterios`, `actividades`, `entregas`, `eval_rubrica`, `examen_config`,
   `resultados_examen` y `cierres`. **Las dieciséis tablas están en uso**:
   `participaciones` entró con el modo de participación (C25).
-- **`application/`**: `asistencia.ts`, `importacion.ts`,
+- **`application/`**: `asistencia.ts`, `importacion.ts`, `historico.ts`,
   `evaluacion.ts`, `entregas.ts`, `calificacion.ts`, `examen.ts`,
   `calificaciones.ts` —el reporte del trimestre y su cierre—, `bitacora.ts`,
   `participacion.ts` y `respaldo.ts` —el archivo JSON con todo, C14—. `armarReporte` es la
@@ -69,8 +69,9 @@ Las dos **herramientas de aula** (D-021) están hechas: `C30` —el sorteo de
 participación, en la pantalla de asistencia— y `C31` —formar equipos, en la pestaña
 Grupo, que no guarda nada—.
 
-**Los treinta y un commits del plan están escritos**: `C16`, el motor de sincronía,
-cerró la lista. Lo que queda no es código —los tres pasos de Supabase, una pasada con
+**Los treinta y un commits del plan están escritos**, y encima la **Fase 7**
+—`C32` a `C36`, el alcance que trajo el uso real: fuera la semilla, y varios ciclos
+guardados con uno abierto (D-025)—. Lo que queda no es código —los tres pasos de Supabase, una pasada con
 el iPad y dos validaciones con la usuaria—; está en `docs/ESTADO.md`.
 
 Encima entran dos **herramientas de aula** (D-021): `C30` —sortear quién participa,
@@ -246,6 +247,17 @@ y fórmulas en `docs/DATA-MODEL.md`; lo que no se negocia al escribir código:
   `mín(participaciones ÷ meta, 1)`, con la meta en **5** por omisión (D-021) —cinco
   o más valen 10.0, una vale 2.0—. Ninguno de los tres aporta a un campo formativo,
   así que solo cuentan para el general.
+- **Un ciclo abierto a la vez, y los anteriores se guardan enteros** (D-025). El grupo
+  cuelga del ciclo: `Alumno.ciclo_id`, con `[ciclo_id+numero_lista]` como identidad al
+  fusionar la lista —sin eso, cargar la lista del año nuevo reasigna el `id` del alumno
+  1 del anterior y con él su asistencia y sus calificaciones—. El acote vive en el
+  **adaptador de alumnos**, no en las pantallas: todas leen por `lista()`, así que
+  acotar una vez las acota todas. `ciclo_id: null` significa «capturado antes de que
+  hubiera ciclo» y abrir un ciclo **adopta** a esos alumnos, igual que abrir un
+  trimestre atribuye los días ya capturados. Cerrar el ciclo exige todos sus trimestres
+  cerrados y **no borra nada**. `asistencia`, `bitacora` y `participaciones` no llevan
+  ciclo: cuelgan de `alumno_id` y se atribuyen por fecha. `criterios` es catálogo global
+  a propósito.
 - La atribución al trimestre es **por fecha y nunca manual**: no existe ni debe
   existir un selector de trimestre en el camino diario. Una fecha fuera de todo
   rango devuelve `null`, que es un resultado normal —vacaciones, puentes— y no un

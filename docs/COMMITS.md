@@ -1309,3 +1309,69 @@ El último no es pereza, es la regla de Zustand del proyecto: los equipos son es
 de interfaz, no un dato del salón. Guardarlos significa una tabla, una fecha y una
 pantalla de historial, y eso solo se paga si va a volver a verlos. Si algún día pide
 «los equipos de ayer», ahí se paga.
+
+---
+
+# Fase 5 · Empezar con datos reales
+
+El alcance del **2026-08-24**, y no salió de planeación previa: salió de que la app iba
+a empezar a usarse de verdad. Quitar el grupo de ejemplo era lo pedido; lo que apareció
+al tirar de ese hilo es que **la app no soportaba un ciclo nuevo**, y que no soportarlo
+no era un hueco sino un riesgo de corrupción silenciosa (D-025).
+
+### ✅ C32 · `fix(data): quitar la lista de ejemplo del arranque`
+
+- [x] `src/data/seed/` desaparece entera, con `sembrarGrupo()` y la llamada de `main.tsx`
+- [x] La app arranca en cero alumnos y se ve el mensaje de lista vacía que ya existía
+- [x] Grupo, Bitácora y Calificaciones abren con la base vacía, sin errores en consola
+- [x] `sembrar()` sigue vivo: es la vía de la carga con IA
+- [x] Su cobertura se muda a `alumnos.adapter.test.ts`, donde le tocaba
+
+El repositorio deja de versionar ninguna lista de alumnos, ni siquiera inventada.
+
+### ✅ C32b · `feat(ui): borrar toda la información desde Respaldo` — temporal
+
+Andamio declarado como tal desde el commit: en el iPad no hay consola con la que borrar
+IndexedDB a mano, y la base en uso arrastraba el grupo de ejemplo. **Retirado en C36.**
+
+### ✅ C33 · `feat(data): atar los alumnos al ciclo escolar`
+
+- [x] `Alumno.ciclo_id` y `version(4)` con el índice `[ciclo_id+numero_lista]`
+- [x] `lista()` devuelve el grupo del ciclo abierto; sin ciclo, los que no tienen ninguno
+- [x] `sembrar()` identifica por número de lista **dentro del ciclo**
+- [x] Abrir un ciclo adopta a los alumnos sueltos, y los encola
+- [x] La migración asigna al único ciclo que haya; con dos o más deja `null` y avisa
+- [x] La columna entra también en Supabase
+
+El índice compuesto no es de rendimiento: es la identidad al fusionar. Sin él, cargar la
+lista del año nuevo reasignaba el `id` del alumno 1 del anterior —y con el `id`, su
+asistencia y sus calificaciones—.
+
+### ✅ C34 · `feat(evaluacion): cerrar el ciclo y abrir el siguiente`
+
+- [x] `cerrarCiclo()` en puerto, adaptador y caso de uso, encolando en la `outbox`
+- [x] Exige **todos** los trimestres cerrados, y dice cuáles faltan
+- [x] Cerrar deja las cuatro pestañas limpias **sin borrar nada**
+- [x] La rama de apertura de `CicloEscolar` vuelve a ser alcanzable
+- [x] Abrir rechaza el nombre repetido y el traslape con un ciclo anterior
+
+La guarda vieja preguntaba por `cicloEnCurso()`, que solo ve los abiertos: habría dejado
+abrir un segundo ciclo abierto el día en que la app empieza a tener historia.
+
+### ✅ C35 · `feat(grupo): consultar los ciclos anteriores`
+
+- [x] *Ajustes → Ciclos anteriores*: ciclo → trimestre → reporte
+- [x] Solo lectura y solo del snapshot; solo trimestres cerrados
+- [x] Los nombres son los **de entonces**, no los del grupo de hoy
+- [x] Ninguna de las cuatro pestañas se toca
+
+Reutiliza `ReporteDelTrimestre` sin cambiarla. Lo único que le faltaba era saber de qué
+ciclo es el grupo: de ahí `deCiclo()` en el puerto, sin versión reactiva porque un ciclo
+cerrado no cambia mientras se mira.
+
+### ✅ C36 · `chore(ui): quitar el borrado temporal de toda la información`
+
+- [x] Se va la sección, `borrarTodo()`, `totalBorrado()` y `vaciar()` con su puerto
+- [x] Revierte `C32b` entero, ni una línea de más
+
+Terminar el ciclo deja la app limpia sin borrar nada, que es lo que se quería de verdad.
