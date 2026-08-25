@@ -132,3 +132,68 @@ describe('la vuelta completa', () => {
     )
   })
 })
+
+// TEMPORAL — a petición del usuario, hasta que la base del iPad esté limpia.
+describe('vaciar', () => {
+  it('deja en cero todas las tablas sincronizables', async () => {
+    await db.alumnos.bulkPut([alumno(1), alumno(2)])
+    await db.asistencia.put({
+      id: 'asistencia-1',
+      alumno_id: 'alumno-1',
+      fecha: '2026-09-01',
+      estado: 'presente',
+      updated_at: '2026-09-01T00:00:00.000Z',
+      deleted_at: null,
+    })
+
+    await repo.vaciar()
+
+    for (const nombre of TABLAS_SINCRONIZABLES) {
+      expect(await db.table(nombre).count(), nombre).toBe(0)
+    }
+  })
+
+  it('vacía también la outbox: si no, la sincronía subiría fantasmas', async () => {
+    await db.alumnos.put(alumno(1))
+    await db.outbox.add({
+      tabla: 'alumnos',
+      registro_id: 'alumno-1',
+      op: 'upsert',
+      at: '2026-09-01T00:00:00.000Z',
+    })
+
+    await repo.vaciar()
+
+    expect(await db.outbox.count()).toBe(0)
+  })
+
+  it('devuelve cuántas filas borró por tabla', async () => {
+    await db.alumnos.bulkPut([alumno(1), alumno(2), alumno(3)])
+
+    const conteo = await repo.vaciar()
+
+    expect(conteo['alumnos']).toBe(3)
+    expect(conteo['asistencia']).toBe(0)
+    // La outbox también se reporta: es de las que se vacían.
+    expect(conteo).toHaveProperty('outbox')
+  })
+
+  it('sobre una base ya vacía no falla y reporta ceros', async () => {
+    const conteo = await repo.vaciar()
+
+    expect(Object.values(conteo).every((n) => n === 0)).toBe(true)
+  })
+
+  it('borra los registros con deleted_at, no solo los vivos', async () => {
+    // Es un borrado duro: `deleted_at` significa «dada de baja» y se sincroniza,
+    // pero esto no es dar de baja a nadie, es empezar de cero.
+    await db.alumnos.bulkPut([
+      alumno(1),
+      { ...alumno(2), deleted_at: '2026-09-01T00:00:00.000Z' },
+    ])
+
+    await repo.vaciar()
+
+    expect(await db.alumnos.count()).toBe(0)
+  })
+})

@@ -305,10 +305,16 @@ configurado, la adopción de los alumnos sueltos al abrir el ciclo, el cierre de
 dejando las pantallas vacías con los datos intactos debajo, y el reporte histórico.
 **En el iPad, nada de esto se ha visto todavía** — como el resto de la Fase 4.
 
-Queda **una cosa sin hacer y es de servidor**: aplicar
-`supabase/migrations/20260824190000_alumnos_por_ciclo.sql` en el proyecto de Supabase.
-Sin esa columna, la sincronía subiría alumnos con un `ciclo_id` que el servidor no
-conoce.
+La migración `20260824190000_alumnos_por_ciclo.sql` **ya está aplicada** en el proyecto
+de Supabase (2026-08-24): `public.alumnos` tiene su columna `ciclo_id` y las políticas
+de RLS quedaron intactas. Se aplicó con las dieciséis tablas vacías, así que no tocó
+ningún dato.
+
+**Pendiente de quitar:** *Ajustes → Respaldo → Borrar toda la información*. Se retiró en
+`C36` y volvió a entrar a petición del usuario, para dejar la base del iPad limpia una
+vez. Cerrar el ciclo ya hace lo que hacía falta de verdad, así que en cuanto la base
+esté como debe, este botón se va —está marcado con `TEMPORAL` en los seis archivos que
+toca—.
 
 ## Supuestos que siguen abiertos
 
