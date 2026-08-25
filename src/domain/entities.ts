@@ -18,8 +18,8 @@ export interface Alumno extends Sincronizable {
 
 /**
  * Un alumno tal como viene de la lista oficial, sin los campos que genera el
- * dispositivo (`id`, `updated_at`, `deleted_at`). Es la forma que tiene la
- * semilla.
+ * dispositivo (`id`, `updated_at`, `deleted_at`). Es la forma en la que entra la
+ * lista al cargarla desde Ajustes.
  */
 export type DatosAlumno = Pick<Alumno, 'nombre' | 'numero_lista' | 'fecha_nacimiento'>
 

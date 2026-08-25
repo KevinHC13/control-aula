@@ -33,7 +33,7 @@ export class DexieAlumnosRepo implements AlumnosRepo {
       )
       const momento = ahora()
 
-      // Solo lo que cambió: si la semilla ya corrió y el archivo es el mismo, no
+      // Solo lo que cambió: si la lista ya se cargó y el archivo es el mismo, no
       // se escribe nada y el `outbox` no se llena de pendientes en cada arranque.
       const porEscribir: Alumno[] = []
       for (const alumno of datos) {

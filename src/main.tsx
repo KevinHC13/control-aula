@@ -2,18 +2,15 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import { App } from '@/ui/App'
-import { sembrarGrupo } from '@/application/grupo'
 import { abrirBase } from '@/data'
 
 // La base se abre al arrancar para que un fallo de IndexedDB se vea de entrada y
-// no a mitad de una captura. La semilla corre enseguida, pero solo si la base
-// está vacía: si ya hay grupo —sembrado antes o importado desde Ajustes— no se
-// toca. El aviso al usuario llega con Sonner, más adelante.
-void abrirBase()
-  .then(sembrarGrupo)
-  .catch((error: unknown) => {
-    console.error('No se pudo preparar la base local', error)
-  })
+// no a mitad de una captura. No se siembra nada: la app arranca vacía y la lista
+// del grupo entra por Ajustes —cargándola con IA o restaurando un respaldo—.
+// El aviso al usuario llega con Sonner, más adelante.
+void abrirBase().catch((error: unknown) => {
+  console.error('No se pudo preparar la base local', error)
+})
 
 /**
  * Sincronía al abrir, al cerrar y al recuperar la red, nunca en segundo plano: iOS

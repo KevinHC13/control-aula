@@ -779,3 +779,40 @@ restaurar del archivo JSON (`RespaldoRepo.restaurar`, D-022): upsert por `id`, s
 encolar en la `outbox`. Y con eso se cierra el pendiente que dejó `C14` — un iPad
 restaurado desde archivo no subía nada solo—: después de restaurar, la subida se pide
 a mano una vez.
+
+---
+
+## D-024 · Fuera la semilla de ejemplo: la app arranca vacía
+
+**Estado:** aceptada — 2026-08-24. Decisión del usuario al empezar el uso real.
+
+Hasta hoy, `main.tsx` llamaba a `sembrarGrupo()` al arrancar y, si la base estaba
+vacía, escribía los **treinta alumnos inventados** de `src/data/seed/grupo.example.ts`.
+Fue el andamio correcto mientras no había otra forma de meter una lista: sin él, la
+pantalla de asistencia no se podía ni mirar.
+
+**Por qué se retira.** Ya hay dos puertas propias para la lista real —la carga
+asistida por IA (D-014) y restaurar un respaldo (D-022)—, así que la semilla no
+sostiene nada. Y sí cuesta: con datos reales, treinta nombres inventados son ruido que
+hay que distinguir del grupo, y un `grupo.ts` olvidado en el disco de cualquiera
+repuebla la base en **cualquier arranque futuro**, en silencio y sin que nada se vea
+roto. La condición de «solo si la base está vacía» protegía de pisar lo importado,
+pero no de eso.
+
+**Cómo queda.** Desaparecen `src/data/seed/` entera, `src/application/grupo.ts` y la
+llamada del arranque. `abrirBase()` ya no encadena nada. La app arranca en cero
+alumnos y las pantallas ya tenían su mensaje —«Todavía no hay alumnos registrados. La
+lista del grupo se carga en Grupo → Ajustes → Cargar lista de alumnos»—, que hasta
+ahora era casi inalcanzable.
+
+**Lo que no se va.** `AlumnosRepo.sembrar()`, que es la vía por la que entra la lista
+desde Ajustes. Los casos que probaban su semántica —idempotencia, fusión por
+`numero_lista` conservando el `id`, revivir un borrado, no dar de baja a quien falte en
+el archivo— vivían colgados de la semilla en `application/grupo.test.ts` y **se
+movieron a `data/dexie/alumnos.adapter.test.ts`**, que es donde les tocaba: prueban el
+puerto, no la semilla.
+
+**Consecuencia sobre los nombres inventados.** Con el ejemplo fuera, el repositorio ya
+no versiona ninguna lista de alumnos, ni siquiera falsa; los nombres inventados que
+quedan viven dentro del archivo de prueba que los usa. La regla de «nada de nombres
+reales en el repositorio» deja de depender de acordarse de un `.gitignore`.

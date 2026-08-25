@@ -22,15 +22,15 @@ Existen y funcionan:
   los criterios automáticos, C26—, con pruebas.
 - **`data/`** con Dexie en `version(3)`: `db.ts` con las dieciséis tablas
   sincronizables, adaptadores de alumnos, asistencia, evaluación y bitácora, sus
-  puertos, la `outbox` y la semilla (`grupo.ts` ignorado, `grupo.example.ts`
-  versionado). `bitacora` reemplazó a `notas` y `participaciones` está creada y
-  vacía, esperando `C25`.
+  puertos y la `outbox`. **Ya no hay semilla** (D-024): la app arranca vacía y la
+  lista entra por la carga con IA o por un respaldo. `bitacora` reemplazó a
+  `notas`.
   De las once tablas de evaluación tienen puerto y adaptador `ciclos`,
   `trimestres`, `criterios`, `criterios_trimestre`, `rubricas`,
   `rubrica_criterios`, `actividades`, `entregas`, `eval_rubrica`, `examen_config`,
   `resultados_examen` y `cierres`. **Las dieciséis tablas están en uso**:
   `participaciones` entró con el modo de participación (C25).
-- **`application/`**: `asistencia.ts`, `grupo.ts`, `importacion.ts`,
+- **`application/`**: `asistencia.ts`, `importacion.ts`,
   `evaluacion.ts`, `entregas.ts`, `calificacion.ts`, `examen.ts`,
   `calificaciones.ts` —el reporte del trimestre y su cierre—, `bitacora.ts`,
   `participacion.ts` y `respaldo.ts` —el archivo JSON con todo, C14—. `armarReporte` es la
@@ -304,9 +304,10 @@ le puede escribir un criterio de aceptación, está mal cortado.
 
 ## Datos reales
 
-**Nada de nombres de alumnos reales en el repositorio.** La semilla real va en
-`src/data/seed/grupo.ts`, ignorada por git, con un `grupo.example.ts`
-versionado. Verificar `git status` antes de commitear la semilla.
+**Nada de nombres de alumnos reales en el repositorio.** Ya no hay semilla ni
+archivo de ejemplo con nombres inventados (D-024): la lista entra en el
+dispositivo, nunca por el código. Las pruebas usan nombres inventados definidos
+en el propio archivo de prueba.
 
 Lo mismo con los archivos de prueba de la carga de lista: nunca subir a un
 servicio externo la lista real durante las pruebas, y nunca dejar el PDF en el

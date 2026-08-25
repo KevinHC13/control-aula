@@ -23,9 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 
-# Semilla real del grupo: nombres de menores, nunca al repositorio
-src/data/seed/grupo.ts
-
 # Variables de entorno: la anon key es pública, pero el archivo local no va al repo
 .env
 .env.local

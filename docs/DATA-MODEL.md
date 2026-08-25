@@ -1008,18 +1008,22 @@ que un criterio que nadie usó vale `—` para todos.
 promedio < 6) y sigue siendo una suposición: el umbral real es uno de los
 `[POR VALIDAR]` abiertos.
 
-# Semilla
+# Cómo entra la lista
 
-La lista entra por uno de dos caminos, y por ninguno se teclean 30 nombres:
+La app **arranca vacía**: no hay semilla y no se teclean 30 nombres. La lista
+entra por uno de dos caminos:
 
-1. **La semilla**, `src/data/seed/grupo.ts`, que carga el desarrollador. Corre al
-   arrancar **solo si la base está vacía**: si ya hay grupo, no se toca.
-2. **La carga desde Ajustes**, donde ella sube un PDF o una foto de la lista
+1. **La carga desde Ajustes**, donde ella sube un PDF o una foto de la lista
    oficial y una IA la extrae (D-014). Revisa el resultado antes de guardar.
+2. **Restaurar un respaldo**, que es el camino del iPad nuevo.
 
-Los dos caminos terminan en `sembrar()`, que fusiona por `numero_lista`
-conservando el `id`. La condición de "base vacía" del primero existe por eso: sin
-ella, la semilla pisaría lo importado en el siguiente arranque, en silencio.
+El primero termina en `sembrar()`, que fusiona por `numero_lista` conservando el
+`id` —y con él la asistencia y las calificaciones de ese alumno—.
+
+Hubo una tercera vía, `src/data/seed/grupo.ts`, que sembraba un grupo al
+arrancar. Se retiró al empezar el uso real (D-024): con la carga por IA ya
+construida no sostenía nada, y un `grupo.ts` olvidado en el disco repoblaba la
+base en cualquier arranque.
 
 No hay CRUD de alumnos en la v1: no existe alta, baja ni edición uno por uno. La
 lista entra completa o no entra.

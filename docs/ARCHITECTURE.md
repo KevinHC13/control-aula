@@ -34,12 +34,10 @@ src/
 │   │   ├─ bitacora.adapter.ts
 │   │   ├─ participaciones.adapter.ts
 │   │   └─ respaldo.adapter.ts
-│   ├─ seed/                   Semilla del grupo (grupo.ts ignorado por git)
 │   └─ index.ts                Contenedor: única línea que elige adaptadores
 │
 ├─ application/              Casos de uso
 │   ├─ asistencia.ts
-│   ├─ grupo.ts
 │   ├─ importacion.ts
 │   ├─ evaluacion.ts
 │   ├─ bitacora.ts
