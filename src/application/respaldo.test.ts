@@ -6,7 +6,6 @@ import {
   leerRespaldo,
   MARCA,
   nombreDeArchivo,
-  totalBorrado,
 } from './respaldo'
 
 const archivo = (extra: Partial<ArchivoDeRespaldo> = {}): ArchivoDeRespaldo => ({
@@ -82,17 +81,5 @@ describe('leerRespaldo', () => {
   it('un respaldo sin fecha se puede leer: la fecha es adorno, las tablas no', () => {
     const sinFecha = { ...archivo(), generado_en: 42 }
     expect(leerRespaldo(JSON.stringify(sinFecha), 3).generado_en).toBe('')
-  })
-})
-
-// TEMPORAL — se retira cuando cerrar el ciclo deje la app limpia por sí solo.
-describe('totalBorrado', () => {
-  it('suma las filas borradas de todas las tablas', () => {
-    expect(totalBorrado({ alumnos: 30, asistencia: 420, outbox: 3 })).toBe(453)
-  })
-
-  it('una base ya vacía da cero, no NaN ni undefined', () => {
-    expect(totalBorrado({ alumnos: 0, asistencia: 0 })).toBe(0)
-    expect(totalBorrado({})).toBe(0)
   })
 })

@@ -62,31 +62,4 @@ export class DexieRespaldoRepo implements RespaldoRepo {
     return conteo
   }
 
-  /**
-   * **TEMPORAL — se retira cuando cerrar el ciclo deje la app limpia por sí solo.**
-   *
-   * Recorre `TABLAS_SINCRONIZABLES` igual que `volcar()`, para que una tabla
-   * nueva en el esquema entre sola, y le suma la `outbox`: es la única
-   * operación de este archivo que la toca, porque es la única que dejaría la
-   * cola apuntando a registros que ya no existen.
-   *
-   * Cuenta antes de borrar. Un «se borró todo» sin números no se puede creer, y
-   * después de `clear()` ya no hay a quién preguntarle.
-   */
-  async vaciar(): Promise<ConteoPorTabla> {
-    const conteo: ConteoPorTabla = {}
-
-    // Todo o nada, como restaurar: una base a medio vaciar es peor que una
-    // llena —deja entregas sin su actividad— y es justo lo que nadie sabría
-    // diagnosticar.
-    await db.transaction('rw', db.tables, async () => {
-      for (const nombre of [...TABLAS_SINCRONIZABLES, 'outbox']) {
-        const tabla = db.table(nombre)
-        conteo[nombre] = await tabla.count()
-        await tabla.clear()
-      }
-    })
-
-    return conteo
-  }
 }

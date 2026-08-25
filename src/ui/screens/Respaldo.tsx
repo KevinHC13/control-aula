@@ -3,13 +3,11 @@ import { useRef, useState } from 'react'
 import {
   type ArchivoDeRespaldo,
   armarRespaldo,
-  borrarTodo,
   contarRegistros,
   esquemaLocal,
   leerRespaldo,
   nombreDeArchivo,
   restaurarRespaldo,
-  totalBorrado,
 } from '@/application/respaldo'
 import type { ConteoPorTabla } from '@/data/ports/respaldo'
 import { IconoAtras } from '@/ui/components/iconos'
@@ -36,11 +34,6 @@ export function Respaldo({ alVolver }: { alVolver: () => void }) {
   const [restaurando, setRestaurando] = useState(false)
   const [conteo, setConteo] = useState<ConteoPorTabla | null>(null)
   const entrada = useRef<HTMLInputElement>(null)
-
-  // TEMPORAL — se retira cuando cerrar el ciclo deje la app limpia por sí solo.
-  const [confirmandoBorrado, setConfirmandoBorrado] = useState(false)
-  const [borrando, setBorrando] = useState(false)
-  const [borrado, setBorrado] = useState<number | null>(null)
 
   const exportar = async () => {
     setGuardando(true)
@@ -105,21 +98,6 @@ export function Respaldo({ alVolver }: { alVolver: () => void }) {
       setError(e instanceof Error ? e.message : 'No se pudo restaurar el respaldo')
     } finally {
       setRestaurando(false)
-    }
-  }
-
-  // TEMPORAL — se retira cuando cerrar el ciclo deje la app limpia por sí solo.
-  const borrar = async () => {
-    setBorrando(true)
-    setError(null)
-    setAviso(null)
-    try {
-      setBorrado(totalBorrado(await borrarTodo()))
-      setConfirmandoBorrado(false)
-    } catch {
-      setError('No se pudo borrar la información')
-    } finally {
-      setBorrando(false)
     }
   }
 
@@ -210,70 +188,6 @@ export function Respaldo({ alVolver }: { alVolver: () => void }) {
         )}
 
         {conteo && <ResumenRestaurado conteo={conteo} />}
-      </section>
-
-      {/* TEMPORAL — se retira cuando cerrar el ciclo deje la app limpia por sí
-          solo. Existe para sacar de una vez el grupo de ejemplo con el que la app
-          arrancaba (D-024): en el iPad no hay consola con la que borrar
-          IndexedDB a mano. */}
-      <section aria-labelledby="titulo-borrar" className="flex flex-col gap-2">
-        <h2 id="titulo-borrar" className="text-base font-medium text-tinta">
-          Borrar toda la información
-        </h2>
-        <p className="text-base text-tinta-2">
-          Deja la aplicación como recién instalada: se borran la lista del grupo, la
-          asistencia, las actividades, las calificaciones y la bitácora.{' '}
-          <strong className="font-medium text-tinta">No se puede deshacer</strong>, y lo
-          único que lo recupera es un respaldo guardado antes.
-        </p>
-
-        {borrado === null &&
-          (confirmandoBorrado ? (
-            <div
-              role="alertdialog"
-              aria-label="Confirmar el borrado de toda la información"
-              className="flex flex-col gap-3 rounded-md border-l-[7px] border-rojo bg-rojo/5 px-4 py-3"
-            >
-              <p className="text-base text-tinta">
-                Se va a borrar todo lo registrado en este iPad. Si todavía no hay un
-                respaldo guardado, conviene generarlo antes: después ya no habrá de dónde.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="destructive"
-                  disabled={borrando}
-                  onClick={() => void borrar()}
-                >
-                  {borrando ? 'Borrando…' : 'Borrar toda la información'}
-                </Button>
-                <Button variant="outline" onClick={() => setConfirmandoBorrado(false)}>
-                  Cancelar
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <Button
-              variant="outline"
-              className="self-start"
-              onClick={() => setConfirmandoBorrado(true)}
-            >
-              Borrar toda la información
-            </Button>
-          ))}
-
-        {borrado !== null && (
-          <div className="flex flex-col gap-3 rounded-md border border-linea p-3">
-            <p className="text-base text-tinta" aria-live="polite">
-              Se borraron <span className="cifra">{borrado}</span>{' '}
-              {plural(borrado, 'registro', 'registros')}.
-            </p>
-            {/* Recargar y no solo redibujar: varias pantallas leen sus datos una
-                sola vez al montarse, y quedarían enseñando lo que ya no existe. */}
-            <Button onClick={() => location.reload()} className="self-start">
-              Recargar la aplicación
-            </Button>
-          </div>
-        )}
       </section>
 
       {error && (
