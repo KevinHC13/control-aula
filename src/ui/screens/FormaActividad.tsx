@@ -135,7 +135,7 @@ export function FormaActividad({
                   'flex min-h-11 items-center rounded-md border px-3 py-2 text-left text-base outline-none',
                   'foco',
                   campo === opcion.campo
-                    ? 'border-azul bg-azul/10 text-tinta'
+                    ? 'border-marca bg-marca/10 text-tinta'
                     : 'border-linea text-tinta-2 hover:bg-cuadro',
                 )}
               >
@@ -230,7 +230,7 @@ export function FormaActividad({
                     'min-h-11 rounded-md border px-3 py-1 text-base outline-none',
                     'foco',
                     puesto
-                      ? 'border-azul bg-azul/10 text-tinta'
+                      ? 'border-marca bg-marca/10 text-tinta'
                       : 'border-linea text-tinta-2 hover:bg-cuadro',
                   )}
                 >

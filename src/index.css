@@ -55,6 +55,18 @@
    Ver docs/UX.md e docs/DECISIONES.md D-010.
    --------------------------------------------------------------------------- */
 @theme {
+  /* La identidad: la marca, el día seleccionado, la pestaña activa, el botón
+     principal, el anillo de foco. **Es el único color que la usuaria puede
+     cambiar** (docs/DECISIONES.md D-028).
+
+     Nace valiendo el azul de siempre, así que sin elegir nada la aplicación se ve
+     exactamente como se veía. Va aparte de `--color-azul` porque ese azul no es
+     decoración: significa «presente» en la barra de cada alumno y «día sin
+     faltas» en el calendario. Con un solo token, elegir verde volvía
+     indistinguibles «presente» y «falta justificada», que es la información que
+     la columna bicolor existe para dar de un vistazo. */
+  --color-marca: #1b4f9c;
+
   --color-azul: #1b4f9c;
   --color-rojo: #c3382e;
   --color-ambar: #c77a08;
@@ -93,21 +105,21 @@
   --popover: var(--color-papel);
   --popover-foreground: var(--color-tinta);
 
-  --primary: var(--color-azul);
+  --primary: var(--color-marca);
   --primary-foreground: var(--color-papel);
   --secondary: var(--color-cuadro);
   --secondary-foreground: var(--color-tinta);
   --muted: var(--color-cuadro);
   --muted-foreground: var(--color-tinta-2);
   --accent: var(--color-cuadro);
-  --accent-foreground: var(--color-azul);
+  --accent-foreground: var(--color-marca);
 
   --destructive: var(--color-rojo);
   --destructive-foreground: var(--color-papel);
 
   --border: var(--color-linea);
   --input: var(--color-linea);
-  --ring: var(--color-azul);
+  --ring: var(--color-marca);
 }
 
 /* Puente para las utilidades de Tailwind que usan los componentes de shadcn

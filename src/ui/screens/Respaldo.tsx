@@ -169,7 +169,7 @@ export function Respaldo({ alVolver }: { alVolver: () => void }) {
             el que abre Archivos, con iCloud y con la carpeta del dispositivo. */}
         <label
           htmlFor="archivo-respaldo"
-          className="text-base font-medium text-azul underline decoration-2 underline-offset-4"
+          className="text-base font-medium text-marca underline decoration-2 underline-offset-4"
         >
           Seleccionar un archivo de respaldo
         </label>

@@ -354,7 +354,7 @@ function CajaDeCifra({
         'flex min-h-14 w-full items-center gap-3 rounded-md border px-3 text-left',
         'foco',
         'disabled:opacity-60',
-        activa ? 'border-azul bg-cuadro' : 'border-linea bg-papel',
+        activa ? 'border-marca bg-cuadro' : 'border-linea bg-papel',
       )}
     >
       <span className="min-w-0 flex-1 text-base text-tinta">{etiqueta}</span>

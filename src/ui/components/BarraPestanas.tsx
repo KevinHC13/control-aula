@@ -39,7 +39,7 @@ export function BarraPestanas() {
                 className={cn(
                   'flex min-h-14 w-full min-w-11 items-center justify-center px-2 text-base',
                   'foco-dentro',
-                  activa ? 'font-semibold text-azul' : 'text-tinta-2',
+                  activa ? 'font-semibold text-marca' : 'text-tinta-2',
                 )}
               >
                 {etiqueta}

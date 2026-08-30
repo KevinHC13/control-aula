@@ -93,7 +93,7 @@ export function Equipos({ alVolver }: { alVolver: () => void }) {
                 'h-11 flex-1 rounded-md border px-3 text-base outline-none',
                 'foco',
                 modo === opcion.valor
-                  ? 'border-azul bg-azul text-papel'
+                  ? 'border-marca bg-marca text-papel'
                   : 'border-linea text-tinta hover:bg-cuadro',
               )}
             >
@@ -118,7 +118,7 @@ export function Equipos({ alVolver }: { alVolver: () => void }) {
                   'cifra h-11 min-w-11 rounded-md border px-3 text-base outline-none',
                   'foco',
                   cantidad === n
-                    ? 'border-azul bg-azul/10 text-tinta'
+                    ? 'border-marca bg-marca/10 text-tinta'
                     : 'border-linea text-tinta-2 hover:bg-cuadro',
                 )}
               >
@@ -201,7 +201,7 @@ export function Equipos({ alVolver }: { alVolver: () => void }) {
           {equipos.map((equipo) => (
             <li
               key={equipo.numero}
-              className="rounded-md border-l-[7px] border-azul bg-cuadro/40 px-3 py-2"
+              className="rounded-md border-l-[7px] border-marca bg-cuadro/40 px-3 py-2"
             >
               <p className="text-base font-medium text-tinta">
                 Equipo <span className="cifra">{equipo.numero}</span>{' '}

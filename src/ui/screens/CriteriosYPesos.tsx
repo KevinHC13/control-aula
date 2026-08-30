@@ -92,7 +92,7 @@ export function CriteriosYPesos({ alVolver }: { alVolver: () => void }) {
                 'h-11 flex-1 rounded-md border px-3 text-base outline-none',
                 'foco',
                 t.numero === numeroActivo
-                  ? 'border-azul bg-azul text-papel'
+                  ? 'border-marca bg-marca text-papel'
                   : 'border-linea text-tinta hover:bg-cuadro',
               )}
             >
@@ -225,7 +225,7 @@ function FilaCriterio({
   return (
     <li className="border-b border-linea">
       <div className="flex min-h-14 items-center gap-2">
-        <span aria-hidden className="h-14 w-[7px] shrink-0 bg-azul" />
+        <span aria-hidden className="h-14 w-[7px] shrink-0 bg-marca" />
 
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="truncate text-base font-medium text-tinta">{catalogo.nombre}</span>
@@ -327,7 +327,7 @@ function ParametrosAutomaticos({
                 'foco',
                 'disabled:pointer-events-none disabled:opacity-50',
                 ponderado.retardos_por_falta === opcion
-                  ? 'border-azul bg-azul/10 text-tinta'
+                  ? 'border-marca bg-marca/10 text-tinta'
                   : 'border-linea text-tinta-2 hover:bg-cuadro',
               )}
             >
@@ -470,7 +470,7 @@ function Alta({ trimestre }: { trimestre: Trimestre }) {
               'flex h-11 flex-col items-start justify-center rounded-md border px-3 outline-none',
               'foco',
               tipo === opcion.tipo
-                ? 'border-azul bg-azul/10 text-tinta'
+                ? 'border-marca bg-marca/10 text-tinta'
                 : 'border-linea text-tinta-2 hover:bg-cuadro',
             )}
           >

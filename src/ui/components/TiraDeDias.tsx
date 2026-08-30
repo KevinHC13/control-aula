@@ -129,7 +129,7 @@ export function TiraDeDias({
                   'flex min-h-14 w-12 flex-col items-center justify-center rounded-lg border',
                   'foco',
                   seleccionado
-                    ? 'border-azul bg-azul text-papel'
+                    ? 'border-marca bg-marca text-papel'
                     : cn('border-linea bg-papel', fin ? 'text-tinta-2/60' : 'text-tinta-2'),
                 )}
               >

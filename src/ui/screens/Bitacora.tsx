@@ -93,7 +93,7 @@ export function Bitacora() {
                   'h-11 flex-1 rounded-md border px-3 text-base outline-none',
                   'foco',
                   t.numero === numeroActivo
-                    ? 'border-azul bg-azul text-papel'
+                    ? 'border-marca bg-marca text-papel'
                     : 'border-linea text-tinta hover:bg-cuadro',
                 )}
               >
@@ -259,7 +259,7 @@ function DetalleAlumno({
             className={cn(
               'w-full rounded-md border border-linea bg-transparent px-3 py-2 text-base text-tinta',
               'outline-none placeholder:text-tinta-2/70',
-              'focus-visible:border-azul focus-visible:ring-[3px] focus-visible:ring-ring/50',
+              'focus-visible:border-marca focus-visible:ring-[3px] focus-visible:ring-ring/50',
             )}
           />
           <div className="flex items-center gap-3">

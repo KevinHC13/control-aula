@@ -39,7 +39,7 @@ export function AvisoActualizacion() {
       <button
         type="button"
         onClick={() => void updateServiceWorker(true)}
-        className="min-h-11 rounded-lg bg-azul px-4 text-base font-medium text-papel"
+        className="min-h-11 rounded-lg bg-marca px-4 text-base font-medium text-papel"
       >
         Actualizar
       </button>

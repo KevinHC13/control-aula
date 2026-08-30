@@ -350,7 +350,7 @@ function CeldaNivel({
         'foco',
         'active:bg-cuadro disabled:opacity-60',
         elegido
-          ? 'border-azul bg-azul text-papel active:bg-azul'
+          ? 'border-marca bg-marca text-papel active:bg-marca'
           : 'border-linea bg-papel text-tinta-2',
       )}
     >

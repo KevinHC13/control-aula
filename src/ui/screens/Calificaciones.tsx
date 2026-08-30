@@ -156,7 +156,7 @@ export function Calificaciones() {
                   'h-11 flex-1 rounded-md border px-3 text-base outline-none',
                   'foco',
                   t.numero === numeroActivo
-                    ? 'border-azul bg-azul text-papel'
+                    ? 'border-marca bg-marca text-papel'
                     : 'border-linea text-tinta hover:bg-cuadro',
                 )}
               >
