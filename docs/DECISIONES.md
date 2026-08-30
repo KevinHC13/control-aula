@@ -1033,3 +1033,66 @@ que sí se leyeron, que era lo que hacía hasta ahora.
 **Lo que cuesta:** la pantalla de carga dejó de tener un solo camino. Ya no es «elegir
 archivo y esperar», sino un estado que se acumula, y eso hay que verlo en el iPad con
 una lista de verdad antes de darlo por bueno.
+
+---
+
+## D-028 · La apariencia se personaliza, pero el bicolor no se toca
+
+**Estado:** aceptada — 2026-08-29
+
+Lo pidió el usuario al ver la aplicación terminada: que la maestra pueda elegir
+«el color de la aplicación», el azul de la captura.
+
+El problema no era técnico sino de significado. `--color-azul` hacía **dos
+trabajos a la vez**: era la identidad —el día seleccionado, la pestaña activa, el
+botón principal— y era «presente» en la barra de cada alumno y «día sin faltas» en
+el calendario. Mientras nadie pudiera cambiarlo, daba igual. En cuanto se puede
+elegir, no: con un solo token, elegir verde volvía indistinguibles «presente» y
+«falta justificada», que es exactamente la información que la columna bicolor
+existe para dar de un vistazo.
+
+**La decisión:** partirlo en dos.
+
+| Token | Qué es | ¿Personalizable? |
+|---|---|---|
+| `--color-marca` | Identidad: día seleccionado, sección activa, botón principal, foco | **Sí** |
+| `--color-azul` | Significado: presente, día sin faltas, ya calificado, rúbrica activa | No |
+
+`--primary`, `--ring` y `--accent-foreground` de shadcn consumen la marca, en esa
+dirección y nunca al revés (D-010). `--color-marca` nace valiendo el mismo
+`#1b4f9c`, así que sin elegir nada la aplicación se ve como siempre.
+
+La pantalla de *Apariencia* **enseña el límite en vez de prometerlo**: debajo de
+los colores hay una muestra con las cuatro filas del bicolor, para comprobar ahí
+mismo que elegir verde no vuelve verde a «presente».
+
+Entran además tres preferencias que no compiten con nada: **modo oscuro**,
+**tamaño de texto** (16, 18 o 20 px) y el **fondo de cuaderno**, que este
+documento describía desde el principio y que nunca se había implementado.
+
+**Se guarda en `localStorage`, no en Dexie.** Es preferencia de quien mira la
+pantalla, no información del salón. Meterla en la base costaría `version(5)`, una
+tabla más entre las dieciséis sincronizables y su renglón en el respaldo y en la
+nube —para que restaurar en un iPad nuevo le impusiera el tema del viejo—. Es el
+segundo uso de `localStorage` en el repositorio, junto al de la sesión (D-023).
+
+El store va **aparte** de `interfaz.ts`. No es manía de orden:
+`interfaz.test.ts` afirma las claves exactas de aquel store para que nadie le meta
+datos del salón, y una preferencia que sobrevive a cerrar la aplicación no es
+estado de navegación. Mezclarlos habría obligado a aflojar la prueba que protege
+la regla.
+
+**Lo que cuesta, escrito para no descubrirlo tarde:**
+
+- El tamaño de texto solo funciona porque todo lo táctil está en `rem`. Cualquier
+  medida nueva en píxeles queda fuera de la escala y rompe la promesa de que los
+  botones crecen con el texto. Por eso `text-[13px]` pasó a ser `--text-apoyo`.
+- El modo oscuro **duplica la paleta**: cada color nuevo hay que darlo en los dos
+  modos, y comprobar el contraste en los dos. Los cuatro del bicolor se aclaran
+  ahí, porque `#c3382e` sobre fondo oscuro se queda en 3.1:1 y una falta dejaría de
+  distinguirse.
+- Cada color ofrecido son **dos** hexadecimales, no uno.
+
+**Lo que se decidió no hacer:** dejar que la usuaria elija el color de cada estado
+por separado. Es más libertad y es la manera de volver la lista ilegible de un
+vistazo, que es lo único que el producto no puede permitirse.

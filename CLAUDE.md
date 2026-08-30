@@ -155,6 +155,10 @@ Consecuencias prácticas:
   `observarDia(fecha): Suscribible<T[]>`; el adaptador de Dexie lo implementa con
   `liveQuery`. `liveQuery` y `dexie-react-hooks` aparecen **solo** en
   `data/dexie/`. Los componentes consumen hooks propios de `ui/hooks/`.
+- **Nada de lo que se ve delata cómo está hecho por dentro**: ni un nombre de
+  tabla, ni una fecha `AAAA-MM-DD` —para eso está `ui/lib/fechas.ts`—, ni un error
+  del servidor en inglés, ni la palabra «esquema», «cola» o «lote». Detalle en
+  `docs/UX.md`, «Cómo se escriben los textos».
 - Los métodos de los puertos se nombran por **caso de uso**, no por consulta.
   Nada de `find()`, `query()`, `where()`, ni `BaseRepository<T>`. Cada puerto
   declara solo lo que alguna pantalla usa hoy.
@@ -298,6 +302,24 @@ y fórmulas en `docs/DATA-MODEL.md`; lo que no se negocia al escribir código:
 - Los tokens del lápiz bicolor viven en `@theme` y son la fuente de verdad; las
   variables semánticas de shadcn (`--primary`, `--destructive`, `--background`)
   apuntan a ellos, nunca al revés.
+- **`--color-marca` y `--color-azul` son dos cosas distintas** (D-028). La marca es
+  la identidad —día seleccionado, sección activa, botón principal, foco— y **la
+  elige la usuaria**; el azul significa «presente», «día sin faltas» y «ya
+  calificado», y es fijo. Al pintar algo nuevo hay que decidir cuál de los dos es:
+  si comunica un estado del alumno o de la captura, es `azul`; si es identidad, es
+  `marca`.
+- **Toda medida nueva va en `rem`, nunca en píxeles.** Es lo que permite que el
+  tamaño de texto de *Apariencia* escale la interfaz moviendo la raíz y que los
+  objetivos de 44 px crezcan con ella. El segundo tamaño de la app es `text-apoyo`,
+  no `text-[13px]`; el anillo de foco es `foco` o `foco-dentro`.
+- **El modo oscuro duplica la paleta**: un color nuevo se da en los dos modos, con
+  el contraste comprobado en los dos.
+- Hay componentes compartidos y hay que usarlos en vez de reescribirlos:
+  `Cabecera`, `SelectorTrimestre`, `Aviso`, `Confirmacion`, `Cargando` y
+  `EstadoVacio`, en `ui/components/`.
+- Las preferencias de apariencia viven en `ui/store/apariencia.ts` y en
+  `localStorage`, **nunca** en Dexie ni en `ui/store/interfaz.ts`, cuyas claves
+  exactas están afirmadas por una prueba.
 - Componentes de shadcn salen a `src/ui/components/ui` (alias `@/`).
 - `registerType: 'prompt'` en `vite-plugin-pwa`, nunca `autoUpdate`: una recarga
   a mitad de una captura es motivo de abandono.

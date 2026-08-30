@@ -159,6 +159,27 @@ títulos, botones, explicaciones, estados vacíos y **mensajes de error**.
 Ojo al cambiarlos: **varias pruebas fijaban la redacción** de los mensajes de error.
 Si se reescribe uno, `npm test` lo dice.
 
+La segunda lectura completa, del 2026-08-29, encontró lo que la primera no vio
+porque no se veía desde dentro:
+
+- **Ningún nombre de tabla sale a la pantalla.** El respaldo y la nube decían
+  «eval_rubrica: 120» justo en el momento en que hace falta creerle a la
+  aplicación. Se traducen y se agrupan en `ui/lib/tablas.ts`.
+- **Ninguna fecha se muestra como `AAAA-MM-DD`.** Eso es cómo se guarda, no cómo
+  se lee. `ui/lib/fechas.ts` la escribe en palabras.
+- **Ningún error del servidor llega en inglés.** Los de Supabase se traducen a lo
+  que se puede distinguir —contraseña, red, sesión— y el resto cae en un mensaje
+  general; el original va a la consola.
+- **Una ruta se escribe siempre completa** desde una pestaña: «Grupo → Ajustes →
+  Cargar lista de alumnos», nunca «Ajustes → …» ni «Grupo → Ajustes» a secas.
+- **El botón que confirma no repite el que abrió la confirmación.** «Dar de baja»
+  abre; «Sí, dar de baja» hace.
+- **Un mensaje de error no delata dónde falló.** Las cuatro formas de que un
+  archivo no sea un respaldo dicen lo mismo: a quien eligió el archivo equivocado
+  le da igual cuál de las cuatro fue.
+- **Nada de notas del cuaderno de desarrollo.** El resumen del grupo confesaba que
+  sus umbrales «están por confirmar».
+
 ## Identidad visual
 
 El sistema de color viene del **lápiz bicolor rojo y azul** — el instrumento con
@@ -167,7 +188,8 @@ codificación semántica.
 
 | Token | Hex | Uso |
 |---|---|---|
-| `--azul` | `#1B4F9C` | Presente, acentos, marca |
+| `--marca` | `#1B4F9C` | Identidad: día seleccionado, sección activa, botón principal, foco. **Lo elige la usuaria** (D-028) |
+| `--azul` | `#1B4F9C` | Presente, día sin faltas, ya calificado. **Fijo** |
 | `--rojo` | `#C3382E` | Ausente, valores fuera de rango |
 | `--ambar` | `#C77A08` | Retardo |
 | `--verde` | `#2F6F4E` | Justificada |
@@ -191,7 +213,14 @@ la izquierda. Convierte la lista en una columna bicolor que se escanea de un
 vistazo — quién faltó se ve sin leer un solo nombre.
 
 **El fondo es cuadrícula de cuaderno**, 28 px, dibujada con
-`repeating-linear-gradient`. Es la referencia al artefacto que la app reemplaza.
+`repeating-linear-gradient` sobre `body`. Es la referencia al artefacto que la app
+reemplaza. Se puede apagar desde *Apariencia*, y sigue al color del tema —en
+oscuro se insinúa, porque con el mismo peso se leería como una rejilla encima del
+contenido en vez de como el fondo—.
+
+Estuvo descrita aquí desde el principio y **sin implementar** hasta la pasada de
+interfaz del 2026-08-29. Vale como recordatorio de que este documento se queda
+viejo y el código no.
 
 ## shadcn/ui
 
@@ -216,12 +245,46 @@ variables semánticas de shadcn los consumen:
 
 ```css
 :root {
-  --primary: var(--color-azul);
+  --primary: var(--color-marca);
   --destructive: var(--color-rojo);
   --background: var(--color-papel);
   --foreground: var(--color-tinta);
 }
 ```
+
+`--primary` apunta a **marca** y no a **azul**: es la mitad personalizable.
+
+## Lo que la usuaria puede cambiar
+
+Cuatro preferencias en *Grupo → Ajustes → Apariencia*, y una regla que las
+gobierna: **el color elegido no toca el bicolor** (D-028). Presente sigue azul,
+ausente rojo, retardo ámbar y justificada verde, porque eso no es decoración sino
+la información que la lista da de un vistazo.
+
+| Preferencia | Qué hace |
+|---|---|
+| Color | Seis tonos de la familia del lápiz. Pinta la identidad, nunca el estado |
+| Modo | Claro, oscuro o el del iPad |
+| Tamaño del texto | 16, 18 o 20 px. Escala la raíz |
+| Fondo de cuaderno | La cuadrícula, encendida o apagada |
+
+Más el **nombre del grupo**, que aparece bajo el título de la pestaña Grupo y en
+el nombre del archivo de respaldo.
+
+Tres cosas que hay que saber antes de tocar esto:
+
+- **El tamaño de texto solo funciona porque todo lo táctil está en `rem`.** Una
+  medida nueva en píxeles queda fuera de la escala y rompe la promesa de que los
+  botones crecen con el texto. Por eso el segundo tamaño se llama `--text-apoyo` y
+  no `text-[13px]`.
+- **El modo oscuro duplica la paleta.** Cada color nuevo va en los dos modos, con
+  el contraste comprobado en los dos.
+- **Se guarda en el dispositivo, no en la base.** No viaja en el respaldo ni a la
+  nube: restaurar en un iPad nuevo no tiene por qué imponer el tema del viejo.
+
+Y el `index.html` aplica la apariencia **antes de pintar**, en ocho líneas: si
+esperara a que React monte, quien eligió el modo oscuro vería un destello blanco
+en cada arranque.
 
 ## Restricciones de tamaño
 

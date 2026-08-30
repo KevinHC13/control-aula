@@ -1,8 +1,10 @@
 # Estado del proyecto
 
-Actualizado el **2026-08-29**, con **cuarenta y dos commits escritos**: los treinta y
-uno del plan, la Fase 7 —el alcance que trajo el uso real—, `C37` y la **Fase 9**, que
-trajo la lista de verdad: Excel, CURP y varias hojas.
+Actualizado el **2026-08-29**, con **cincuenta y un commits escritos**: los treinta y
+uno del plan, la Fase 7 —el alcance que trajo el uso real—, `C37`, la **Fase 9** —la
+lista de verdad: Excel, CURP y varias hojas— y la **Fase 10**, la pasada de interfaz
+que trajo la auditoría de UX: los defectos que engañaban, el sistema de diseño
+recuperado y **la personalización** (D-028).
 
 Lo anterior, del 2026-08-21:
 la Fase 4 completa —C18 a C29, más los fixes C19b y C21c—, el alcance nuevo que la
@@ -72,6 +74,7 @@ deshacer (D-022).
 | 7 · Datos reales | Fuera la semilla, y varios ciclos guardados | ✅ Terminada: C32–C36 |
 | 8 · Administrar el grupo | Alta, corrección y baja de alumnos | ✅ Terminada: C37 |
 | 9 · La lista real | Excel, CURP y varias hojas | ✅ Terminada: C38–C42 |
+| 10 · Auditoría de interfaz | Defectos, sistema de diseño, textos y personalización | ✅ Terminada: C43–C51 |
 
 ## Lo que existe y funciona
 
@@ -368,6 +371,42 @@ fila 8, datos desde la 11 y el nombre bien partido.
    Safari —existe desde iPadOS 16.4—.
 3. Una foto real por la IA con el CURP: el esquema y las instrucciones cambiaron y solo
    se han probado contra la nube simulada.
+
+## Alcance nuevo: la pasada de interfaz (2026-08-29)
+
+Lo pidió el usuario: una auditoría de UX/UI de la aplicación entera, la corrección de
+lo encontrado, personalización para la usuaria y una revisión de todos los textos.
+Está todo hecho, C43 a C51.
+
+La auditoría, sobre las veintidós pantallas, encontró tres clases de cosa:
+
+- **Defectos que engañaban** (`C43`): el aviso de versión nueva era `fixed` y tapaba
+  la tira de días; el contador decía «0 / 0 · Todos presentes» sin lista cargada; el
+  estado vacío de Asistencia esperaba debajo de dos cosas que sin alumnos no dicen
+  nada; una confirmación describía la acción equivocada; y que una rúbrica en uso no
+  se pueda borrar se explicaba en un `title`, que **en el iPad no existe**.
+- **Erosión del sistema de diseño**: la cabecera copiada doce veces, el selector de
+  trimestre cuatro, `text-[13px]` ciento una, el anillo de foco diecisiete. Y dos
+  elementos de identidad que `docs/UX.md` describía **sin estar implementados**: la
+  cuadrícula de cuaderno y el aviso con Sonner —el primero ya está; el segundo sigue
+  sin hacer falta, porque cada pantalla dice lo suyo en su sitio—.
+- **Textos que delataban la máquina**: nombres de tabla impresos al usuario, la
+  mecánica de la cola de sincronía en una línea de estado, fechas `AAAA-MM-DD` en
+  ocho sitios, errores de Postgres en inglés, tuteo mezclado con usted, y una nota del
+  cuaderno de desarrollo a la vista.
+
+**La personalización** (D-028) obligó a la decisión de fondo: `--color-azul` hacía dos
+trabajos —identidad y «presente»— y hubo que partirlo. Lo que la usuaria elige pinta la
+identidad; el bicolor no se toca, y la pantalla lo **enseña** con una muestra de las
+cuatro filas en vez de prometerlo por escrito.
+
+Verificado en el navegador: los seis colores, los tres modos y los tres tamaños
+comprobando en cada combinación que los cuatro estados siguen distinguiéndose; que la
+apariencia sobrevive a recargar; y que con `localStorage` lleno de basura la aplicación
+arranca con el tema de siempre en vez de romperse. **En el iPad, nada de esto se ha
+visto todavía** —como el resto de la Fase 4 en adelante—: falta comprobar los tres
+tamaños de texto con el dispositivo en la mano y que el modo oscuro no pelee con la
+barra de estado.
 
 ## Supuestos que siguen abiertos
 
