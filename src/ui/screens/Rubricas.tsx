@@ -14,6 +14,7 @@ import {
 } from '@/application/evaluacion'
 import type { RubricaConCriterios } from '@/data/ports/evaluacion'
 import { NIVELES } from '@/domain/values'
+import { EstadoVacio } from '@/ui/components/EstadoVacio'
 import { Cabecera } from '@/ui/components/Cabecera'
 import { IconoBasura } from '@/ui/components/iconos'
 import { Cargando } from '@/ui/components/Cargando'
@@ -55,12 +56,11 @@ export function Rubricas({ alVolver }: { alVolver: () => void }) {
         {cargando ? (
           <Cargando />
         ) : rubricas.length === 0 ? (
-          <p className="text-base text-tinta-2">
-            Todavía no hay rúbricas. Una rúbrica es la lista de aspectos que se observan al
-            revisar un trabajo, con la descripción de lo que significa cada nivel. Se usa al
-            calificar una actividad, y la misma puede reutilizarse en varias. La primera se
-            crea con el botón de abajo.
-          </p>
+          <EstadoVacio titulo="Todavía no hay rúbricas.">
+            Una rúbrica es la lista de aspectos que se observan al revisar un trabajo, con
+            la descripción de lo que significa cada nivel. Se usa al calificar una
+            actividad, y la misma sirve para varias.
+          </EstadoVacio>
         ) : (
           <ul className="border-t border-linea">
             {rubricas.map((r) => (

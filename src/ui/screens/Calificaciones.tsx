@@ -14,6 +14,7 @@ import type {
 } from '@/data/ports/evaluacion'
 import type { Trimestre } from '@/domain/entities'
 import { fechaLocal } from '@/domain/fechas'
+import { EstadoVacio } from '@/ui/components/EstadoVacio'
 import { SelectorTrimestre } from '@/ui/components/SelectorTrimestre'
 import { Cargando } from '@/ui/components/Cargando'
 import { Button } from '@/ui/components/ui/button'
@@ -140,10 +141,10 @@ export function Calificaciones() {
       {cargando ? (
         <Cargando />
       ) : !ciclo ? (
-        <p className="text-base text-tinta-2">
-          Primero hay que registrar el ciclo escolar, en Grupo → Ajustes → Ciclo escolar.
-          Cada actividad pertenece a un trimestre, así que no se pueden crear todavía.
-        </p>
+        <EstadoVacio titulo="Todavía no hay un ciclo escolar registrado.">
+          Cada actividad pertenece a un trimestre, así que primero hay que registrar el
+          ciclo, en Grupo → Ajustes → Ciclo escolar.
+        </EstadoVacio>
       ) : (
         <>
           <SelectorTrimestre
@@ -153,10 +154,10 @@ export function Calificaciones() {
           />
 
           {grupos.length === 0 && examenes.length === 0 ? (
-            <p className="text-base text-tinta-2">
-              Este trimestre todavía no tiene criterios con los que calificar. Se agregan en
-              Grupo → Ajustes → Criterios y pesos.
-            </p>
+            <EstadoVacio titulo="Este trimestre todavía no tiene con qué calificar.">
+              Los criterios —las tareas, el examen, la conducta— se agregan en Grupo →
+              Ajustes → Criterios y pesos.
+            </EstadoVacio>
           ) : (
             grupos.map((grupo) => (
               <GrupoDeCriterio

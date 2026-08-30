@@ -5,6 +5,7 @@ import { CAMPOS_CON_NOMBRE } from '@/application/evaluacion'
 import { aportacionAlFinal, aportacionesQueSuman, comoCalificacion } from '@/domain/calculo'
 import type { Trimestre } from '@/domain/entities'
 import type { CampoFormativo } from '@/domain/values'
+import { EstadoVacio } from '@/ui/components/EstadoVacio'
 import { Cabecera } from '@/ui/components/Cabecera'
 import { Cargando } from '@/ui/components/Cargando'
 import { useReporteDeTrimestre } from '@/ui/hooks/useReporteDeTrimestre'
@@ -133,9 +134,9 @@ export function ReporteDelTrimestre({
               </nav>
 
               {alumnos.length === 0 ? (
-                <p className="text-base text-tinta-2">
-                  Todavía no hay alumnos. La lista se carga en Grupo → Ajustes → Cargar lista de alumnos.
-                </p>
+                <EstadoVacio titulo="Todavía no hay alumnos en el grupo.">
+              La lista se carga en Grupo → Ajustes → Cargar lista de alumnos.
+            </EstadoVacio>
               ) : (
                 <TablaDelGrupo
                   alumnos={alumnos}

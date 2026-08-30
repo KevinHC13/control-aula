@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { ciclosAnteriores, trimestresConsultables } from '@/application/historico'
 import type { CicloEnCurso } from '@/data/ports/evaluacion'
 import type { Trimestre } from '@/domain/entities'
+import { EstadoVacio } from '@/ui/components/EstadoVacio'
 import { Cabecera } from '@/ui/components/Cabecera'
 import { Cargando } from '@/ui/components/Cargando'
 import { comoRango } from '@/ui/lib/fechas'
@@ -56,10 +57,10 @@ export function CiclosAnteriores({ alVolver }: { alVolver: () => void }) {
       {ciclos === null && <Cargando />}
 
       {ciclos !== null && ciclos.length === 0 && (
-        <p className="text-base text-tinta-2">
-          Todavía no hay ciclos terminados. Cuando se cierre uno, sus calificaciones se
-          consultan aquí.
-        </p>
+        <EstadoVacio titulo="Todavía no hay ciclos terminados.">
+          Al terminar un ciclo escolar, sus calificaciones se guardan tal como se
+          reportaron y se consultan aquí.
+        </EstadoVacio>
       )}
 
       {ciclos !== null && ciclos.length > 0 && elegido === null && (

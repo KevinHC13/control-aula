@@ -12,6 +12,7 @@ import type { ActividadConEstado } from '@/data/ports/evaluacion'
 import type { Trimestre } from '@/domain/entities'
 import { NIVELES } from '@/domain/values'
 import type { Nivel } from '@/domain/values'
+import { EstadoVacio } from '@/ui/components/EstadoVacio'
 import { Cabecera } from '@/ui/components/Cabecera'
 import { comoDiaCorto } from '@/ui/lib/fechas'
 import { Button } from '@/ui/components/ui/button'
@@ -141,9 +142,9 @@ export function CapturaRubrica({
           </ul>
 
           {!cargando && filas.length === 0 && (
-            <p className="text-base text-tinta-2">
-              Todavía no hay alumnos. La lista se carga en Grupo → Ajustes → Cargar lista de alumnos.
-            </p>
+            <EstadoVacio titulo="Todavía no hay alumnos en el grupo.">
+              La lista se carga en Grupo → Ajustes → Cargar lista de alumnos.
+            </EstadoVacio>
           )}
 
           {abierto && filas.length > 0 && (

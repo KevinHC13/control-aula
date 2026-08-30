@@ -11,6 +11,7 @@ import {
 import { type AlumnoExtraido, extraerLista, extraerListaDeTexto } from '@/services/extraccion'
 import { leerHoja } from '@/services/xlsx'
 import { Cabecera } from '@/ui/components/Cabecera'
+import { Aviso } from '@/ui/components/Aviso'
 import { FilaRevision } from '@/ui/components/FilaRevision'
 import { Button } from '@/ui/components/ui/button'
 import { cn } from '@/ui/lib/utils'
@@ -143,7 +144,7 @@ export function CargarLista({ alVolver }: { alVolver: () => void }) {
 
       {(estado === 'inicio' || (estado === 'error' && !hayAlgoLeido)) && (
         <div className="flex flex-col gap-3 pt-6">
-          {estado === 'error' && <Aviso>{error}</Aviso>}
+          {estado === 'error' && <Aviso tono="error">{error}</Aviso>}
           <p className="text-base text-tinta-2">
             Seleccione la lista oficial del grupo: un PDF, un archivo de Excel, o una
             fotografía de ella. Los nombres se leen automáticamente y después se pueden
@@ -196,7 +197,7 @@ export function CargarLista({ alVolver }: { alVolver: () => void }) {
               que hay. */}
           {estado === 'error' && (
             <div className="flex flex-col items-start gap-2 pt-4">
-              <Aviso>{error}</Aviso>
+              <Aviso tono="error">{error}</Aviso>
               <Button variant="outline" onClick={() => void leer(archivos)}>
                 Reintentar
               </Button>
@@ -327,18 +328,6 @@ async function leerArchivo(archivo: File, señal: AbortSignal): Promise<AlumnoEx
 
   const texto = celdas.map((fila) => (fila ?? []).join('\t')).join('\n')
   return extraerListaDeTexto(texto, señal)
-}
-
-/** El mismo aviso rojo en los dos sitios donde puede aparecer un error. */
-function Aviso({ children }: { children: React.ReactNode }) {
-  return (
-    <p
-      role="alert"
-      className="rounded-md border-l-[7px] border-rojo bg-rojo/5 px-4 py-3 text-base text-tinta"
-    >
-      {children}
-    </p>
-  )
 }
 
 /**

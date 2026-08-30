@@ -9,6 +9,7 @@ import {
 import { trimestreDe } from '@/application/evaluacion'
 import type { Reporte, Trimestre } from '@/domain/entities'
 import { fechaLocal } from '@/domain/fechas'
+import { EstadoVacio } from '@/ui/components/EstadoVacio'
 import { Cabecera } from '@/ui/components/Cabecera'
 import { SelectorTrimestre } from '@/ui/components/SelectorTrimestre'
 import { IconoBasura } from '@/ui/components/iconos'
@@ -78,10 +79,10 @@ export function Bitacora() {
       {cargando ? (
         <Cargando />
       ) : !ciclo ? (
-        <p className="text-base text-tinta-2">
-          Primero hay que registrar el ciclo escolar, en Grupo → Ajustes → Ciclo escolar.
-          Cada reporte se asigna al trimestre que corresponde a su fecha.
-        </p>
+        <EstadoVacio titulo="Todavía no hay un ciclo escolar registrado.">
+          Cada reporte pertenece al trimestre que le toca por su fecha, así que primero
+          hay que registrar el ciclo, en Grupo → Ajustes → Ciclo escolar.
+        </EstadoVacio>
       ) : (
         <>
           <SelectorTrimestre

@@ -16,6 +16,7 @@ import {
 } from '@/application/evaluacion'
 import type { CicloEnCurso } from '@/data/ports/evaluacion'
 import { fechaLocal } from '@/domain/fechas'
+import { Aviso } from '@/ui/components/Aviso'
 import { Cabecera } from '@/ui/components/Cabecera'
 import { Cargando } from '@/ui/components/Cargando'
 import { Button } from '@/ui/components/ui/button'
@@ -128,7 +129,7 @@ function Apertura() {
         />
       </ul>
 
-      {error && <Aviso>{error}</Aviso>}
+      {error && <Aviso tono="error">{error}</Aviso>}
 
       <div>
         <Button size="lg" onClick={() => void abrir()} disabled={!listo || guardando}>
@@ -199,7 +200,7 @@ function Configurado({ ciclo }: { ciclo: CicloEnCurso }) {
         })}
       </ul>
 
-      {error && <Aviso>{error}</Aviso>}
+      {error && <Aviso tono="error">{error}</Aviso>}
 
       <div className="flex items-center gap-3">
         <Button
@@ -303,7 +304,7 @@ function Terminar({ ciclo }: { ciclo: CicloEnCurso }) {
         </Button>
       )}
 
-      {error && <Aviso>{error}</Aviso>}
+      {error && <Aviso tono="error">{error}</Aviso>}
     </section>
   )
 }
@@ -368,19 +369,8 @@ function Siguiente({ ciclo, numero }: { ciclo: CicloEnCurso; numero: 1 | 2 | 3 }
       </div>
 
       {problema && <p className="text-apoyo text-rojo">{problema}</p>}
-      {error && <Aviso>{error}</Aviso>}
+      {error && <Aviso tono="error">{error}</Aviso>}
     </section>
-  )
-}
-
-function Aviso({ children }: { children: React.ReactNode }) {
-  return (
-    <p
-      role="alert"
-      className="rounded-md border-l-[7px] border-rojo bg-rojo/5 px-4 py-3 text-base text-tinta"
-    >
-      {children}
-    </p>
   )
 }
 

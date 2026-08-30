@@ -18,6 +18,7 @@ import type { CriterioDelTrimestre } from '@/data/ports/evaluacion'
 import type { CriterioTrimestre, TipoCriterio, Trimestre } from '@/domain/entities'
 import { esAutomatico, parametrosCompletos } from '@/domain/evaluacion'
 import { fechaLocal } from '@/domain/fechas'
+import { EstadoVacio } from '@/ui/components/EstadoVacio'
 import { SelectorTrimestre } from '@/ui/components/SelectorTrimestre'
 import { Cabecera } from '@/ui/components/Cabecera'
 import { IconoBasura } from '@/ui/components/iconos'
@@ -70,10 +71,12 @@ export function CriteriosYPesos({ alVolver }: { alVolver: () => void }) {
   if (!ciclo) {
     return (
       <Marco alVolver={alVolver}>
-        <p className="pt-6 text-base text-tinta-2">
-          Primero hay que registrar el ciclo escolar, en Grupo → Ajustes → Ciclo escolar.
-          Los criterios se definen por trimestre, y todavía no hay ninguno.
-        </p>
+        <div className="pt-6">
+          <EstadoVacio titulo="Todavía no hay un ciclo escolar registrado.">
+            Los criterios se definen por trimestre, así que primero hay que registrar el
+            ciclo, en Grupo → Ajustes → Ciclo escolar.
+          </EstadoVacio>
+        </div>
       </Marco>
     )
   }
@@ -162,10 +165,10 @@ function Reparto({
 }) {
   if (criterios.length === 0) {
     return (
-      <p className="text-base text-tinta-2">
-        Todavía no hay criterios en este trimestre. El primero se agrega en el formulario
-        de abajo.
-      </p>
+      <EstadoVacio titulo="Todavía no hay criterios en este trimestre.">
+        Un criterio es cada cosa que cuenta para la calificación: las tareas, el examen, la
+        puntualidad. El primero se agrega en el formulario de abajo.
+      </EstadoVacio>
     )
   }
 

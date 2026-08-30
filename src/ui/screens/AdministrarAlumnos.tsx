@@ -13,6 +13,7 @@ import {
   separarBajas,
 } from '@/application/alumnos'
 import type { Alumno } from '@/domain/entities'
+import { EstadoVacio } from '@/ui/components/EstadoVacio'
 import { Cabecera } from '@/ui/components/Cabecera'
 import { Cargando } from '@/ui/components/Cargando'
 import { Button } from '@/ui/components/ui/button'
@@ -71,7 +72,10 @@ export function AdministrarAlumnos({ alVolver }: { alVolver: () => void }) {
           )}
 
           {vigentes.length === 0 && (
-            <p className="text-base text-tinta-2">Todavía no hay alumnos en el grupo.</p>
+            <EstadoVacio titulo="Todavía no hay alumnos en el grupo.">
+              El grupo entero se carga de una vez en Grupo → Ajustes → Cargar lista de
+              alumnos. Aquí se agrega a quien llegue después.
+            </EstadoVacio>
           )}
 
           <ul className="-mx-4 border-t border-linea">

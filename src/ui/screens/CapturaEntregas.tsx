@@ -4,6 +4,7 @@ import { abrirCaptura, alternarEntrega, contarEntregadas } from '@/application/e
 import { CAMPOS_CON_NOMBRE } from '@/application/evaluacion'
 import type { ActividadConEstado } from '@/data/ports/evaluacion'
 import type { Trimestre } from '@/domain/entities'
+import { EstadoVacio } from '@/ui/components/EstadoVacio'
 import { Cabecera } from '@/ui/components/Cabecera'
 import { FilaEntregaAlumno } from '@/ui/components/FilaEntregaAlumno'
 import { comoDiaCorto } from '@/ui/lib/fechas'
@@ -111,9 +112,9 @@ export function CapturaEntregas({
       </ul>
 
       {!cargando && filas.length === 0 && (
-        <p className="text-base text-tinta-2">
-          Todavía no hay alumnos. La lista se carga en Grupo → Ajustes → Cargar lista de alumnos.
-        </p>
+        <EstadoVacio titulo="Todavía no hay alumnos en el grupo.">
+              La lista se carga en Grupo → Ajustes → Cargar lista de alumnos.
+            </EstadoVacio>
       )}
     </section>
   )

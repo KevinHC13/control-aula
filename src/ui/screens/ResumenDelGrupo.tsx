@@ -4,6 +4,7 @@ import { trimestreDe } from '@/application/evaluacion'
 import { UMBRALES } from '@/application/resumen'
 import { comoCalificacion } from '@/domain/calculo'
 import { fechaLocal } from '@/domain/fechas'
+import { EstadoVacio } from '@/ui/components/EstadoVacio'
 import { SelectorTrimestre } from '@/ui/components/SelectorTrimestre'
 import { Cargando } from '@/ui/components/Cargando'
 import { FilaResumenAlumno } from '@/ui/components/FilaResumenAlumno'
@@ -45,10 +46,10 @@ export function ResumenDelGrupo() {
 
   if (!ciclo) {
     return (
-      <p className="text-base text-tinta-2">
-        Todavía no hay ciclo escolar. El resumen es de un trimestre, y los trimestres se
-        abren en Grupo → Ajustes → Ciclo escolar.
-      </p>
+      <EstadoVacio titulo="Todavía no hay un ciclo escolar registrado.">
+        El resumen es de un trimestre, y los trimestres se abren en Grupo → Ajustes →
+        Ciclo escolar.
+      </EstadoVacio>
     )
   }
 
