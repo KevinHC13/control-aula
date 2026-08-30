@@ -17,6 +17,7 @@ const alumno = (n: number) => ({
   ciclo_id: null,
   numero_lista: n,
   fecha_nacimiento: null,
+  curp: null,
 })
 
 /** Encola un cambio como lo haría cualquier adaptador al escribir. */

@@ -13,6 +13,8 @@
 export interface AlumnoExtraido {
   nombre?: string | null
   numero_lista?: number | null
+  /** De aquí sale la fecha de nacimiento cuando el documento no la imprime. */
+  curp?: string | null
   fecha_nacimiento?: string | null
 }
 

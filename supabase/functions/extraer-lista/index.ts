@@ -32,8 +32,10 @@ Para cada alumno:
   Respeta los acentos y los apellidos compuestos ("De la Cruz", "Del Ángel") tal como aparecen.
   Si el documento ya usa ese formato, cópialo sin reordenar.
 - "numero_lista": el número de lista, tal como está impreso. null si el documento no lo trae.
+- "curp": la CURP del alumno tal como aparece, 18 caracteres alfanuméricos en mayúsculas.
+  null si el documento no la trae. No la deduzcas ni la completes.
 - "fecha_nacimiento": en formato YYYY-MM-DD. Las fechas del documento vienen en día/mes/año.
-  null si no aparece.
+  null si no aparece. **No la deduzcas de la CURP**: de eso se encarga la aplicación.
 
 No inventes alumnos ni completes datos que no estén en el documento.`
 
@@ -47,6 +49,7 @@ const ESQUEMA = {
         properties: {
           nombre: { type: 'STRING' },
           numero_lista: { type: 'INTEGER', nullable: true },
+          curp: { type: 'STRING', nullable: true },
           fecha_nacimiento: { type: 'STRING', nullable: true },
         },
         required: ['nombre'],

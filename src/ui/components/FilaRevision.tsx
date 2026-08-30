@@ -82,6 +82,16 @@ export function FilaRevision({
         </button>
       </div>
 
+      {/* El CURP se enseña pero no se edita aquí: son dieciocho caracteres que
+          nadie va a teclear en una lista de treinta, y la fila no tiene un
+          cuarto campo que quepa en el iPad. Se corrige en Ajustes → Alumnos.
+          Está a la vista porque de él sale la fecha de la izquierda. */}
+      {fila.curp !== '' && (
+        <p className={cn('cifra pb-1 pl-[3.25rem] text-[13px]', malo ? 'text-rojo' : 'text-tinta-2')}>
+          {fila.curp}
+        </p>
+      )}
+
       {malo && (
         <p className="pb-2 pl-[3.25rem] text-[13px] text-rojo">{fila.problema}</p>
       )}

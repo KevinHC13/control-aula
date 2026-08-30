@@ -8,7 +8,7 @@ const problema = (crudo: Parameters<typeof normalizarExtraccion>[0]) =>
 describe('normalizarExtraccion', () => {
   it('limpia los espacios que deja un OCR de tabla', () => {
     const [fila] = normalizarExtraccion([
-      { nombre: '  Gómez  Pérez,   Ana Sofía ', numero_lista: 1, fecha_nacimiento: '2015-03-15' },
+      { nombre: '  Gómez  Pérez,   Ana Sofía ', numero_lista: 1, fecha_nacimiento: '2015-03-15', curp: '' },
     ])
 
     expect(fila?.nombre).toBe('Gómez Pérez, Ana Sofía')
@@ -54,30 +54,30 @@ describe('normalizarExtraccion', () => {
   it('marca la fecha en formato del documento en vez de adivinar el día y el mes', () => {
     // "12/03/2015" es 12 de marzo o 3 de diciembre según quién la escribió.
     // Adivinar mal una fecha de nacimiento no se nota hasta que ya no importa.
-    expect(problema([{ nombre: 'Aguilar, Bruno', numero_lista: 1, fecha_nacimiento: '12/03/2015' }])).toEqual([
+    expect(problema([{ nombre: 'Aguilar, Bruno', numero_lista: 1, fecha_nacimiento: '12/03/2015', curp: '' }])).toEqual([
       'La fecha debe ser AAAA-MM-DD',
     ])
   })
 
   it('marca una fecha con el formato bueno pero el día inexistente', () => {
-    expect(problema([{ nombre: 'Aguilar, Bruno', numero_lista: 1, fecha_nacimiento: '2015-02-31' }])).toEqual([
+    expect(problema([{ nombre: 'Aguilar, Bruno', numero_lista: 1, fecha_nacimiento: '2015-02-31', curp: '' }])).toEqual([
       'La fecha debe ser AAAA-MM-DD',
     ])
   })
 
   it('acepta que falte la fecha: no todas las listas oficiales la traen', () => {
     expect(problema([{ nombre: 'Aguilar, Bruno', numero_lista: 1 }])).toEqual([undefined])
-    expect(problema([{ nombre: 'Aguilar, Bruno', numero_lista: 1, fecha_nacimiento: null }])).toEqual([
+    expect(problema([{ nombre: 'Aguilar, Bruno', numero_lista: 1, fecha_nacimiento: null, curp: null }])).toEqual([
       undefined,
     ])
   })
 
   it('una extracción sucia completa marca solo las filas malas', () => {
     const filas = normalizarExtraccion([
-      { nombre: 'Aguilar Mendoza,  Bruno', numero_lista: 1, fecha_nacimiento: '2015-01-20' },
-      { nombre: '', numero_lista: 2, fecha_nacimiento: '2015-04-02' },
-      { nombre: 'Cruz Ríos, Diego', numero_lista: 3, fecha_nacimiento: '12/03/2015' },
-      { nombre: 'De la Cruz, Elena', numero_lista: 3, fecha_nacimiento: null },
+      { nombre: 'Aguilar Mendoza,  Bruno', numero_lista: 1, fecha_nacimiento: '2015-01-20', curp: '' },
+      { nombre: '', numero_lista: 2, fecha_nacimiento: '2015-04-02', curp: '' },
+      { nombre: 'Cruz Ríos, Diego', numero_lista: 3, fecha_nacimiento: '12/03/2015', curp: '' },
+      { nombre: 'De la Cruz, Elena', numero_lista: 3, fecha_nacimiento: null, curp: null },
       { nombre: 'Fuentes, Gabriel', numero_lista: 5 },
     ])
 
@@ -134,12 +134,64 @@ describe('capitalización de la lista oficial', () => {
   })
 })
 
+describe('la CURP', () => {
+  // Inventadas, como todo nombre de estas pruebas.
+  const CURP = 'AUVG160520MNLRLRA3' // 20 de mayo de 2016
+
+  it('rellena la fecha de nacimiento cuando la lista no la trae', () => {
+    // Es el caso real: la lista de Control Escolar trae CURP y no trae fecha.
+    const [fila] = normalizarExtraccion([{ nombre: 'Aguilar, Bruno', curp: CURP }])
+
+    expect(fila?.fecha_nacimiento).toBe('2016-05-20')
+    expect(fila?.problema).toBeUndefined()
+  })
+
+  it('la fecha impresa gana sobre la de la CURP', () => {
+    const [fila] = normalizarExtraccion([
+      { nombre: 'Aguilar, Bruno', curp: CURP, fecha_nacimiento: '2016-05-21' },
+    ])
+
+    expect(fila?.fecha_nacimiento).toBe('2016-05-21')
+  })
+
+  it('la sube a mayúsculas y le quita los espacios del OCR', () => {
+    const [fila] = normalizarExtraccion([{ nombre: 'Aguilar, Bruno', curp: ' auvg 160520 mnlrlra3 ' }])
+
+    expect(fila?.curp).toBe(CURP)
+  })
+
+  it('marca la que no tiene forma de CURP, sin tirar la fila', () => {
+    const [fila] = normalizarExtraccion([{ nombre: 'Aguilar, Bruno', curp: 'AUVG160520' }])
+
+    expect(fila?.problema).toBe('El CURP no es válido')
+    expect(fila?.nombre).toBe('Aguilar, Bruno')
+  })
+
+  it('marca la repetida: es la misma persona leída dos veces', () => {
+    expect(
+      problema([
+        { nombre: 'Aguilar, Bruno', numero_lista: 1, curp: CURP },
+        { nombre: 'Aguilar, Bruno', numero_lista: 2, curp: CURP },
+      ]),
+    ).toEqual(['CURP repetido', 'CURP repetido'])
+  })
+
+  it('sin CURP no hay repetición que valer: la mayoría de las listas no la trae', () => {
+    expect(
+      problema([
+        { nombre: 'Aguilar, Bruno', numero_lista: 1 },
+        { nombre: 'Bautista, Carla', numero_lista: 2 },
+      ]),
+    ).toEqual([undefined, undefined])
+  })
+})
+
 describe('revalidar', () => {
   it('recalcula los problemas sin tocar el texto', () => {
     // Es lo que corre en cada tecla: no recorta espacios ni recapitaliza, porque
     // le pelearía al teclado a media palabra.
     const [fila] = revalidar([
-      { nombre: 'DE LA ', numero_lista: 1, fecha_nacimiento: '2015-' },
+      { nombre: 'DE LA ', numero_lista: 1, fecha_nacimiento: '2015-', curp: '' },
     ])
 
     expect(fila?.nombre).toBe('DE LA ')
@@ -159,7 +211,7 @@ describe('revalidar', () => {
 
   it('no arrastra un problema ya resuelto', () => {
     const [fila] = revalidar([
-      { nombre: 'Aguilar, Bruno', numero_lista: 1, fecha_nacimiento: '', problema: 'Falta el nombre' },
+      { nombre: 'Aguilar, Bruno', numero_lista: 1, fecha_nacimiento: '', problema: 'Falta el nombre', curp: '' },
     ])
     expect(fila && 'problema' in fila).toBe(false)
   })
@@ -169,18 +221,18 @@ describe('aDatosAlumno', () => {
   it('la fecha vacía se guarda como dato ausente, no como cadena vacía', () => {
     expect(
       aDatosAlumno([
-        { nombre: 'Aguilar, Bruno', numero_lista: 1, fecha_nacimiento: '' },
-        { nombre: 'Bautista, Carla', numero_lista: 2, fecha_nacimiento: '2015-04-02' },
+        { nombre: 'Aguilar, Bruno', numero_lista: 1, fecha_nacimiento: '', curp: '' },
+        { nombre: 'Bautista, Carla', numero_lista: 2, fecha_nacimiento: '2015-04-02', curp: '' },
       ]),
     ).toEqual([
-      { nombre: 'Aguilar, Bruno', numero_lista: 1, fecha_nacimiento: null },
-      { nombre: 'Bautista, Carla', numero_lista: 2, fecha_nacimiento: '2015-04-02' },
+      { nombre: 'Aguilar, Bruno', numero_lista: 1, fecha_nacimiento: null, curp: null },
+      { nombre: 'Bautista, Carla', numero_lista: 2, fecha_nacimiento: '2015-04-02', curp: null },
     ])
   })
 
   it('no arrastra `problema` al dominio', () => {
     const [dato] = aDatosAlumno([
-      { nombre: 'Aguilar, Bruno', numero_lista: 1, fecha_nacimiento: '', problema: 'algo' },
+      { nombre: 'Aguilar, Bruno', numero_lista: 1, fecha_nacimiento: '', problema: 'algo', curp: '' },
     ])
     expect(dato && 'problema' in dato).toBe(false)
   })

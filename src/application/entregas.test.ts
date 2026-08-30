@@ -52,6 +52,7 @@ const alumno = (i: number): Alumno => ({
   ciclo_id: null,
   numero_lista: i,
   fecha_nacimiento: null,
+  curp: null,
 })
 
 const entrega = (alumnoId: string, entregada: boolean): Entrega => ({

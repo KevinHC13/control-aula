@@ -4,6 +4,7 @@ import {
   agregarAlumno,
   darDeBajaAlumno,
   editarAlumno,
+  editarFormulario,
   type FormularioAlumno,
   formularioDe,
   formularioNuevo,
@@ -253,7 +254,7 @@ function Formulario({
 
   function editar(campo: keyof FormularioAlumno, valor: string) {
     setError('')
-    setFormulario((previo) => ({ ...previo, [campo]: valor }))
+    setFormulario((previo) => editarFormulario(previo, campo, valor))
   }
 
   async function guardar() {
@@ -293,6 +294,23 @@ function Formulario({
           />
         </label>
       </div>
+
+      {/* La CURP va antes que la fecha porque la trae dentro: al escribirla, la
+          fecha de abajo se llena sola. Es el mismo trato que en la carga de la
+          lista, donde la fecha impresa casi nunca aparece. */}
+      <label className="flex flex-col gap-1">
+        <span className="text-[13px] text-tinta-2">CURP (opcional)</span>
+        <input
+          type="text"
+          value={formulario.curp}
+          placeholder="18 caracteres"
+          autoCapitalize="characters"
+          autoCorrect="off"
+          spellCheck={false}
+          onChange={(e) => editar('curp', e.target.value)}
+          className={cn(CAMPO, 'cifra')}
+        />
+      </label>
 
       <label className="flex flex-col gap-1">
         <span className="text-[13px] text-tinta-2">

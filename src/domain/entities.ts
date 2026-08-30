@@ -25,6 +25,19 @@ export interface Alumno extends Sincronizable {
   /** Orden en la lista, 1-based **dentro de su ciclo** */
   numero_lista: number
   fecha_nacimiento: Fecha | null
+  /**
+   * La CURP tal como la trae la lista oficial, 18 caracteres, o `null`.
+   *
+   * Se guarda por lo que trae dentro: en la lista de Control Escolar la fecha de
+   * nacimiento **solo** existe aquí, y de ella sale el aviso de cumpleaños
+   * (`C15`). Revierte a sabiendas el «sin CURP» de D-014 (docs/DECISIONES.md
+   * D-027).
+   *
+   * No es la identidad del alumno: fusionar la lista sigue siendo por
+   * `[ciclo_id+numero_lista]`, que es lo que conserva su asistencia y sus
+   * calificaciones.
+   */
+  curp: string | null
 }
 
 /**
@@ -33,7 +46,10 @@ export interface Alumno extends Sincronizable {
  * que entra la lista al cargarla desde Ajustes: el ciclo no viaja en el archivo,
  * lo pone el repositorio con el que esté abierto.
  */
-export type DatosAlumno = Pick<Alumno, 'nombre' | 'numero_lista' | 'fecha_nacimiento'>
+export type DatosAlumno = Pick<
+  Alumno,
+  'nombre' | 'numero_lista' | 'fecha_nacimiento' | 'curp'
+>
 
 export interface RegistroAsistencia extends Sincronizable {
   alumno_id: Id

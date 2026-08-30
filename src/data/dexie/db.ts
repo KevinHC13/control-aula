@@ -228,6 +228,20 @@ db.version(VERSION_ESQUEMA)
     })
   })
 
+/*
+ * `Alumno.curp` **no lleva versión nueva** (docs/DECISIONES.md D-027).
+ *
+ * No es un descuido: Dexie solo versiona los **índices**, y nadie busca alumnos
+ * por CURP —se lee del alumno que ya se tiene en la mano—. Una propiedad sin
+ * índice se guarda con el objeto y las filas viejas la leen como `undefined`,
+ * que el adaptador escribe como `null` en cuanto la lista se vuelve a cargar.
+ *
+ * Por eso `VERSION_ESQUEMA` se queda en 4, y eso es lo que se quiere: un
+ * respaldo hecho antes de esto se sigue restaurando, y uno hecho después se
+ * sigue abriendo en una app que todavía no tenga el campo —la fila viaja
+ * entera, con su CURP dentro, y nadie la pierde—.
+ */
+
 /**
  * ID de un registro nuevo. Siempre UUID del cliente, nunca autoincremento: con
  * enteros locales dos dispositivos generan el mismo `id: 1` y el respaldo se

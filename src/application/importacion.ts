@@ -1,4 +1,5 @@
 import { repos } from '@/data'
+import { curpValido, fechaDeCurp, normalizarCurp } from '@/domain/curp'
 import type { DatosAlumno } from '@/domain/entities'
 import { fechaValida } from '@/domain/fechas'
 import type { AlumnoExtraido } from '@/services/extraccion'
@@ -8,13 +9,16 @@ import type { AlumnoExtraido } from '@/services/extraccion'
  * está mal con ella.
  *
  * `problema` existe porque la revisión es obligatoria y necesita señalar dónde
- * mirar. La IA falla con acentos y apellidos compuestos, y la app no tiene
- * edición de alumnos donde corregir después (docs/DECISIONES.md D-014).
+ * mirar. La IA falla con acentos y apellidos compuestos, y aunque desde `C37` se
+ * puede corregir un alumno en Ajustes, un nombre mal escrito que nadie mira aquí
+ * se queda mal escrito todo el ciclo (docs/DECISIONES.md D-014).
  */
 export interface FilaImportada {
   nombre: string
   numero_lista: number
   fecha_nacimiento: string
+  /** 18 caracteres o vacío. Lo que trae la lista oficial de Control Escolar. */
+  curp: string
   /** Ausente cuando la fila está bien. Mensaje para mostrar tal cual. */
   problema?: string
 }
@@ -76,11 +80,19 @@ function capitalizar(nombre: string): string {
  */
 export function normalizarExtraccion(crudo: AlumnoExtraido[]): FilaImportada[] {
   return revalidar(
-    crudo.map((alumno, i) => ({
-      nombre: capitalizar(limpiar(alumno.nombre ?? '')),
-      numero_lista: alumno.numero_lista ?? i + 1,
-      fecha_nacimiento: limpiar(alumno.fecha_nacimiento ?? ''),
-    })),
+    crudo.map((alumno, i) => {
+      const curp = normalizarCurp(alumno.curp ?? '')
+
+      return {
+        nombre: capitalizar(limpiar(alumno.nombre ?? '')),
+        numero_lista: alumno.numero_lista ?? i + 1,
+        // Lo impreso gana; la CURP rellena. Nunca al revés: si el documento
+        // trae las dos y no coinciden, la que se ve es la que se respeta y la
+        // maestra decide en la revisión.
+        fecha_nacimiento: limpiar(alumno.fecha_nacimiento ?? '') || (fechaDeCurp(curp) ?? ''),
+        curp,
+      }
+    }),
   )
 }
 
@@ -93,13 +105,15 @@ export function normalizarExtraccion(crudo: AlumnoExtraido[]): FilaImportada[] {
  */
 export function revalidar(filas: FilaImportada[]): FilaImportada[] {
   const veces = new Map<number, number>()
-  for (const { numero_lista } of filas) {
+  const vecesCurp = new Map<string, number>()
+  for (const { numero_lista, curp } of filas) {
     veces.set(numero_lista, (veces.get(numero_lista) ?? 0) + 1)
+    if (curp !== '') vecesCurp.set(curp, (vecesCurp.get(curp) ?? 0) + 1)
   }
 
-  return filas.map(({ nombre, numero_lista, fecha_nacimiento }) => {
-    const fila = { nombre, numero_lista, fecha_nacimiento }
-    const problema = revisar(fila, veces)
+  return filas.map(({ nombre, numero_lista, fecha_nacimiento, curp }) => {
+    const fila = { nombre, numero_lista, fecha_nacimiento, curp }
+    const problema = revisar(fila, veces, vecesCurp)
     return problema ? { ...fila, problema } : fila
   })
 }
@@ -107,6 +121,7 @@ export function revalidar(filas: FilaImportada[]): FilaImportada[] {
 function revisar(
   fila: Omit<FilaImportada, 'problema'>,
   veces: Map<number, number>,
+  vecesCurp: Map<string, number>,
 ): string | undefined {
   if (fila.nombre === '') return 'Falta el nombre'
   if (!Number.isInteger(fila.numero_lista) || fila.numero_lista < 1) {
@@ -116,6 +131,10 @@ function revisar(
   if (fila.fecha_nacimiento !== '' && !fechaValida(fila.fecha_nacimiento)) {
     return 'La fecha debe ser AAAA-MM-DD'
   }
+  if (fila.curp !== '' && !curpValido(fila.curp)) return 'El CURP no es válido'
+  // Dos veces el mismo CURP es la misma persona leída dos veces: pasa al
+  // fotografiar una hoja que ya se había cargado.
+  if ((vecesCurp.get(fila.curp) ?? 0) > 1) return 'CURP repetido'
   return undefined
 }
 
@@ -125,6 +144,7 @@ export function aDatosAlumno(filas: FilaImportada[]): DatosAlumno[] {
     nombre: fila.nombre,
     numero_lista: fila.numero_lista,
     fecha_nacimiento: fila.fecha_nacimiento === '' ? null : fila.fecha_nacimiento,
+    curp: fila.curp === '' ? null : fila.curp,
   }))
 }
 

@@ -112,9 +112,12 @@ export class DexieAlumnosRepo implements AlumnosRepo {
           continue
         }
 
+        // El CURP entra en la comparación o reimportar la misma lista con CURP
+        // no escribiría nada: el resto de los campos ya coincide.
         const igual =
           existente.nombre === alumno.nombre &&
           existente.fecha_nacimiento === alumno.fecha_nacimiento &&
+          existente.curp === alumno.curp &&
           existente.deleted_at === null
         if (igual) continue
 

@@ -27,6 +27,7 @@ const alumno = (numero_lista: number, nombre: string): Alumno => ({
   ciclo_id: null,
   numero_lista,
   fecha_nacimiento: null,
+  curp: null,
   updated_at: '2026-08-18T08:00:00.000Z',
   deleted_at: null,
 })

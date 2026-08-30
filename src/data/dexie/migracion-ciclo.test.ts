@@ -68,6 +68,7 @@ beforeAll(async () => {
       nombre: `Apellido${i + 1}, Nombre`,
       numero_lista: i + 1,
       fecha_nacimiento: null,
+      curp: null,
     })),
   )
 

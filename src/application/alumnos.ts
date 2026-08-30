@@ -1,4 +1,5 @@
 import { repos } from '@/data'
+import { curpValido, fechaDeCurp, normalizarCurp } from '@/domain/curp'
 import type { Alumno, DatosAlumno } from '@/domain/entities'
 import { fechaValida } from '@/domain/fechas'
 import type { Id } from '@/domain/values'
@@ -16,16 +17,22 @@ import type { Id } from '@/domain/values'
  * uno de los dos.
  */
 
-/** Lo que la pantalla edita: los tres campos, la fecha como texto. */
+/** Lo que la pantalla edita: todo como texto, incluida la fecha. */
 export interface FormularioAlumno {
   nombre: string
   numero_lista: string
   fecha_nacimiento: string
+  curp: string
 }
 
 /** El formulario vacío para un alta, con el número ya propuesto. */
 export function formularioNuevo(alumnos: readonly Alumno[]): FormularioAlumno {
-  return { nombre: '', numero_lista: String(siguienteNumero(alumnos)), fecha_nacimiento: '' }
+  return {
+    nombre: '',
+    numero_lista: String(siguienteNumero(alumnos)),
+    fecha_nacimiento: '',
+    curp: '',
+  }
 }
 
 /** El formulario de un alumno que ya existe, para corregirlo. */
@@ -34,6 +41,34 @@ export function formularioDe(alumno: Alumno): FormularioAlumno {
     nombre: alumno.nombre,
     numero_lista: String(alumno.numero_lista),
     fecha_nacimiento: alumno.fecha_nacimiento ?? '',
+    curp: alumno.curp ?? '',
+  }
+}
+
+/**
+ * El formulario después de escribir en un campo, con la fecha rellenada desde la
+ * CURP si estaba vacía.
+ *
+ * Vive aquí y no en la pantalla porque es la misma regla que aplica la carga de
+ * la lista: lo escrito gana, la CURP rellena. Rellena y no sobrescribe —quien ya
+ * puso una fecha la puso por algo—, y solo cuando la CURP está completa y bien
+ * formada, para no ir cambiando la fecha a cada tecla.
+ */
+export function editarFormulario(
+  formulario: FormularioAlumno,
+  campo: keyof FormularioAlumno,
+  valor: string,
+): FormularioAlumno {
+  const siguiente = { ...formulario, [campo]: valor }
+  if (campo !== 'curp') return siguiente
+
+  const curp = normalizarCurp(valor)
+  const deLaCurp = fechaDeCurp(curp)
+
+  return {
+    ...siguiente,
+    curp,
+    fecha_nacimiento: siguiente.fecha_nacimiento || (deLaCurp ?? ''),
   }
 }
 
@@ -76,6 +111,10 @@ export function revisarFormulario(
     return 'La fecha debe ser AAAA-MM-DD'
   }
 
+  if (formulario.curp !== '' && !curpValido(formulario.curp)) {
+    return 'El CURP debe traer 18 caracteres'
+  }
+
   return undefined
 }
 
@@ -86,6 +125,7 @@ function aDatos(formulario: FormularioAlumno): DatosAlumno {
     numero_lista: Number(formulario.numero_lista),
     fecha_nacimiento:
       formulario.fecha_nacimiento === '' ? null : formulario.fecha_nacimiento,
+    curp: formulario.curp === '' ? null : normalizarCurp(formulario.curp),
   }
 }
 

@@ -18,8 +18,8 @@ type Estado = 'inicio' | 'leyendo' | 'revisando' | 'listo' | 'error'
  * Cargar la lista del grupo desde un archivo o una foto.
  *
  * El paso de revisión no es una cortesía: la IA falla con acentos y apellidos
- * compuestos, y la app no tiene edición de alumnos donde corregir después. Un
- * nombre mal escrito aquí se queda mal escrito todo el ciclo escolar
+ * compuestos, y un nombre mal escrito aquí se queda mal escrito todo el ciclo
+ * escolar —corregirlo después existe desde `C37`, pero hay que darse cuenta—
  * (docs/DECISIONES.md D-014).
  *
  * Pero revisar 30 nombres tiene que costar un vistazo, no 30 lecturas: la lista
@@ -111,8 +111,9 @@ export function CargarLista({ alVolver }: { alVolver: () => void }) {
           )}
           <p className="text-base text-tinta-2">
             Seleccione la lista oficial del grupo en PDF, o una fotografía de ella. Los
-            nombres se leen automáticamente y después se pueden corregir. Este es el único
-            paso que necesita conexión a internet.
+            nombres se leen automáticamente y después se pueden corregir. Si la lista trae
+            CURP, la fecha de cumpleaños sale de ahí sola. Este es el único paso que
+            necesita conexión a internet.
           </p>
           <div className="flex flex-col gap-2 pt-2">
             <ElegirArchivo

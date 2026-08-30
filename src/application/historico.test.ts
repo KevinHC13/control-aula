@@ -114,6 +114,7 @@ describe('el grupo de un ciclo cerrado', () => {
         nombre: 'Del año pasado',
         numero_lista: 1,
         fecha_nacimiento: null,
+        curp: null,
         updated_at: '2025-08-25T00:00:00.000Z',
         deleted_at: null,
       },
@@ -123,6 +124,7 @@ describe('el grupo de un ciclo cerrado', () => {
         nombre: 'De este año',
         numero_lista: 1,
         fecha_nacimiento: null,
+        curp: null,
         updated_at: '2026-08-24T00:00:00.000Z',
         deleted_at: null,
       },
@@ -143,6 +145,7 @@ describe('el grupo de un ciclo cerrado', () => {
       nombre: 'Se cambió de escuela',
       numero_lista: 1,
       fecha_nacimiento: null,
+      curp: null,
       updated_at: '2025-08-25T00:00:00.000Z',
       deleted_at: '2025-10-01T00:00:00.000Z',
     })

@@ -550,7 +550,7 @@ describe('cerrarCicloEscolar', () => {
     await abrirCicloEscolar('2026–2027', BUENOS[0]!)
     const ciclo = await cicloEnCurso()
     await repos.alumnos.sembrar([
-      { numero_lista: 1, nombre: 'Del año pasado', fecha_nacimiento: null },
+      { numero_lista: 1, nombre: 'Del año pasado', fecha_nacimiento: null, curp: null },
     ])
     expect(await repos.alumnos.lista()).toHaveLength(1)
 

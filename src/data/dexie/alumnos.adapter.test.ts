@@ -17,6 +17,7 @@ const alumno = (numero_lista: number, nombre: string, deleted_at: string | null 
   ciclo_id: null,
   numero_lista,
   fecha_nacimiento: null,
+  curp: null,
   updated_at: '2026-08-18T08:00:00.000Z',
   deleted_at,
 })
@@ -77,9 +78,9 @@ describe('observarLista', () => {
  */
 describe('sembrar', () => {
   const LISTA: DatosAlumno[] = [
-    { numero_lista: 1, nombre: 'Aguilar Mendoza, Bruno', fecha_nacimiento: '2017-03-14' },
-    { numero_lista: 2, nombre: 'Barrera Solís, Diego', fecha_nacimiento: null },
-    { numero_lista: 3, nombre: 'Cruz Herrera, Regina', fecha_nacimiento: '2017-09-23' },
+    { numero_lista: 1, nombre: 'Aguilar Mendoza, Bruno', fecha_nacimiento: '2017-03-14', curp: null },
+    { numero_lista: 2, nombre: 'Barrera Solís, Diego', fecha_nacimiento: null, curp: null },
+    { numero_lista: 3, nombre: 'Cruz Herrera, Regina', fecha_nacimiento: '2017-09-23', curp: null },
   ]
 
   beforeEach(async () => {
@@ -121,6 +122,19 @@ describe('sembrar', () => {
     expect(despues.map((a) => a.id)).toEqual(antes.map((a) => a.id))
     // Y la segunda pasada no encoló nada: nada cambió.
     expect(await db.outbox.count()).toBe(pendientes)
+  })
+
+  it('recargar la lista con CURP se la escribe a quien ya existía', async () => {
+    // Sin el CURP en la comparación de `sembrar`, esta segunda pasada no
+    // escribiría nada: el nombre y la fecha ya coinciden.
+    await repo.sembrar(LISTA)
+    const original = (await repo.lista())[0]!
+
+    await repo.sembrar([{ ...LISTA[0]!, curp: 'AUVG160520MNLRLRA3' }])
+
+    const despues = (await repo.lista())[0]!
+    expect(despues.id).toBe(original.id)
+    expect(despues.curp).toBe('AUVG160520MNLRLRA3')
   })
 
   it('un nombre corregido se actualiza conservando el id', async () => {
@@ -219,7 +233,7 @@ describe('el grupo se acota al ciclo abierto', () => {
     await db.ciclos.put(ciclo('ciclo-a', 'abierto', '2026-08-01T00:00:00.000Z'))
 
     await repo.sembrar([
-      { numero_lista: 1, nombre: 'Aguilar, Bruno', fecha_nacimiento: null },
+      { numero_lista: 1, nombre: 'Aguilar, Bruno', fecha_nacimiento: null, curp: null },
     ])
 
     expect((await repo.lista())[0]?.ciclo_id).toBe('ciclo-a')
@@ -233,7 +247,7 @@ describe('el grupo se acota al ciclo abierto', () => {
     await db.ciclos.put(ciclo('ciclo-nuevo', 'abierto', '2026-08-01T00:00:00.000Z'))
 
     await repo.sembrar([
-      { numero_lista: 1, nombre: 'De este año', fecha_nacimiento: null },
+      { numero_lista: 1, nombre: 'De este año', fecha_nacimiento: null, curp: null },
     ])
 
     const nuevo = (await repo.lista())[0]
@@ -254,7 +268,7 @@ describe('administrar alumnos', () => {
     await db.outbox.clear()
   })
 
-  const DATOS = { nombre: 'Llegó Después, Ana', numero_lista: 31, fecha_nacimiento: null }
+  const DATOS = { nombre: 'Llegó Después, Ana', numero_lista: 31, fecha_nacimiento: null, curp: null }
 
   it('agregar da de alta con id, updated_at y sin baja', async () => {
     await repo.agregar(DATOS)
@@ -347,6 +361,7 @@ describe('administrar alumnos', () => {
       nombre: 'Del año pasado',
       numero_lista: 1,
       fecha_nacimiento: null,
+      curp: null,
       updated_at: '2025-08-25T00:00:00.000Z',
       deleted_at: null,
     })
@@ -355,6 +370,7 @@ describe('administrar alumnos', () => {
       nombre: 'Corregido',
       numero_lista: 1,
       fecha_nacimiento: null,
+      curp: null,
     })
 
     expect((await db.alumnos.get('a-1'))?.ciclo_id).toBe('ciclo-viejo')
