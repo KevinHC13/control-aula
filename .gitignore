@@ -36,3 +36,7 @@ supabase/.temp/
 # IA
 .agents
 .claude
+
+# Listas reales del salón: entran al dispositivo, nunca al repositorio
+docs/lista-ejemplo.*
+docs/*.xlsx
