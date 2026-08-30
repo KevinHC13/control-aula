@@ -1,11 +1,26 @@
+import {
+  IconoAnotacion,
+  IconoCuaderno,
+  IconoGrupo,
+  IconoLista,
+} from '@/ui/components/iconos'
 import { cn } from '@/ui/lib/utils'
 import { type Pestana, useInterfaz } from '@/ui/store/interfaz'
 
-const PESTANAS: { id: Pestana; etiqueta: string }[] = [
-  { id: 'asistencia', etiqueta: 'Asistencia' },
-  { id: 'calificaciones', etiqueta: 'Calificaciones' },
-  { id: 'bitacora', etiqueta: 'Bitácora' },
-  { id: 'grupo', etiqueta: 'Grupo' },
+/**
+ * Con icono **y** etiqueta. El icono hace que la sección se reconozca sin leer
+ * —eran cuatro palabras del mismo peso, y encontrar la suya costaba leerlas— y la
+ * etiqueta se queda porque un icono solo se adivina.
+ */
+const PESTANAS: {
+  id: Pestana
+  etiqueta: string
+  Icono: (p: { className?: string }) => React.JSX.Element
+}[] = [
+  { id: 'asistencia', etiqueta: 'Asistencia', Icono: IconoLista },
+  { id: 'calificaciones', etiqueta: 'Calificaciones', Icono: IconoCuaderno },
+  { id: 'bitacora', etiqueta: 'Bitácora', Icono: IconoAnotacion },
+  { id: 'grupo', etiqueta: 'Grupo', Icono: IconoGrupo },
 ]
 
 /**
@@ -26,7 +41,7 @@ export function BarraPestanas() {
       className="fixed inset-x-0 bottom-0 border-t border-linea bg-papel pb-[env(safe-area-inset-bottom)]"
     >
       <ul className="grid grid-cols-4">
-        {PESTANAS.map(({ id, etiqueta }) => {
+        {PESTANAS.map(({ id, etiqueta, Icono }) => {
           const activa = id === pestanaActiva
           return (
             <li key={id}>
@@ -37,12 +52,13 @@ export function BarraPestanas() {
                 // min-h-14 y no min-h-11: la barra es el objetivo más tocado de
                 // la app y 44 px es el piso, no la meta.
                 className={cn(
-                  'flex min-h-14 w-full min-w-11 items-center justify-center px-2 text-base',
+                  'flex min-h-14 w-full min-w-11 flex-col items-center justify-center gap-0.5 px-2 py-1.5',
                   'foco-dentro',
                   activa ? 'font-semibold text-marca' : 'text-tinta-2',
                 )}
               >
-                {etiqueta}
+                <Icono className="size-6" />
+                <span className="text-apoyo leading-none">{etiqueta}</span>
               </button>
             </li>
           )

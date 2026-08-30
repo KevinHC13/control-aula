@@ -44,8 +44,24 @@ export async function armarRespaldo(): Promise<ArchivoDeRespaldo> {
  * El nombre del archivo lleva la fecha del dispositivo, no un consecutivo: en
  * Archivos, «palomita-2026-12-18.json» se ordena solo y se reconoce sin abrirlo.
  */
-export function nombreDeArchivo(hoy: Fecha = fechaLocal(new Date())): string {
-  return `palomita-${hoy}.json`
+export function nombreDeArchivo(
+  hoy: Fecha = fechaLocal(new Date()),
+  grupo = '',
+): string {
+  // Con varios respaldos en la misma carpeta de Archivos, la fecha sola no dice
+  // de qué grupo es cada uno. Se limpia lo que no cabe en un nombre de archivo
+  // —acentos, barras, dos puntos— en vez de rechazarlo: quien escribe «3.º B» no
+  // tiene por qué saber qué caracteres admite iPadOS.
+  const etiqueta = grupo
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase()
+
+  return etiqueta === ''
+    ? `palomita-${hoy}.json`
+    : `palomita-${etiqueta}-${hoy}.json`
 }
 
 /** Cuántos registros trae el archivo, para poder decirlo antes de restaurar. */

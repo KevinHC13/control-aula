@@ -96,3 +96,20 @@ describe('totalBorrado', () => {
     expect(totalBorrado({})).toBe(0)
   })
 })
+
+describe('nombreDeArchivo con el nombre del grupo', () => {
+  it('lo agrega cuando lo hay, sin lo que no cabe en un nombre de archivo', () => {
+    expect(nombreDeArchivo('2026-12-18', '3.º B')).toBe('palomita-3-b-2026-12-18.json')
+  })
+
+  it('quita los acentos en vez de rechazar el nombre', () => {
+    expect(nombreDeArchivo('2026-12-18', 'Sección Ñandú')).toBe(
+      'palomita-seccion-nandu-2026-12-18.json',
+    )
+  })
+
+  it('sin nombre de grupo, el de siempre', () => {
+    expect(nombreDeArchivo('2026-12-18', '')).toBe('palomita-2026-12-18.json')
+    expect(nombreDeArchivo('2026-12-18', '   ')).toBe('palomita-2026-12-18.json')
+  })
+})

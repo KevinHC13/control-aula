@@ -16,6 +16,7 @@ import { Cabecera } from '@/ui/components/Cabecera'
 import { Button } from '@/ui/components/ui/button'
 import { comoDiaConAnio } from '@/ui/lib/fechas'
 import { plural } from '@/ui/lib/plural'
+import { useApariencia } from '@/ui/store/apariencia'
 
 /**
  * Guardar el año en un archivo, y volverlo a meter.
@@ -26,6 +27,9 @@ import { plural } from '@/ui/lib/plural'
  * pantallas de captura, donde cada toque escribe—.
  */
 export function Respaldo({ alVolver }: { alVolver: () => void }) {
+  // Va al nombre del archivo: con varios respaldos en la misma carpeta, la fecha
+  // sola no dice de qué grupo es cada uno.
+  const nombreDelGrupo = useApariencia((s) => s.nombreDelGrupo)
   const [guardando, setGuardando] = useState(false)
   const [aviso, setAviso] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -49,7 +53,7 @@ export function Respaldo({ alVolver }: { alVolver: () => void }) {
     setAviso(null)
     try {
       const archivo = await armarRespaldo()
-      const nombre = nombreDeArchivo()
+      const nombre = nombreDeArchivo(undefined, nombreDelGrupo)
       const json = JSON.stringify(archivo)
 
       // Dos caminos, y el primero es el del iPad: con el archivo en la hoja de

@@ -15,6 +15,7 @@ import { Equipos } from '@/ui/screens/Equipos'
 import { ResumenDelGrupo } from '@/ui/screens/ResumenDelGrupo'
 import { Respaldo } from '@/ui/screens/Respaldo'
 import { Rubricas } from '@/ui/screens/Rubricas'
+import { useApariencia } from '@/ui/store/apariencia'
 
 /**
  * La pantalla de la nube se carga cuando se abre, no antes: arrastra el cliente de
@@ -44,6 +45,7 @@ type Vista =
   | 'apariencia'
 
 export function Grupo() {
+  const nombreDelGrupo = useApariencia((s) => s.nombreDelGrupo)
   const [vista, setVista] = useState<Vista>('resumen')
 
   if (vista === 'ajustes') {
@@ -118,6 +120,9 @@ export function Grupo() {
       <Cabecera
         titulo="Grupo"
         id="titulo-grupo"
+        // El nombre que la usuaria le puso, si le puso alguno. Vacío no se pinta:
+        // un renglón en blanco repetido enseña a ignorar ese lugar.
+        detalle={nombreDelGrupo.trim() === '' ? undefined : nombreDelGrupo}
         accion={
           <Button
             size="icon"
