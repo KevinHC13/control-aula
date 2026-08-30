@@ -1393,3 +1393,62 @@ Lo menos obvio es el punto tres: con el filtro de siempre, dar de baja en noviem
 habría borrado a ese alumno del trimestre 1 cerrado en octubre, cuya boleta ya se
 entregó. Quién entra al reporte se decide en `armarReporte`, donde ya se decide entre el
 snapshot y el cálculo, porque es la misma bifurcación.
+
+---
+
+# Fase 9 · La lista real
+
+El alcance del **2026-08-29**, y como el de la Fase 7, no salió de planeación: salió de
+ir a cargar la lista de verdad. Los dos archivos que llegaron —la lista de Control
+Escolar en foto y la de asistencia en Excel— tiraron tres supuestos de `C10c` a la vez
+(D-027): la lista es un Excel, la fecha de nacimiento no está impresa, y treinta y siete
+alumnos no caben en una foto.
+
+### ✅ C38 · `feat(domain): leer la fecha de nacimiento del CURP`
+
+- [x] `fechaDeCurp('AUVG160520HNLRLRA3') === '2016-05-20'`
+- [x] El siglo sale de la homoclave: dígito, 1900; letra, 2000
+- [x] Una fecha imposible —un 31 de febrero mal leído— devuelve `null`, no una fecha
+- [x] `domain/curp.ts` no importa nada, como el resto del dominio
+
+Es decodificación, no adivinanza, y por eso no se le pide a la IA: la aritmética se hace
+con un `slice` y así no hay ocasión de inventarla.
+
+### ✅ C39 · `feat(data): guardar el CURP del alumno y sacar de él su cumpleaños`
+
+- [x] `Alumno.curp`, y con él la columna en Supabase — o la outbox no podría subir
+- [x] **Sin `version(5)`**: Dexie solo versiona índices y nadie busca por CURP
+- [x] Al cargar la lista, lo impreso gana y el CURP rellena; nunca al revés
+- [x] La revisión marca «El CURP no es válido» y «CURP repetido» sin tirar la fila
+- [x] *Ajustes → Alumnos* tiene el campo, y escribirlo llena la fecha si estaba vacía
+- [x] `sembrar()` compara también el CURP, o recargar la lista no lo escribiría
+
+Revierte el «sin CURP» de D-014 a sabiendas (D-027): se descartó porque nada lo usaba, y
+resulta ser el único sitio donde viene la fecha de nacimiento.
+
+### ✅ C40 · `feat(ui): cargar la lista en varias hojas`
+
+- [x] Cada lectura **se suma** a lo revisado; antes lo reemplazaba
+- [x] Identidad por CURP y, si no lo hay, por número de lista
+- [x] Lo ya escrito gana y lo nuevo rellena huecos: releer una hoja es idempotente
+- [x] Se pueden elegir varias fotos de una vez, y se leen **en serie**
+- [x] Una hoja que falla **no tira** las que ya se leyeron
+- [x] El contador dice «74 alumnos · 2 hojas»
+
+### ✅ C41 · `feat(app): cargar la lista desde un archivo de Excel`
+
+- [x] Un `.xlsx` se abre **en el dispositivo y sin red**, con cero dependencias nuevas
+- [x] Los encabezados se buscan en las primeras veinte filas: el membrete no estorba
+- [x] El nombre partido en tres columnas se arma como «Paterno Materno, Nombres»
+- [x] Si los encabezados no se reconocen, la hoja se manda como texto a la IA
+- [x] Verificado contra el archivo real: 38 alumnos, encabezados en la fila 8
+
+`services/xlsx.ts` hace el zip y el XML; `application/hoja.ts` reconoce las columnas y es
+lo único que hace falta probar, porque es lo único que decide algo.
+
+### ✅ C42 · `feat(app): partir el nombre con ayuda del CURP`
+
+- [x] «ARGUELLES VILLANUEVA GERONIMO ALEJANDRO» → «Arguelles Villanueva, Geronimo Alejandro»
+- [x] «DE LEON CEDILLO YARETZI XIMENA» se parte bien, que es donde un modelo falla
+- [x] Si las iniciales no cuadran, el nombre se deja como vino
+- [x] Un nombre que ya trae coma no se toca: el documento sabe más que esta cuenta

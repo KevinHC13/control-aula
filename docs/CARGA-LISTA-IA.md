@@ -17,6 +17,17 @@
 >   lado no tiene criterio de aceptación que escribir.
 > - **`.env` nunca llegó al historial** (`git log -- .env` vacío), así que no hubo que
 >   reescribir nada ni rotar la clave por esa vía.
+>
+> **Ampliado el 2026-08-29 (docs/DECISIONES.md D-027)**, cuando llegaron los archivos
+> reales y tiraron tres supuestos de este documento:
+>
+> - **También se carga un `.xlsx`**, y se abre **en el dispositivo, sin red**:
+>   `services/xlsx.ts` descomprime el zip y `application/hoja.ts` reconoce las columnas.
+>   La IA queda de respaldo, para la hoja que no se sepa leer.
+> - **El CURP sí se guarda** y de él sale la fecha de nacimiento, que la lista real no
+>   imprime. Y sus cuatro primeras letras dicen dónde acaban los apellidos.
+> - **La lista se carga en varias hojas**, sumando: una lista de treinta y siete alumnos
+>   viene en dos páginas y no cabe en una foto.
 
 ## Decisiones tomadas
 
@@ -24,9 +35,9 @@
 |---|---|
 | Clave de Gemini | **Backend en Supabase.** La clave es *secret* de una Edge Function y nunca llega al bundle. Adelanta la infraestructura que C16 ya contemplaba. |
 | Fusión con lo existente | **Por `numero_lista`**, igual que `sembrar()` hoy: mismo número = mismo alumno, conserva el `id` (y con él su asistencia), nunca borra. |
-| Campos a extraer | Nombre completo (`"Apellidos, Nombres"`), número de lista y fecha de nacimiento. **Sin CURP**: no existe en el modelo y obligaría a `db.version(2)`. |
+| Campos a extraer | Nombre completo (`"Apellidos, Nombres"`), número de lista y fecha de nacimiento. ~~**Sin CURP**~~ — revocado por D-027: el CURP se extrae y se guarda, porque es donde vive la fecha de nacimiento. |
 | Alcance de la pantalla | **Pantalla de ajustes general**, pensada para que después quepan el respaldo JSON de C14 y la versión de la app. Hoy con una sola opción. |
-| Revisión previa | **Obligatoria.** La IA falla con acentos y apellidos compuestos, y no hay edición de alumnos donde corregir después. |
+| Revisión previa | **Obligatoria.** La IA falla con acentos y apellidos compuestos, y aunque desde `C37` se puede corregir un alumno en Ajustes, hay que darse cuenta primero. |
 | Semilla | **Sembrar solo si la base está vacía.** Si no, la semilla pisaría la lista importada en el siguiente arranque. |
 
 ## Contexto

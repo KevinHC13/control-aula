@@ -87,10 +87,24 @@ Esta parte está construida y en uso.
 // domain/entities.ts
 
 export interface Alumno extends Sincronizable {
+  ciclo_id: Id | null     // su generación (D-025); null = de antes del ciclo
   nombre: string          // "Apellidos, Nombres" — orden de la lista oficial
-  numero_lista: number    // orden en la lista, 1-based
+  numero_lista: number    // orden en la lista, 1-based dentro de su ciclo
   fecha_nacimiento: Fecha | null
+  curp: string | null     // 18 caracteres (D-027); de aquí sale la fecha
 }
+
+/**
+ * El CURP no es la identidad del alumno: fusionar la lista sigue siendo por
+ * `[ciclo_id+numero_lista]`. Se guarda porque la lista oficial **no imprime la
+ * fecha de nacimiento** y la trae dentro: posiciones 5–10 en `AAMMDD`, con el
+ * siglo en la homoclave —dígito, 1900; letra, 2000—. Leerlo es decodificar, no
+ * adivinar, y por eso vive en `domain/curp.ts` y no en el prompt de la IA.
+ *
+ * Sus cuatro primeras letras —inicial del paterno, su primera vocal interna,
+ * inicial del materno, inicial del primer nombre— dicen además dónde acaban los
+ * apellidos en un nombre impreso sin coma.
+ */
 
 export interface RegistroAsistencia extends Sincronizable {
   alumno_id: Id

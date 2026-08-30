@@ -1,7 +1,8 @@
 # Estado del proyecto
 
-Actualizado el **2026-08-24**, con **treinta y seis commits escritos**: los treinta y
-uno del plan, más la Fase 7 —el alcance que trajo el uso real— descrita abajo.
+Actualizado el **2026-08-29**, con **cuarenta y dos commits escritos**: los treinta y
+uno del plan, la Fase 7 —el alcance que trajo el uso real—, `C37` y la **Fase 9**, que
+trajo la lista de verdad: Excel, CURP y varias hojas.
 
 Lo anterior, del 2026-08-21:
 la Fase 4 completa —C18 a C29, más los fixes C19b y C21c—, el alcance nuevo que la
@@ -35,7 +36,7 @@ este proyecto tiene mucho de lo primero.
 
 | Cómo | Qué cubre |
 |---|---|
-| **839 pruebas** (`npm test`) | El dominio y los casos de uso completos, los adaptadores sobre `fake-indexeddb`, y las reglas de dependencia de la arquitectura |
+| **958 pruebas** (`npm test`) | El dominio y los casos de uso completos, los adaptadores sobre `fake-indexeddb`, y las reglas de dependencia de la arquitectura |
 | **Navegador de escritorio** | Todas las pantallas, incluidas las de esta sesión: el cálculo de los tres criterios automáticos con los números comprobados a mano, el sorteo, el modo participación con su pulsación larga, los equipos, el resumen, los cumpleaños, el respaldo y la pantalla de la nube |
 | **Supabase real** | Que las dieciséis tablas existen con RLS, que con la clave publicable no se lee ni se escribe nada, que los registros están cerrados y que el login funciona |
 | **Nada** | La **subida y la restauración contra Supabase** —falta hacerlas una vez—, y **todo el comportamiento en el iPad**: instalación, gestos con el dedo, teclado, tiempos |
@@ -70,6 +71,7 @@ deshacer (D-022).
 | 4 · Evaluación | Ciclo, trimestres, criterios, rúbricas, cálculo | ✅ Terminada: C18–C24 y C27–C29 |
 | 7 · Datos reales | Fuera la semilla, y varios ciclos guardados | ✅ Terminada: C32–C36 |
 | 8 · Administrar el grupo | Alta, corrección y baja de alumnos | ✅ Terminada: C37 |
+| 9 · La lista real | Excel, CURP y varias hojas | ✅ Terminada: C38–C42 |
 
 ## Lo que existe y funciona
 
@@ -335,6 +337,37 @@ de asistencia sin borrar la fila, y reactivar.
 **Lo que conviene saber:** volver a cargar la lista con IA **revive** a un alumno dado
 de baja si viene en el archivo nuevo. Es correcto —si la escuela lo trae en la lista
 oficial, está inscrito— pero sorprende si no se espera.
+
+## Alcance nuevo: la lista real (2026-08-29)
+
+Lo pidió el usuario al ir a cargar la lista de verdad, y llegó con dos archivos reales
+que tiraron tres supuestos de `C10c` a la vez (D-027). Está todo hecho, C38 a C42.
+
+- **La lista puede ser un Excel**, y se abre **en el dispositivo, sin red y al
+  instante**: `services/xlsx.ts` descomprime el zip con `DecompressionStream` y lee el
+  XML con `DOMParser` —cero dependencias nuevas, contra los cuatrocientos kilobytes de
+  SheetJS—, y `application/hoja.ts` reconoce las columnas. Solo si no las reconoce se
+  manda la hoja como texto a la IA.
+- **El CURP entra al modelo**, porque la lista oficial **no imprime la fecha de
+  nacimiento** y la trae dentro. Con eso el aviso de cumpleaños (`C15`) funciona sin
+  teclear una sola fecha. Y sus cuatro primeras letras dicen dónde acaban los apellidos
+  en un nombre impreso sin coma, que es donde un modelo se equivoca.
+- **La lista se carga en varias hojas**, sumando en vez de reemplazar: treinta y siete
+  alumnos vienen en dos páginas. Una hoja que falla ya no tira las que sí se leyeron.
+
+Verificado con `npm test` (958 pruebas) y, para la parte que las pruebas puras no
+alcanzan, corriendo `leerHoja` **contra el archivo real**: 38 alumnos, encabezados en la
+fila 8, datos desde la 11 y el nombre bien partido.
+
+**Lo que falta de esto, y necesita el dispositivo o la nube:**
+
+1. La migración `20260829000000_alumnos_curp.sql` **no está aplicada** en Supabase. Hasta
+   que lo esté, subir alumnos con CURP lo rechazaría PostgREST.
+2. La pantalla de carga **no se ha visto en el iPad**: elegir varias fotos de la galería,
+   abrir un `.xlsx` desde Archivos, y comprobar que `DecompressionStream` está en ese
+   Safari —existe desde iPadOS 16.4—.
+3. Una foto real por la IA con el CURP: el esquema y las instrucciones cambiaron y solo
+   se han probado contra la nube simulada.
 
 ## Supuestos que siguen abiertos
 

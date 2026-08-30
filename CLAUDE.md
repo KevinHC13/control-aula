@@ -36,13 +36,13 @@ Existen y funcionan:
   `participacion.ts` y `respaldo.ts` —el archivo JSON con todo, C14—. `armarReporte` es la
   única función que decide entre recalcular y leer el snapshot: no duplicar esa
   decisión.
-- **`services/`**: `extraccion.ts`, `supabase.ts` y `sincronia.ts` —la única salida
-  a red del cliente—. El motor de sincronía tiene además su propio puerto
+- **`services/`**: `extraccion.ts`, `xlsx.ts` —abrir un Excel en el dispositivo, sin
+  dependencias—, `supabase.ts` y `sincronia.ts` —la única salida a red del cliente—. El motor de sincronía tiene además su propio puerto
   (`data/ports/sincronia.ts`): habla de filas y de la `outbox`, no de alumnos, y no
   vuelve a pasar por los casos de uso.
 - **`ui/`**: las cuatro pestañas, la de asistencia terminada (tira de días,
   calendario del mes, contador, filas, etiqueta del trimestre), Ajustes, la carga
-  de lista con IA, la configuración del ciclo escolar, los criterios con sus pesos,
+  de lista —Excel, PDF o fotos, en varias hojas—, la configuración del ciclo escolar, los criterios con sus pesos,
   las rúbricas, el cierre del trimestre, y `Calificaciones` con las actividades del
   trimestre, sus tres capturas —entregas, rúbrica alumno por alumno y el examen por
   aciertos con teclado numérico propio— y el reporte por alumno y por campo
@@ -69,9 +69,10 @@ Las dos **herramientas de aula** (D-021) están hechas: `C30` —el sorteo de
 participación, en la pantalla de asistencia— y `C31` —formar equipos, en la pestaña
 Grupo, que no guarda nada—.
 
-**Los treinta y un commits del plan están escritos**, y encima la **Fase 7**
+**Están escritos cuarenta y dos commits**: los treinta y uno del plan, la **Fase 7**
 —`C32` a `C36`, el alcance que trajo el uso real: fuera la semilla, y varios ciclos
-guardados con uno abierto (D-025)—. Lo que queda no es código —los tres pasos de Supabase, una pasada con
+guardados con uno abierto (D-025)—, `C37` —administrar alumnos— y la **Fase 9**
+—`C38` a `C42`, la lista real: Excel, CURP y varias hojas (D-027)—. Lo que queda no es código —los tres pasos de Supabase, una pasada con
 el iPad y dos validaciones con la usuaria—; está en `docs/ESTADO.md`.
 
 Encima entran dos **herramientas de aula** (D-021): `C30` —sortear quién participa,
@@ -258,6 +259,16 @@ y fórmulas en `docs/DATA-MODEL.md`; lo que no se negocia al escribir código:
   cerrados y **no borra nada**. `asistencia`, `bitacora` y `participaciones` no llevan
   ciclo: cuelgan de `alumno_id` y se atribuyen por fecha. `criterios` es catálogo global
   a propósito.
+- **La lista entra por Excel, PDF o fotos, y en varias hojas** (D-027). Un `.xlsx` se
+  abre **en el dispositivo y sin red** —`services/xlsx.ts` para el zip, `application/hoja.ts`
+  para reconocer las columnas—; la IA solo entra si los encabezados no se reconocen, o si
+  lo que llega es un PDF o una foto. Cada lectura **se suma** a lo revisado: la identidad
+  es el CURP y, si no lo hay, el número de lista, y lo ya escrito gana sobre lo nuevo.
+- **El CURP se guarda, y de él sale la fecha de nacimiento** (D-027, que revierte el «sin
+  CURP» de D-014): la lista oficial no la imprime. Decodificarlo vive en `domain/curp.ts`
+  y **nunca** se le pide a la IA. Lo impreso gana, el CURP rellena. Sus cuatro primeras
+  letras dicen además dónde acaban los apellidos en un nombre sin coma. **No es la
+  identidad del alumno**: fusionar sigue siendo por `[ciclo_id+numero_lista]`.
 - **Los alumnos se administran uno por uno** desde *Ajustes → Alumnos* (D-026), sin que
   eso quite a la carga con IA su papel de meter la lista completa. La baja es **suave y
   reversible**, no borra nada suyo, y un dado de baja **sigue apareciendo en los

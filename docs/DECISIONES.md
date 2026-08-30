@@ -373,6 +373,10 @@ importado en el siguiente arranque; por eso ahora solo corre con la base vacía.
 **Sin CURP.** No existe en el modelo y agregarla obligaría a `db.version(2)`
 sobre datos reales del salón. No hay nada hoy que la use.
 
+> **Revocado el 2026-08-29 por [D-027](#d-027--el-curp-entra-al-modelo-y-la-lista-puede-venir-en-excel-y-en-varias-hojas).**
+> Sí hay algo que la usa: la lista real no trae fecha de nacimiento, la trae dentro
+> del CURP.
+
 ---
 
 ## D-015 · La evaluación se modela con rúbricas, trimestres y pesos
@@ -951,3 +955,81 @@ entera. Un nombre a medio escribir no es un dato, y escribir en cada tecla llena
 a un alumno dado de baja si aparece en el archivo nuevo. Es el comportamiento correcto
 —si la escuela lo trae en la lista oficial, está inscrito— pero conviene saberlo antes
 de que sorprenda.
+
+---
+
+## D-027 · El CURP entra al modelo, y la lista puede venir en Excel y en varias hojas
+
+**Estado:** aceptada — 2026-08-29
+
+Lo pidió el usuario al ir a cargar la lista de verdad, y lo que llegó con la
+petición fueron dos archivos reales que tiraron tres supuestos de
+[D-014](#d-014--la-lista-puede-entrar-por-importación-asistida-por-ia) a la vez:
+
+| Se suponía | Es en realidad |
+|---|---|
+| Un PDF o una foto | También un **Excel**, que es lo que la escuela reparte |
+| La fecha de nacimiento está impresa | **No aparece**: viene dentro del CURP |
+| La lista cabe en un archivo | Treinta y siete alumnos en **«PÁGINA 1 DE …»** |
+
+### El CURP se guarda
+
+Revoca el «sin CURP» de D-014, que lo descartó por lo que costaba migrar y porque
+nada lo usaba. Ahora algo lo usa: es **el único sitio donde vive la fecha de
+nacimiento**, y de ella sale el aviso de cumpleaños (`C15`). Sin esto, estrenar la
+app costaba teclear treinta fechas a mano, que es lo mismo que no tenerlas.
+
+Leerlo **no es adivinar, es decodificar** —las posiciones 5 a 10 son `AAMMDD`, y el
+siglo sale de la homoclave—, así que vive en `domain/curp.ts` y no en el prompt: a un
+modelo no se le paga por hacer aritmética, ni se le da ocasión de inventarla. Al
+cargar la lista, **lo impreso gana y el CURP rellena**; nunca al revés.
+
+Lo que costó migrar resultó ser poco: **no hace falta `version(5)`**, porque Dexie solo
+versiona los índices y nadie busca alumnos por CURP. Sí hizo falta la columna en
+Supabase, o PostgREST rechazaría las filas que suba la outbox.
+
+**No es la identidad del alumno.** Fusionar la lista sigue siendo por
+`[ciclo_id+numero_lista]` (D-025): ese número es lo que conserva su asistencia y sus
+calificaciones, y cambiar de llave por un dato que un OCR puede leer mal sería mover
+historia de sitio en silencio.
+
+**Y de paso resuelve un problema viejo:** la lista imprime «ARGUELLES VILLANUEVA
+GERONIMO ALEJANDRO», sin coma, y dónde acaban los apellidos era una adivinanza que
+con «De León Cedillo» se falla. Las cuatro primeras letras del CURP son la inicial del
+paterno, su primera vocal interna, la inicial del materno y la del primer nombre: el
+corte está señalado. Si no cuadran, el nombre se deja como vino.
+
+### El Excel se abre en el dispositivo
+
+Un `.xlsx` es un zip con dos XML dentro, y el navegador sabe abrir las dos cosas
+—`DecompressionStream` y `DOMParser`—. Contra la alternativa, que era **cuatrocientos
+kilobytes de dependencia** en una PWA que se instala en un iPad para leer una hoja al
+año, con la versión de npm congelada y con vulnerabilidades conocidas.
+
+Y una hoja **ya es una tabla**: mandarla a un modelo para que redescubra lo que el
+archivo dice sería pagar segundos y conexión por nada. Se interpreta local
+(`application/hoja.ts`) buscando los encabezados en las primeras veinte filas —lo que
+resuelve el membrete de la escuela— y **solo si no se reconocen** se manda su texto a
+la IA. Un Excel se carga entonces **sin red y al instante**, que es como debería
+funcionar todo en esta app.
+
+Hay una ventaja que no se esperaba: la hoja trae el nombre **partido en tres columnas**
+—paterno, materno, nombres—, así que ahí el corte no hay ni que deducirlo.
+
+Lo que se pierde: es código nuestro, no de una librería probada, y solo lee `.xlsx`
+moderno. Un `.xls` viejo es otro formato binario y ahí queda la foto.
+
+### La lista se carga en varias hojas
+
+Cada lectura **se suma** a lo ya revisado en vez de reemplazarlo. La identidad es el
+CURP y, si no lo hay, el número de lista; **lo ya escrito gana** y lo nuevo solo rellena
+huecos, así que volver a fotografiar una hoja ya cargada no duplica a nadie ni pisa una
+corrección hecha a mano.
+
+Las fotos se leen **en serie**, no a la vez: son llamadas a un modelo y tres
+simultáneas son un rechazo por exceso de peticiones. Y una hoja que falla ya no tira las
+que sí se leyeron, que era lo que hacía hasta ahora.
+
+**Lo que cuesta:** la pantalla de carga dejó de tener un solo camino. Ya no es «elegir
+archivo y esperar», sino un estado que se acumula, y eso hay que verlo en el iPad con
+una lista de verdad antes de darlo por bueno.
