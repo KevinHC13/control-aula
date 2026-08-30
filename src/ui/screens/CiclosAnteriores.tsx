@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react'
 import { ciclosAnteriores, trimestresConsultables } from '@/application/historico'
 import type { CicloEnCurso } from '@/data/ports/evaluacion'
 import type { Trimestre } from '@/domain/entities'
-import { IconoAtras } from '@/ui/components/iconos'
-import { Button } from '@/ui/components/ui/button'
+import { Cabecera } from '@/ui/components/Cabecera'
+import { Cargando } from '@/ui/components/Cargando'
 import { ReporteDelTrimestre } from '@/ui/screens/ReporteDelTrimestre'
 
 /**
@@ -47,21 +47,12 @@ export function CiclosAnteriores({ alVolver }: { alVolver: () => void }) {
 
   return (
     <section aria-labelledby="titulo-anteriores" className="flex flex-col gap-4">
-      <header className="flex items-center gap-2">
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => (elegido ? setElegido(null) : alVolver())}
-          aria-label={elegido ? 'Volver a los ciclos' : 'Volver a Ajustes'}
-        >
-          <IconoAtras className="size-6" />
-        </Button>
-        <h1 id="titulo-anteriores" className="text-2xl font-bold text-tinta">
-          {elegido ? elegido.ciclo.nombre : 'Ciclos anteriores'}
-        </h1>
-      </header>
+      <Cabecera titulo={elegido ? elegido.ciclo.nombre : 'Ciclos anteriores'}
+        id="titulo-anteriores"
+        alVolver={() => (elegido ? setElegido(null) : alVolver())}
+        etiquetaVolver={elegido ? 'Volver a los ciclos' : 'Volver a Ajustes'} />
 
-      {ciclos === null && <p className="text-base text-tinta-2">Cargando…</p>}
+      {ciclos === null && <Cargando />}
 
       {ciclos !== null && ciclos.length === 0 && (
         <p className="text-base text-tinta-2">

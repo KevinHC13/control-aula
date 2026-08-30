@@ -4,6 +4,7 @@ import { sumarParticipacion } from '@/application/participacion'
 import { candidatosPresentes, sortearEntre } from '@/application/sorteo'
 import type { Trimestre } from '@/domain/entities'
 import type { Fecha } from '@/domain/values'
+import { Cargando } from '@/ui/components/Cargando'
 import { Button } from '@/ui/components/ui/button'
 import { useAsistenciaDelDia } from '@/ui/hooks/useAsistenciaDelDia'
 import { useParticipacionDelDia } from '@/ui/hooks/useParticipacionDelDia'
@@ -87,9 +88,9 @@ export function Sorteo({ fecha, trimestre }: { fecha: Fecha; trimestre: Trimestr
 
   if (cargando) {
     return (
-      <p className="py-8 text-center text-base text-tinta-2" aria-live="polite">
-        Cargando…
-      </p>
+      <div className="py-8 text-center">
+  <Cargando />
+</div>
     )
   }
 

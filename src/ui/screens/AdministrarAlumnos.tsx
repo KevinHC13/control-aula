@@ -13,7 +13,8 @@ import {
   separarBajas,
 } from '@/application/alumnos'
 import type { Alumno } from '@/domain/entities'
-import { IconoAtras } from '@/ui/components/iconos'
+import { Cabecera } from '@/ui/components/Cabecera'
+import { Cargando } from '@/ui/components/Cargando'
 import { Button } from '@/ui/components/ui/button'
 import { useAlumnosConBajas } from '@/ui/hooks/useAlumnosConBajas'
 import { cn } from '@/ui/lib/utils'
@@ -44,21 +45,14 @@ export function AdministrarAlumnos({ alVolver }: { alVolver: () => void }) {
 
   return (
     <section aria-labelledby="titulo-alumnos" className="flex flex-col gap-4">
-      <header className="flex items-center gap-2">
-        <Button size="icon" variant="ghost" onClick={alVolver} aria-label="Volver a Ajustes">
-          <IconoAtras className="size-6" />
-        </Button>
-        <h1 id="titulo-alumnos" className="text-2xl font-bold text-tinta">
-          Alumnos
-        </h1>
-      </header>
+      <Cabecera titulo="Alumnos" id="titulo-alumnos" alVolver={alVolver} etiquetaVolver="Volver a Ajustes" />
 
       <p className="text-base text-tinta-2">
         Para cargar el grupo entero conviene Ajustes → Cargar lista de alumnos. Aquí se
         agrega a quien llegó después, se corrige un nombre y se da de baja a quien se fue.
       </p>
 
-      {cargando && <p className="text-base text-tinta-2">Cargando…</p>}
+      {cargando && <Cargando />}
 
       {!cargando && (
         <>

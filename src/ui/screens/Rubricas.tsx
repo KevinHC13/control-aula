@@ -14,7 +14,9 @@ import {
 } from '@/application/evaluacion'
 import type { RubricaConCriterios } from '@/data/ports/evaluacion'
 import { NIVELES } from '@/domain/values'
-import { IconoAtras, IconoBasura } from '@/ui/components/iconos'
+import { Cabecera } from '@/ui/components/Cabecera'
+import { IconoBasura } from '@/ui/components/iconos'
+import { Cargando } from '@/ui/components/Cargando'
 import { Button } from '@/ui/components/ui/button'
 import { Input } from '@/ui/components/ui/input'
 import { useRubricas } from '@/ui/hooks/useRubricas'
@@ -51,9 +53,7 @@ export function Rubricas({ alVolver }: { alVolver: () => void }) {
     <Marco alVolver={alVolver} titulo="Rúbricas">
       <div className="flex flex-col gap-4 pt-4">
         {cargando ? (
-          <p className="text-base text-tinta-2" aria-live="polite">
-            Cargando…
-          </p>
+          <Cargando />
         ) : rubricas.length === 0 ? (
           <p className="text-base text-tinta-2">
             Todavía no hay rúbricas. Una rúbrica es la lista de aspectos que se observan al
@@ -92,14 +92,7 @@ function Marco({
 }) {
   return (
     <section aria-labelledby="titulo-rubricas" className="mx-auto flex max-w-2xl flex-col">
-      <header className="flex items-center gap-1">
-        <Button size="icon" variant="ghost" onClick={alVolver} aria-label="Volver">
-          <IconoAtras className="size-6" />
-        </Button>
-        <h1 id="titulo-rubricas" className="text-2xl font-bold text-tinta">
-          {titulo}
-        </h1>
-      </header>
+      <Cabecera titulo={titulo} id="titulo-rubricas" alVolver={alVolver} />
       {children}
     </section>
   )

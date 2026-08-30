@@ -5,8 +5,8 @@ import { CAMPOS_CON_NOMBRE } from '@/application/evaluacion'
 import { aportacionAlFinal, aportacionesQueSuman, comoCalificacion } from '@/domain/calculo'
 import type { Trimestre } from '@/domain/entities'
 import type { CampoFormativo } from '@/domain/values'
-import { IconoAtras } from '@/ui/components/iconos'
-import { Button } from '@/ui/components/ui/button'
+import { Cabecera } from '@/ui/components/Cabecera'
+import { Cargando } from '@/ui/components/Cargando'
 import { useReporteDeTrimestre } from '@/ui/hooks/useReporteDeTrimestre'
 import { cn } from '@/ui/lib/utils'
 
@@ -66,30 +66,16 @@ export function ReporteDelTrimestre({
 
   return (
     <section aria-labelledby="titulo-reporte" className="flex flex-col gap-4">
-      <header className="flex items-start gap-1">
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => (alumno ? setAbierto(null) : alVolver())}
-          aria-label={alumno ? 'Volver al grupo' : 'Volver'}
-        >
-          <IconoAtras className="size-6" />
-        </Button>
-        <div className="min-w-0 flex-1 pt-2">
-          <h1 id="titulo-reporte" className="text-2xl font-bold text-tinta">
-            Calificaciones
-          </h1>
-          <p className="text-apoyo text-tinta-2">
-            Trimestre {trimestre.numero} ·{' '}
-            {trimestre.estado === 'cerrado' ? 'cerrado' : 'en curso'}
-          </p>
-        </div>
-      </header>
+      <Cabecera
+        titulo="Calificaciones"
+        id="titulo-reporte"
+        alVolver={() => (alumno ? setAbierto(null) : alVolver())}
+        etiquetaVolver={alumno ? 'Volver al grupo' : 'Volver'}
+        detalle={`Trimestre ${trimestre.numero} · ${trimestre.estado === 'cerrado' ? 'cerrado' : 'en curso'}`}
+      />
 
       {cargando ? (
-        <p className="text-base text-tinta-2" aria-live="polite">
-          Cargando…
-        </p>
+        <Cargando />
       ) : reporte === null ? (
         <p className="text-base text-tinta-2">Este trimestre ya no existe.</p>
       ) : (

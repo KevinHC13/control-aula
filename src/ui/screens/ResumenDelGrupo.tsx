@@ -4,11 +4,12 @@ import { trimestreDe } from '@/application/evaluacion'
 import { UMBRALES } from '@/application/resumen'
 import { comoCalificacion } from '@/domain/calculo'
 import { fechaLocal } from '@/domain/fechas'
+import { SelectorTrimestre } from '@/ui/components/SelectorTrimestre'
+import { Cargando } from '@/ui/components/Cargando'
 import { FilaResumenAlumno } from '@/ui/components/FilaResumenAlumno'
 import { useCicloEnCurso } from '@/ui/hooks/useCicloEnCurso'
 import { useResumenDelGrupo } from '@/ui/hooks/useResumenDelGrupo'
 import { plural } from '@/ui/lib/plural'
-import { cn } from '@/ui/lib/utils'
 
 /**
  * El resumen del grupo: cómo va el trimestre, de un vistazo.
@@ -38,9 +39,7 @@ export function ResumenDelGrupo() {
 
   if (cargandoCiclo) {
     return (
-      <p className="text-base text-tinta-2" aria-live="polite">
-        Cargando…
-      </p>
+      <Cargando />
     )
   }
 
@@ -55,28 +54,11 @@ export function ResumenDelGrupo() {
 
   return (
     <div className="flex flex-col gap-4">
-      <nav aria-label="Trimestre" className="flex gap-2">
-        {ciclo.trimestres.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            aria-current={t.numero === numeroActivo}
-            onClick={() => setElegido(t.numero)}
-            className={cn(
-              'h-11 flex-1 rounded-md border px-3 text-base outline-none',
-              'foco',
-              t.numero === numeroActivo
-                ? 'border-marca bg-marca text-papel'
-                : 'border-linea text-tinta hover:bg-cuadro',
-            )}
-          >
-            T{t.numero}
-            {t.estado === 'cerrado' && (
-              <span className="block text-apoyo opacity-80">cerrado</span>
-            )}
-          </button>
-        ))}
-      </nav>
+      <SelectorTrimestre
+            trimestres={ciclo.trimestres}
+            activo={numeroActivo}
+            alElegir={setElegido}
+          />
 
       {/* Las dos cifras del grupo. Grandes y juntas: son las que se dicen en voz
           alta cuando alguien pregunta cómo va el salón. */}

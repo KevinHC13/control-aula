@@ -12,7 +12,7 @@ import {
   totalBorrado,
 } from '@/application/respaldo'
 import type { ConteoPorTabla } from '@/data/ports/respaldo'
-import { IconoAtras } from '@/ui/components/iconos'
+import { Cabecera } from '@/ui/components/Cabecera'
 import { Button } from '@/ui/components/ui/button'
 import { plural } from '@/ui/lib/plural'
 
@@ -125,14 +125,7 @@ export function Respaldo({ alVolver }: { alVolver: () => void }) {
 
   return (
     <section aria-labelledby="titulo-respaldo" className="flex flex-col gap-6">
-      <header className="flex items-center gap-2">
-        <Button size="icon" variant="ghost" onClick={alVolver} aria-label="Volver a Ajustes">
-          <IconoAtras className="size-6" />
-        </Button>
-        <h1 id="titulo-respaldo" className="text-2xl font-bold text-tinta">
-          Respaldo
-        </h1>
-      </header>
+      <Cabecera titulo="Respaldo" id="titulo-respaldo" alVolver={alVolver} etiquetaVolver="Volver a Ajustes" />
 
       <section aria-labelledby="titulo-guardar" className="flex flex-col gap-2">
         <h2 id="titulo-guardar" className="text-base font-medium text-tinta">

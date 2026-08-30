@@ -9,7 +9,10 @@ import {
 import { trimestreDe } from '@/application/evaluacion'
 import type { Reporte, Trimestre } from '@/domain/entities'
 import { fechaLocal } from '@/domain/fechas'
-import { IconoAtras, IconoBasura } from '@/ui/components/iconos'
+import { Cabecera } from '@/ui/components/Cabecera'
+import { SelectorTrimestre } from '@/ui/components/SelectorTrimestre'
+import { IconoBasura } from '@/ui/components/iconos'
+import { Cargando } from '@/ui/components/Cargando'
 import { Button } from '@/ui/components/ui/button'
 import { useBitacoraDelTrimestre } from '@/ui/hooks/useBitacoraDelTrimestre'
 import { useCicloEnCurso } from '@/ui/hooks/useCicloEnCurso'
@@ -72,9 +75,7 @@ export function Bitacora() {
       </div>
 
       {cargando ? (
-        <p className="text-base text-tinta-2" aria-live="polite">
-          Cargando…
-        </p>
+        <Cargando />
       ) : !ciclo ? (
         <p className="text-base text-tinta-2">
           Primero hay que registrar el ciclo escolar, en Grupo → Ajustes → Ciclo escolar.
@@ -82,25 +83,11 @@ export function Bitacora() {
         </p>
       ) : (
         <>
-          <nav aria-label="Trimestre" className="flex gap-2">
-            {ciclo.trimestres.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                aria-current={t.numero === numeroActivo}
-                onClick={() => setElegido(t.numero)}
-                className={cn(
-                  'h-11 flex-1 rounded-md border px-3 text-base outline-none',
-                  'foco',
-                  t.numero === numeroActivo
-                    ? 'border-marca bg-marca text-papel'
-                    : 'border-linea text-tinta hover:bg-cuadro',
-                )}
-              >
-                T{t.numero}
-              </button>
-            ))}
-          </nav>
+          <SelectorTrimestre
+            trimestres={ciclo.trimestres}
+            activo={numeroActivo}
+            alElegir={setElegido}
+          />
 
           <p className="text-apoyo text-tinta-2" aria-live="polite">
             {cargandoFilas
@@ -226,21 +213,18 @@ function DetalleAlumno({
 
   return (
     <section aria-labelledby="titulo-detalle" className="flex flex-col gap-4">
-      <header className="flex items-start gap-1">
-        <Button size="icon" variant="ghost" onClick={alVolver} aria-label="Volver">
-          <IconoAtras className="size-6" />
-        </Button>
-        <div className="min-w-0 flex-1 pt-2">
-          <h1 id="titulo-detalle" className="truncate text-2xl font-bold text-tinta">
-            {fila.alumno.nombre}
-          </h1>
-          <p className="text-apoyo text-tinta-2">
+      <Cabecera
+        titulo={fila.alumno.nombre}
+        id="titulo-detalle"
+        alVolver={alVolver}
+        detalle={
+          <>
             <span className="cifra">{fila.reportes.length}</span>{' '}
-            {fila.reportes.length === 1 ? 'reporte' : 'reportes'} en el trimestre{' '}
+            {plural(fila.reportes.length, 'reporte', 'reportes')} en el trimestre{' '}
             <span className="cifra">{trimestre.numero}</span>
-          </p>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       {enCurso ? (
         <div className="flex flex-col gap-2">

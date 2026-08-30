@@ -11,7 +11,8 @@ import {
   subirPendientes,
 } from '@/application/sincronia'
 import type { ConteoPorTabla } from '@/data/ports/respaldo'
-import { IconoAtras } from '@/ui/components/iconos'
+import { Cabecera } from '@/ui/components/Cabecera'
+import { Cargando } from '@/ui/components/Cargando'
 import { Button } from '@/ui/components/ui/button'
 import { Input } from '@/ui/components/ui/input'
 import { plural } from '@/ui/lib/plural'
@@ -112,14 +113,7 @@ export function Nube({ alVolver }: { alVolver: () => void }) {
 
   return (
     <section aria-labelledby="titulo-nube" className="flex flex-col gap-6">
-      <header className="flex items-center gap-2">
-        <Button size="icon" variant="ghost" onClick={alVolver} aria-label="Volver a Ajustes">
-          <IconoAtras className="size-6" />
-        </Button>
-        <h1 id="titulo-nube" className="text-2xl font-bold text-tinta">
-          Copia en la nube
-        </h1>
-      </header>
+      <Cabecera titulo="Copia en la nube" id="titulo-nube" alVolver={alVolver} etiquetaVolver="Volver a Ajustes" />
 
       {!hayNube() ? (
         <p className="text-base text-tinta-2">
@@ -128,9 +122,7 @@ export function Nube({ alVolver }: { alVolver: () => void }) {
           Respaldo.
         </p>
       ) : revisandoSesion ? (
-        <p className="text-base text-tinta-2" aria-live="polite">
-          Cargando…
-        </p>
+        <Cargando />
       ) : sesion === null ? (
         <form
           className="flex flex-col gap-3"

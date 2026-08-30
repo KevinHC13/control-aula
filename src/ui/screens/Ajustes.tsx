@@ -1,5 +1,4 @@
-import { IconoAtras } from '@/ui/components/iconos'
-import { Button } from '@/ui/components/ui/button'
+import { Cabecera } from '@/ui/components/Cabecera'
 
 /**
  * Lo que no cabe en el camino diario. Nació como lista con una sola opción justo
@@ -32,14 +31,7 @@ export function Ajustes({
 }) {
   return (
     <section aria-labelledby="titulo-ajustes" className="flex flex-col gap-4">
-      <header className="flex items-center gap-2">
-        <Button size="icon" variant="ghost" onClick={alVolver} aria-label="Volver a Grupo">
-          <IconoAtras className="size-6" />
-        </Button>
-        <h1 id="titulo-ajustes" className="text-2xl font-bold text-tinta">
-          Ajustes
-        </h1>
-      </header>
+      <Cabecera titulo="Ajustes" id="titulo-ajustes" alVolver={alVolver} etiquetaVolver="Volver a Grupo" />
 
       <ul className="divide-y divide-linea rounded-md border border-linea bg-papel">
         <li>

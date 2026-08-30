@@ -16,7 +16,7 @@ import type {
 } from '@/data/ports/evaluacion'
 import type { Trimestre } from '@/domain/entities'
 import type { CampoFormativo } from '@/domain/values'
-import { IconoAtras } from '@/ui/components/iconos'
+import { Cabecera } from '@/ui/components/Cabecera'
 import { Button } from '@/ui/components/ui/button'
 import { Input } from '@/ui/components/ui/input'
 import { useRubricas } from '@/ui/hooks/useRubricas'
@@ -107,14 +107,11 @@ export function FormaActividad({
 
   return (
     <section aria-labelledby="titulo-actividad" className="mx-auto flex max-w-2xl flex-col">
-      <header className="flex items-center gap-1">
-        <Button size="icon" variant="ghost" onClick={alVolver} aria-label="Volver">
-          <IconoAtras className="size-6" />
-        </Button>
-        <h1 id="titulo-actividad" className="text-2xl font-bold text-tinta">
-          {editando ? 'Actividad' : 'Nueva actividad'}
-        </h1>
-      </header>
+      <Cabecera
+        titulo={editando ? 'Actividad' : 'Nueva actividad'}
+        id="titulo-actividad"
+        alVolver={alVolver}
+      />
 
       <div className="flex flex-col gap-5 pt-4">
         <p className="text-base text-tinta-2">

@@ -4,8 +4,8 @@ import { abrirCaptura, alternarEntrega, contarEntregadas } from '@/application/e
 import { CAMPOS_CON_NOMBRE } from '@/application/evaluacion'
 import type { ActividadConEstado } from '@/data/ports/evaluacion'
 import type { Trimestre } from '@/domain/entities'
+import { Cabecera } from '@/ui/components/Cabecera'
 import { FilaEntregaAlumno } from '@/ui/components/FilaEntregaAlumno'
-import { IconoAtras } from '@/ui/components/iconos'
 import { Button } from '@/ui/components/ui/button'
 import { useEntregasDeActividad } from '@/ui/hooks/useEntregasDeActividad'
 
@@ -48,23 +48,22 @@ export function CapturaEntregas({
 
   return (
     <section aria-labelledby="titulo-captura" className="flex flex-col gap-4">
-      <header className="flex items-start gap-1">
-        <Button size="icon" variant="ghost" onClick={alVolver} aria-label="Volver">
-          <IconoAtras className="size-6" />
-        </Button>
-        <div className="min-w-0 flex-1 pt-2">
-          <h1 id="titulo-captura" className="truncate text-2xl font-bold text-tinta">
-            {actividad.actividad.nombre}
-          </h1>
-          <p className="text-apoyo text-tinta-2">
+      <Cabecera
+        titulo={actividad.actividad.nombre}
+        id="titulo-captura"
+        alVolver={alVolver}
+        detalle={
+          <>
             <span className="cifra">{actividad.actividad.fecha}</span>
             {campo && ` · ${campo}`}
-          </p>
-        </div>
-        <Button variant="ghost" onClick={alEditar} className="mt-1 shrink-0">
-          Editar
-        </Button>
-      </header>
+          </>
+        }
+        accion={
+          <Button variant="ghost" onClick={alEditar} className="mt-1">
+            Editar
+          </Button>
+        }
+      />
 
       <div>
         {/* Una sola cifra, no un tablero. aria-live porque al tocar una fila el

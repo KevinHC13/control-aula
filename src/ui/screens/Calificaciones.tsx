@@ -14,6 +14,8 @@ import type {
 } from '@/data/ports/evaluacion'
 import type { Trimestre } from '@/domain/entities'
 import { fechaLocal } from '@/domain/fechas'
+import { SelectorTrimestre } from '@/ui/components/SelectorTrimestre'
+import { Cargando } from '@/ui/components/Cargando'
 import { Button } from '@/ui/components/ui/button'
 import { useActividadesDelTrimestre } from '@/ui/hooks/useActividadesDelTrimestre'
 import { useCicloEnCurso } from '@/ui/hooks/useCicloEnCurso'
@@ -135,9 +137,7 @@ export function Calificaciones() {
       </h1>
 
       {cargando ? (
-        <p className="text-base text-tinta-2" aria-live="polite">
-          Cargando…
-        </p>
+        <Cargando />
       ) : !ciclo ? (
         <p className="text-base text-tinta-2">
           Primero hay que registrar el ciclo escolar, en Grupo → Ajustes → Ciclo escolar.
@@ -145,28 +145,11 @@ export function Calificaciones() {
         </p>
       ) : (
         <>
-          <nav aria-label="Trimestre" className="flex gap-2">
-            {ciclo.trimestres.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                aria-current={t.numero === numeroActivo}
-                onClick={() => setElegido(t.numero)}
-                className={cn(
-                  'h-11 flex-1 rounded-md border px-3 text-base outline-none',
-                  'foco',
-                  t.numero === numeroActivo
-                    ? 'border-marca bg-marca text-papel'
-                    : 'border-linea text-tinta hover:bg-cuadro',
-                )}
-              >
-                T{t.numero}
-                {t.estado === 'cerrado' && (
-                  <span className="block text-apoyo opacity-80">cerrado</span>
-                )}
-              </button>
-            ))}
-          </nav>
+          <SelectorTrimestre
+            trimestres={ciclo.trimestres}
+            activo={numeroActivo}
+            alElegir={setElegido}
+          />
 
           {grupos.length === 0 && examenes.length === 0 ? (
             <p className="text-base text-tinta-2">

@@ -16,7 +16,7 @@ import {
 import type { ExamenDelTrimestre } from '@/data/ports/evaluacion'
 import type { Trimestre } from '@/domain/entities'
 import type { CampoFormativo } from '@/domain/values'
-import { IconoAtras } from '@/ui/components/iconos'
+import { Cabecera } from '@/ui/components/Cabecera'
 import { TecladoNumerico } from '@/ui/components/TecladoNumerico'
 import { Button } from '@/ui/components/ui/button'
 import { useResultadosDeExamen } from '@/ui/hooks/useResultadosDeExamen'
@@ -100,37 +100,33 @@ export function CapturaExamen({
 
   return (
     <section aria-labelledby="titulo-examen" className="flex flex-col gap-4">
-      <header className="flex items-start gap-1">
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => (indice === null ? alVolver() : abrirAlumno(null))}
-          aria-label={indice === null ? 'Volver' : 'Volver a la lista'}
-        >
-          <IconoAtras className="size-6" />
-        </Button>
-        <div className="min-w-0 flex-1 pt-2">
-          <h1 id="titulo-examen" className="truncate text-2xl font-bold text-tinta">
-            {examen.criterio.nombre}
-          </h1>
-          <p className="text-apoyo text-tinta-2">
-            T{trimestre.numero} · <span className="cifra">{examen.ponderado.peso}%</span>
+      <Cabecera
+        titulo={examen.criterio.nombre}
+        id="titulo-examen"
+        alVolver={() => (indice === null ? alVolver() : abrirAlumno(null))}
+        etiquetaVolver={indice === null ? 'Volver' : 'Volver a la lista'}
+        detalle={
+          <>
+            Trimestre {trimestre.numero} ·{' '}
+            <span className="cifra">{examen.ponderado.peso}%</span>
             {listo && ` · ${campos.length} de 4 campos`}
-          </p>
-        </div>
-        {listo && abierto && borrador === null && indice === null && (
-          <Button
-            variant="ghost"
-            className="mt-1 shrink-0"
-            onClick={() => {
-              setBorrador(examen.config?.preguntas ?? {})
-              setProblema(null)
-            }}
-          >
-            Preguntas
-          </Button>
-        )}
-      </header>
+          </>
+        }
+        accion={
+          listo && abierto && borrador === null && indice === null ? (
+            <Button
+              variant="ghost"
+              className="mt-1"
+              onClick={() => {
+                setBorrador(examen.config?.preguntas ?? {})
+                setProblema(null)
+              }}
+            >
+              Preguntas
+            </Button>
+          ) : undefined
+        }
+      />
 
       {!abierto && (
         <p className="text-apoyo text-tinta-2">

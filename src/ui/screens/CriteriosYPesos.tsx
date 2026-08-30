@@ -18,7 +18,10 @@ import type { CriterioDelTrimestre } from '@/data/ports/evaluacion'
 import type { CriterioTrimestre, TipoCriterio, Trimestre } from '@/domain/entities'
 import { esAutomatico, parametrosCompletos } from '@/domain/evaluacion'
 import { fechaLocal } from '@/domain/fechas'
-import { IconoAtras, IconoBasura } from '@/ui/components/iconos'
+import { SelectorTrimestre } from '@/ui/components/SelectorTrimestre'
+import { Cabecera } from '@/ui/components/Cabecera'
+import { IconoBasura } from '@/ui/components/iconos'
+import { Cargando } from '@/ui/components/Cargando'
 import { Button } from '@/ui/components/ui/button'
 import { Input } from '@/ui/components/ui/input'
 import { useCicloEnCurso } from '@/ui/hooks/useCicloEnCurso'
@@ -57,9 +60,9 @@ export function CriteriosYPesos({ alVolver }: { alVolver: () => void }) {
   if (cargando) {
     return (
       <Marco alVolver={alVolver}>
-        <p className="pt-6 text-base text-tinta-2" aria-live="polite">
-          Cargando…
-        </p>
+        <div className="pt-6">
+  <Cargando />
+</div>
       </Marco>
     )
   }
@@ -81,28 +84,11 @@ export function CriteriosYPesos({ alVolver }: { alVolver: () => void }) {
   return (
     <Marco alVolver={alVolver}>
       <div className="flex flex-col gap-4 pt-4">
-        <nav aria-label="Trimestre" className="flex gap-2">
-          {ciclo.trimestres.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              aria-current={t.numero === numeroActivo}
-              onClick={() => setElegido(t.numero)}
-              className={cn(
-                'h-11 flex-1 rounded-md border px-3 text-base outline-none',
-                'foco',
-                t.numero === numeroActivo
-                  ? 'border-marca bg-marca text-papel'
-                  : 'border-linea text-tinta hover:bg-cuadro',
-              )}
-            >
-              T{t.numero}
-              {t.estado === 'cerrado' && (
-                <span className="block text-apoyo opacity-80">cerrado</span>
-              )}
-            </button>
-          ))}
-        </nav>
+        <SelectorTrimestre
+            trimestres={ciclo.trimestres}
+            activo={numeroActivo}
+            alElegir={setElegido}
+          />
 
         {trimestre && <Reparto trimestre={trimestre} criterios={esquema?.criterios ?? []} />}
 
@@ -156,14 +142,12 @@ export function CriteriosYPesos({ alVolver }: { alVolver: () => void }) {
 function Marco({ alVolver, children }: { alVolver: () => void; children: React.ReactNode }) {
   return (
     <section aria-labelledby="titulo-criterios" className="mx-auto flex max-w-2xl flex-col">
-      <header className="flex items-center gap-1">
-        <Button size="icon" variant="ghost" onClick={alVolver} aria-label="Volver a Ajustes">
-          <IconoAtras className="size-6" />
-        </Button>
-        <h1 id="titulo-criterios" className="text-2xl font-bold text-tinta">
-          Criterios y pesos
-        </h1>
-      </header>
+      <Cabecera
+        titulo="Criterios y pesos"
+        id="titulo-criterios"
+        alVolver={alVolver}
+        etiquetaVolver="Volver a Ajustes"
+      />
       {children}
     </section>
   )

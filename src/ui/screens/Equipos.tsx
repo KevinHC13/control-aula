@@ -6,7 +6,7 @@ import {
   formarEquipos,
   type ModoDeReparto,
 } from '@/application/equipos'
-import { IconoAtras } from '@/ui/components/iconos'
+import { Cabecera } from '@/ui/components/Cabecera'
 import { Button } from '@/ui/components/ui/button'
 import { Input } from '@/ui/components/ui/input'
 import { useAsistenciaDelDia } from '@/ui/hooks/useAsistenciaDelDia'
@@ -67,14 +67,7 @@ export function Equipos({ alVolver }: { alVolver: () => void }) {
 
   return (
     <section aria-labelledby="titulo-equipos" className="flex flex-col gap-4">
-      <header className="flex items-center gap-2">
-        <Button size="icon" variant="ghost" onClick={alVolver} aria-label="Volver a Grupo">
-          <IconoAtras className="size-6" />
-        </Button>
-        <h1 id="titulo-equipos" className="text-2xl font-bold text-tinta">
-          Equipos
-        </h1>
-      </header>
+      <Cabecera titulo="Equipos" id="titulo-equipos" alVolver={alVolver} etiquetaVolver="Volver a Grupo" />
 
       <div className="flex flex-col gap-3">
         <div role="group" aria-label="Cómo repartir" className="flex gap-2">

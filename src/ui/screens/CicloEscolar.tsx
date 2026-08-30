@@ -16,7 +16,8 @@ import {
 } from '@/application/evaluacion'
 import type { CicloEnCurso } from '@/data/ports/evaluacion'
 import { fechaLocal } from '@/domain/fechas'
-import { IconoAtras } from '@/ui/components/iconos'
+import { Cabecera } from '@/ui/components/Cabecera'
+import { Cargando } from '@/ui/components/Cargando'
 import { Button } from '@/ui/components/ui/button'
 import { Input } from '@/ui/components/ui/input'
 import { useCicloEnCurso } from '@/ui/hooks/useCicloEnCurso'
@@ -41,9 +42,9 @@ export function CicloEscolar({ alVolver }: { alVolver: () => void }) {
   if (cargando) {
     return (
       <Marco alVolver={alVolver}>
-        <p className="pt-6 text-base text-tinta-2" aria-live="polite">
-          Cargando…
-        </p>
+        <div className="pt-6">
+  <Cargando />
+</div>
       </Marco>
     )
   }
@@ -68,14 +69,7 @@ export function CicloEscolar({ alVolver }: { alVolver: () => void }) {
 function Marco({ alVolver, children }: { alVolver: () => void; children: React.ReactNode }) {
   return (
     <section aria-labelledby="titulo-ciclo" className="mx-auto flex max-w-2xl flex-col">
-      <header className="flex items-center gap-1">
-        <Button size="icon" variant="ghost" onClick={alVolver} aria-label="Volver a Ajustes">
-          <IconoAtras className="size-6" />
-        </Button>
-        <h1 id="titulo-ciclo" className="text-2xl font-bold text-tinta">
-          Ciclo escolar
-        </h1>
-      </header>
+      <Cabecera titulo="Ciclo escolar" id="titulo-ciclo" alVolver={alVolver} etiquetaVolver="Volver a Ajustes" />
       {children}
     </section>
   )

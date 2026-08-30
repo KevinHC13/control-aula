@@ -1,6 +1,8 @@
 import { lazy, Suspense, useState } from 'react'
 
+import { Cabecera } from '@/ui/components/Cabecera'
 import { IconoEngrane } from '@/ui/components/iconos'
+import { Cargando } from '@/ui/components/Cargando'
 import { Button } from '@/ui/components/ui/button'
 import { AdministrarAlumnos } from '@/ui/screens/AdministrarAlumnos'
 import { Ajustes } from '@/ui/screens/Ajustes'
@@ -90,9 +92,7 @@ export function Grupo() {
     return (
       <Suspense
         fallback={
-          <p className="text-base text-tinta-2" aria-live="polite">
-            Cargando…
-          </p>
+          <Cargando />
         }
       >
         <Nube alVolver={() => setVista('ajustes')} />
@@ -108,19 +108,20 @@ export function Grupo() {
 
   return (
     <section aria-labelledby="titulo-grupo" className="flex flex-col gap-4">
-      <header className="flex items-center justify-between">
-        <h1 id="titulo-grupo" className="text-2xl font-bold text-tinta">
-          Grupo
-        </h1>
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => setVista('ajustes')}
-          aria-label="Ajustes"
-        >
-          <IconoEngrane className="size-6" />
-        </Button>
-      </header>
+      <Cabecera
+        titulo="Grupo"
+        id="titulo-grupo"
+        accion={
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => setVista('ajustes')}
+            aria-label="Ajustes"
+          >
+            <IconoEngrane className="size-6" />
+          </Button>
+        }
+      />
 
       {/* Los equipos entran aquí porque son una herramienta sobre la composición
           del salón, no sobre el día. Van arriba del resumen porque se usan en

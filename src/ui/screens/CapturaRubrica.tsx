@@ -12,7 +12,7 @@ import type { ActividadConEstado } from '@/data/ports/evaluacion'
 import type { Trimestre } from '@/domain/entities'
 import { NIVELES } from '@/domain/values'
 import type { Nivel } from '@/domain/values'
-import { IconoAtras } from '@/ui/components/iconos'
+import { Cabecera } from '@/ui/components/Cabecera'
 import { Button } from '@/ui/components/ui/button'
 import { useEvaluacionesDeActividad } from '@/ui/hooks/useEvaluacionesDeActividad'
 import { useRubricas } from '@/ui/hooks/useRubricas'
@@ -74,31 +74,26 @@ export function CapturaRubrica({
 
   return (
     <section aria-labelledby="titulo-rubrica" className="flex flex-col gap-4">
-      <header className="flex items-start gap-1">
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => (indice === null ? alVolver() : setIndice(null))}
-          aria-label={indice === null ? 'Volver' : 'Volver a la lista'}
-        >
-          <IconoAtras className="size-6" />
-        </Button>
-        <div className="min-w-0 flex-1 pt-2">
-          <h1 id="titulo-rubrica" className="truncate text-2xl font-bold text-tinta">
-            {actividad.actividad.nombre}
-          </h1>
-          <p className="text-apoyo text-tinta-2">
+      <Cabecera
+        titulo={actividad.actividad.nombre}
+        id="titulo-rubrica"
+        alVolver={() => (indice === null ? alVolver() : setIndice(null))}
+        etiquetaVolver={indice === null ? 'Volver' : 'Volver a la lista'}
+        detalle={
+          <>
             <span className="cifra">{actividad.actividad.fecha}</span>
             {campo && ` · ${campo}`}
             {rubrica && ` · ${rubrica.rubrica.nombre}`}
-          </p>
-        </div>
-        {indice === null && (
-          <Button variant="ghost" onClick={alEditar} className="mt-1 shrink-0">
-            Editar
-          </Button>
-        )}
-      </header>
+          </>
+        }
+        accion={
+          indice === null ? (
+            <Button variant="ghost" onClick={alEditar} className="mt-1">
+              Editar
+            </Button>
+          ) : undefined
+        }
+      />
 
       {/* El progreso, en la misma forma que el contador de presentes: una cifra,
           no un tablero. aria-live porque cambia al tocar un nivel, sin que nada

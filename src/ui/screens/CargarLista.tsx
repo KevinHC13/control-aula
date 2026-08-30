@@ -10,8 +10,8 @@ import {
 } from '@/application/importacion'
 import { type AlumnoExtraido, extraerLista, extraerListaDeTexto } from '@/services/extraccion'
 import { leerHoja } from '@/services/xlsx'
+import { Cabecera } from '@/ui/components/Cabecera'
 import { FilaRevision } from '@/ui/components/FilaRevision'
-import { IconoAtras } from '@/ui/components/iconos'
 import { Button } from '@/ui/components/ui/button'
 import { cn } from '@/ui/lib/utils'
 
@@ -133,18 +133,13 @@ export function CargarLista({ alVolver }: { alVolver: () => void }) {
 
   return (
     <section aria-labelledby="titulo-cargar" className="mx-auto flex max-w-2xl flex-col">
-      <header
-        className={cn(
-          'sticky top-0 z-10 -mx-4 flex items-center gap-1 border-b border-linea bg-papel px-4 pb-2',
-        )}
-      >
-        <Button size="icon" variant="ghost" onClick={alVolver} aria-label="Volver a Ajustes">
-          <IconoAtras className="size-6" />
-        </Button>
-        <h1 id="titulo-cargar" className="text-2xl font-bold text-tinta">
-          Cargar lista
-        </h1>
-      </header>
+      <Cabecera
+        titulo="Cargar lista"
+        id="titulo-cargar"
+        alVolver={alVolver}
+        etiquetaVolver="Volver a Ajustes"
+        pegajosa
+      />
 
       {(estado === 'inicio' || (estado === 'error' && !hayAlgoLeido)) && (
         <div className="flex flex-col gap-3 pt-6">
