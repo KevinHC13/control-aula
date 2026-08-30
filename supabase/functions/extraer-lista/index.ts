@@ -39,6 +39,12 @@ Para cada alumno:
 
 No inventes alumnos ni completes datos que no estén en el documento.`
 
+/** Lo que se le agrega cuando lo que llega es una hoja de cálculo en texto. */
+const INSTRUCCIONES_TEXTO = `${INSTRUCCIONES}
+
+El documento viene como el texto de una hoja de cálculo, con las columnas separadas por
+tabuladores y una fila por línea. Las primeras líneas suelen ser membrete de la escuela.`
+
 const ESQUEMA = {
   type: 'OBJECT',
   properties: {
@@ -79,23 +85,38 @@ Deno.serve(async (req: Request) => {
   const clave = Deno.env.get('GEMINI_API_KEY')
   if (!clave) return responder({ error: 'El servidor no tiene configurada la clave de Gemini' }, 500)
 
-  let cuerpo: { mimeType?: unknown; datos?: unknown }
+  let cuerpo: { mimeType?: unknown; datos?: unknown; texto?: unknown }
   try {
     cuerpo = await req.json()
   } catch {
     return responder({ error: 'El cuerpo de la petición no es JSON' }, 400)
   }
 
-  const { mimeType, datos } = cuerpo
-  if (typeof mimeType !== 'string' || !MIMES_PERMITIDOS.has(mimeType)) {
-    return responder({ error: 'Ese tipo de archivo no se puede leer. Usa un PDF o una foto.' }, 415)
+  // Dos formas de llegar: un archivo en base64 —PDF o foto— o el texto de una
+  // hoja de cálculo, que el dispositivo ya abrió y no supo interpretar solo.
+  const { mimeType, datos, texto: hoja } = cuerpo
+  const esTexto = typeof hoja === 'string'
+
+  if (esTexto) {
+    if (hoja.length === 0) return responder({ error: 'No llegó el archivo' }, 400)
+    if (hoja.length > MAX_BASE64) {
+      return responder({ error: 'El archivo es muy grande.' }, 413)
+    }
+  } else {
+    if (typeof mimeType !== 'string' || !MIMES_PERMITIDOS.has(mimeType)) {
+      return responder({ error: 'Ese tipo de archivo no se puede leer. Usa un PDF o una foto.' }, 415)
+    }
+    if (typeof datos !== 'string' || datos.length === 0) {
+      return responder({ error: 'No llegó el archivo' }, 400)
+    }
+    if (datos.length > MAX_BASE64) {
+      return responder({ error: 'El archivo es muy grande. Prueba con una foto de menos resolución.' }, 413)
+    }
   }
-  if (typeof datos !== 'string' || datos.length === 0) {
-    return responder({ error: 'No llegó el archivo' }, 400)
-  }
-  if (datos.length > MAX_BASE64) {
-    return responder({ error: 'El archivo es muy grande. Prueba con una foto de menos resolución.' }, 413)
-  }
+
+  const partes = esTexto
+    ? [{ text: INSTRUCCIONES_TEXTO + '\n\n' + hoja }]
+    : [{ inlineData: { mimeType, data: datos } }, { text: INSTRUCCIONES }]
 
   let respuesta: Response
   try {
@@ -105,9 +126,7 @@ Deno.serve(async (req: Request) => {
         method: 'POST',
         headers: { 'x-goog-api-key': clave, 'content-type': 'application/json' },
         body: JSON.stringify({
-          contents: [
-            { parts: [{ inlineData: { mimeType, data: datos } }, { text: INSTRUCCIONES }] },
-          ],
+          contents: [{ parts: partes }],
           generationConfig: {
             responseMimeType: 'application/json',
             responseSchema: ESQUEMA,

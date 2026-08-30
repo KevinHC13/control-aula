@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 
+import { interpretarHoja } from '@/application/hoja'
 import {
   type FilaImportada,
   fusionarHojas,
@@ -7,13 +8,23 @@ import {
   normalizarExtraccion,
   revalidar,
 } from '@/application/importacion'
-import { extraerLista } from '@/services/extraccion'
+import { type AlumnoExtraido, extraerLista, extraerListaDeTexto } from '@/services/extraccion'
+import { leerHoja } from '@/services/xlsx'
 import { FilaRevision } from '@/ui/components/FilaRevision'
 import { IconoAtras } from '@/ui/components/iconos'
 import { Button } from '@/ui/components/ui/button'
 import { cn } from '@/ui/lib/utils'
 
 type Estado = 'inicio' | 'leyendo' | 'revisando' | 'listo' | 'error'
+
+/** Lo que se puede elegir. El `.xlsx` va también por extensión: iPadOS no
+    siempre le pone el tipo largo de Office a un archivo que viene de Archivos. */
+const ACEPTADOS = [
+  'application/pdf',
+  'image/*',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  '.xlsx',
+].join(',')
 
 /** Qué se está leyendo, para poder decir «hoja 2 de 3» y no solo «espere». */
 interface Avance {
@@ -70,7 +81,7 @@ export function CargarLista({ alVolver }: { alVolver: () => void }) {
       setAvance({ hoja: i + 1, de: elegidos.length })
 
       try {
-        const crudo = await extraerLista(archivo, control.signal)
+        const crudo = await leerArchivo(archivo, control.signal)
         const leidas = normalizarExtraccion(crudo)
         setFilas((previas) => (previas.length === 0 ? leidas : fusionarHojas(previas, leidas)))
         setHojas((previas) => previas + 1)
@@ -139,10 +150,10 @@ export function CargarLista({ alVolver }: { alVolver: () => void }) {
         <div className="flex flex-col gap-3 pt-6">
           {estado === 'error' && <Aviso>{error}</Aviso>}
           <p className="text-base text-tinta-2">
-            Seleccione la lista oficial del grupo en PDF, o una fotografía de ella. Los
-            nombres se leen automáticamente y después se pueden corregir. Si la lista trae
-            CURP, la fecha de cumpleaños sale de ahí sola. Este es el único paso que
-            necesita conexión a internet.
+            Seleccione la lista oficial del grupo: un PDF, un archivo de Excel, o una
+            fotografía de ella. Los nombres se leen automáticamente y después se pueden
+            corregir. Si la lista trae CURP, la fecha de cumpleaños sale de ahí sola. Con
+            un archivo de Excel no hace falta conexión; con un PDF o una foto, sí.
           </p>
           <p className="text-[13px] text-tinta-2">
             Si la lista viene en varias páginas, puede elegirlas todas de una vez, o
@@ -151,7 +162,7 @@ export function CargarLista({ alVolver }: { alVolver: () => void }) {
           <div className="flex flex-col gap-2 pt-2">
             <ElegirArchivo
               etiqueta={archivos.length > 0 ? 'Elegir otro archivo' : 'Elegir archivo'}
-              accept="application/pdf,image/*"
+              accept={ACEPTADOS}
               multiple
               alElegir={leer}
             />
@@ -252,7 +263,7 @@ export function CargarLista({ alVolver }: { alVolver: () => void }) {
             <div className="flex flex-wrap gap-2">
               <ElegirArchivo
                 etiqueta="Agregar otra hoja"
-                accept="application/pdf,image/*"
+                accept={ACEPTADOS}
                 multiple
                 variante="secundaria"
                 alElegir={leer}
@@ -298,6 +309,29 @@ export function CargarLista({ alVolver }: { alVolver: () => void }) {
       )}
     </section>
   )
+}
+
+const ES_EXCEL = /\.xlsx$/i
+
+/**
+ * De archivo a alumnos, por el camino más barato que sirva.
+ *
+ * Un Excel se abre **en el dispositivo**: sus columnas ya vienen con su
+ * encabezado escrito, así que no hay nada que descubrir y la lista aparece al
+ * instante, sin red. Solo si esa hoja no se sabe leer —otra escuela, otro
+ * formato— se manda su texto a la IA, que para eso es buena.
+ *
+ * Un PDF o una foto van directo a la IA, como siempre.
+ */
+async function leerArchivo(archivo: File, señal: AbortSignal): Promise<AlumnoExtraido[]> {
+  if (!ES_EXCEL.test(archivo.name)) return extraerLista(archivo, señal)
+
+  const celdas = await leerHoja(archivo)
+  const alumnos = interpretarHoja(celdas)
+  if (alumnos !== null) return alumnos
+
+  const texto = celdas.map((fila) => (fila ?? []).join('\t')).join('\n')
+  return extraerListaDeTexto(texto, señal)
 }
 
 /** El mismo aviso rojo en los dos sitios donde puede aparecer un error. */

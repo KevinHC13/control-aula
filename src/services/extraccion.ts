@@ -50,14 +50,34 @@ export async function extraerLista(
   archivo: File,
   señal?: AbortSignal,
 ): Promise<AlumnoExtraido[]> {
+  return pedir({ mimeType: archivo.type, datos: await aBase64(archivo) }, señal)
+}
+
+/**
+ * Lo mismo, pero para una hoja de cálculo que el dispositivo ya abrió y no supo
+ * interpretar por su cuenta (`application/hoja.ts`).
+ *
+ * Va como texto y no como archivo porque el modelo no lee el binario de Excel, y
+ * porque para entonces el zip ya se descomprimió aquí: lo que queda por resolver
+ * no es el formato, es dónde están las columnas.
+ */
+export async function extraerListaDeTexto(
+  texto: string,
+  señal?: AbortSignal,
+): Promise<AlumnoExtraido[]> {
+  return pedir({ texto }, señal)
+}
+
+async function pedir(
+  cuerpo: Record<string, string>,
+  señal?: AbortSignal,
+): Promise<AlumnoExtraido[]> {
   if (!URL_SUPABASE || !CLAVE_SUPABASE) {
     throw new Error('La app no tiene configurado el servidor de lectura')
   }
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
     throw new Error('Leer la lista necesita conexión. Conéctate e inténtalo de nuevo.')
   }
-
-  const datos = await aBase64(archivo)
 
   let respuesta: Response
   try {
@@ -68,7 +88,7 @@ export async function extraerLista(
         apikey: CLAVE_SUPABASE,
         'content-type': 'application/json',
       },
-      body: JSON.stringify({ mimeType: archivo.type, datos }),
+      body: JSON.stringify(cuerpo),
       signal: señal,
     })
   } catch (error) {
@@ -78,16 +98,16 @@ export async function extraerLista(
     })
   }
 
-  const cuerpo: { alumnos?: AlumnoExtraido[]; error?: string } = await respuesta
+  const leido: { alumnos?: AlumnoExtraido[]; error?: string } = await respuesta
     .json()
     .catch(() => ({}))
 
   if (!respuesta.ok) {
-    throw new Error(cuerpo.error ?? 'No se pudo leer el archivo')
+    throw new Error(leido.error ?? 'No se pudo leer el archivo')
   }
-  if (!Array.isArray(cuerpo.alumnos)) {
+  if (!Array.isArray(leido.alumnos)) {
     throw new Error('No se reconoció ninguna lista en el archivo')
   }
 
-  return cuerpo.alumnos
+  return leido.alumnos
 }
