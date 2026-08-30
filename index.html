@@ -16,6 +16,26 @@
     <meta name="theme-color" content="#1B4F9C" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Palomita</title>
+    <!--
+      La apariencia se aplica antes de pintar. Si esto esperara a que React monte,
+      quien eligió el modo oscuro vería un destello blanco en cada arranque, y quien
+      subió el tamaño de texto vería la interfaz saltar de tamaño. Son ocho líneas
+      que no pueden fallar: cualquier problema deja la apariencia de siempre.
+    -->
+    <script>
+      try {
+        var a = JSON.parse(localStorage.getItem('palomita.apariencia') || '{}')
+        var r = document.documentElement
+        var oscuro =
+          a.modo === 'oscuro' ||
+          (a.modo !== 'claro' && matchMedia('(prefers-color-scheme: dark)').matches)
+        r.dataset.tema = oscuro ? 'oscuro' : 'claro'
+        r.dataset.cuadricula = a.cuadricula === false ? 'no' : 'si'
+        r.style.colorScheme = oscuro ? 'dark' : 'light'
+        if (a.tamano === 'grande') r.style.fontSize = '112.5%'
+        if (a.tamano === 'mayor') r.style.fontSize = '125%'
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -4,6 +4,7 @@ import { Asistencia } from '@/ui/screens/Asistencia'
 import { Bitacora } from '@/ui/screens/Bitacora'
 import { Calificaciones } from '@/ui/screens/Calificaciones'
 import { Grupo } from '@/ui/screens/Grupo'
+import { useTema } from '@/ui/hooks/useTema'
 import { type Pestana, useInterfaz } from '@/ui/store/interfaz'
 
 /**
@@ -19,11 +20,17 @@ const PANTALLAS: Record<Pestana, () => React.JSX.Element> = {
 }
 
 export function App() {
+  // Una sola vez y aquí arriba: lleva al documento el color, el modo, el tamaño de
+  // texto y la cuadrícula que la usuaria haya elegido.
+  useTema()
+
   const pestanaActiva = useInterfaz((s) => s.pestanaActiva)
   const Pantalla = PANTALLAS[pestanaActiva]
 
   return (
-    <div className="min-h-dvh bg-papel">
+    /* Sin fondo propio: el color y la cuadrícula los pinta `body`, y taparlos aquí
+       con un `bg-papel` dejaría la retícula debajo de un lienzo opaco. */
+    <div className="min-h-dvh">
       {/* pb-24 reserva el alto de la barra fija: sin esto la última fila de la
           lista queda tapada justo cuando hay 30 alumnos. */}
       <main className="px-4 pt-6 pb-24">

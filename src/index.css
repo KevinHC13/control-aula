@@ -94,6 +94,33 @@
   --radius: 0.625rem;
 }
 
+/* ---------------------------------------------------------------------------
+   Modo oscuro.
+
+   `data-tema` lo pone `useTema` en la raíz, y siempre con un valor: nunca se
+   depende solo de `prefers-color-scheme`, porque la usuaria puede pedir claro con
+   el iPad en oscuro y al revés.
+
+   Los cuatro colores del bicolor **se aclaran**. No es cosmético: `#c3382e` sobre
+   `#15181b` se queda en 3.1:1 y una falta dejaría de leerse, que es justo el dato
+   que la columna existe para dar. Se conserva el tono —rojo sigue siendo rojo— y
+   se sube la luminosidad hasta pasar 4.5:1 contra el fondo.
+
+   `--color-cuadro` es más claro que el papel aquí, al revés que en claro: sobre
+   fondo oscuro, una superficie que destaca es una que tiene **más** luz, no menos.
+   --------------------------------------------------------------------------- */
+:root[data-tema='oscuro'] {
+  --color-azul: #7ba7e8;
+  --color-rojo: #f08a80;
+  --color-ambar: #e0a34e;
+  --color-verde: #6cc0a4;
+  --color-papel: #15181b;
+  --color-cuadro: #23282d;
+  --color-linea: #333940;
+  --color-tinta: #eceef0;
+  --color-tinta-2: #9aa3ac;
+}
+
 /* Variables semánticas de shadcn, todas apuntadas a un token del bicolor.
    No agregar una variable de shadcn sin mapearla aquí. */
 :root {
@@ -190,8 +217,46 @@
     @apply border-border outline-ring/50;
   }
 
+  /* La cuadrícula de cuaderno, 28 px: la referencia al artefacto que la aplicación
+     reemplaza (docs/UX.md). Se dibuja con gradientes y no con una imagen para que
+     siga al color del tema y no pese un solo byte del precaché.
+
+     `background-attachment: fixed` la deja quieta al desplazar, como el papel de un
+     cuaderno: moviéndose con el contenido, treinta filas pasando sobre una retícula
+     de 28 px produce un parpadeo desagradable en pantalla. */
   body {
     @apply bg-background text-foreground;
+  }
+
+  :root[data-cuadricula='si'] body {
+    background-image:
+      repeating-linear-gradient(
+        to right,
+        var(--color-cuadro) 0 1px,
+        transparent 1px 28px
+      ),
+      repeating-linear-gradient(
+        to bottom,
+        var(--color-cuadro) 0 1px,
+        transparent 1px 28px
+      );
+    background-attachment: fixed;
+  }
+
+  /* En oscuro la retícula se insinúa: con el mismo peso que en papel se lee como
+     una rejilla encima del contenido en vez de como el fondo. */
+  :root[data-tema='oscuro'][data-cuadricula='si'] body {
+    background-image:
+      repeating-linear-gradient(
+        to right,
+        color-mix(in oklab, var(--color-cuadro) 60%, transparent) 0 1px,
+        transparent 1px 28px
+      ),
+      repeating-linear-gradient(
+        to bottom,
+        color-mix(in oklab, var(--color-cuadro) 60%, transparent) 0 1px,
+        transparent 1px 28px
+      );
   }
 
   :where(input, output, td, th) {

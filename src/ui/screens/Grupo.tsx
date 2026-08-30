@@ -6,6 +6,7 @@ import { Cargando } from '@/ui/components/Cargando'
 import { Button } from '@/ui/components/ui/button'
 import { AdministrarAlumnos } from '@/ui/screens/AdministrarAlumnos'
 import { Ajustes } from '@/ui/screens/Ajustes'
+import { Apariencia } from '@/ui/screens/Apariencia'
 import { CiclosAnteriores } from '@/ui/screens/CiclosAnteriores'
 import { CargarLista } from '@/ui/screens/CargarLista'
 import { CicloEscolar } from '@/ui/screens/CicloEscolar'
@@ -40,6 +41,7 @@ type Vista =
   | 'respaldo'
   | 'equipos'
   | 'nube'
+  | 'apariencia'
 
 export function Grupo() {
   const [vista, setVista] = useState<Vista>('resumen')
@@ -56,6 +58,7 @@ export function Grupo() {
         alConsultarAnteriores={() => setVista('anteriores')}
         alRespaldar={() => setVista('respaldo')}
         alSincronizar={() => setVista('nube')}
+        alPersonalizar={() => setVista('apariencia')}
       />
     )
   }
@@ -86,6 +89,10 @@ export function Grupo() {
 
   if (vista === 'respaldo') {
     return <Respaldo alVolver={() => setVista('ajustes')} />
+  }
+
+  if (vista === 'apariencia') {
+    return <Apariencia alVolver={() => setVista('ajustes')} />
   }
 
   if (vista === 'nube') {
