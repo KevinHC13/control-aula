@@ -160,6 +160,24 @@ describe('la CURP', () => {
     expect(fila?.curp).toBe(CURP)
   })
 
+  it('parte el nombre que la lista imprime sin coma', () => {
+    // Es el formato de la lista oficial: apellidos y nombres seguidos. Con el
+    // CURP, dónde acaban los apellidos no se adivina.
+    const [fila] = normalizarExtraccion([
+      { nombre: 'ARGUELLES VILLANUEVA GERONIMO ALEJANDRO', curp: 'AUVG160520HNLRLRA3' },
+    ])
+
+    expect(fila?.nombre).toBe('Arguelles Villanueva, Geronimo Alejandro')
+  })
+
+  it('no toca el nombre que ya viene con coma', () => {
+    const [fila] = normalizarExtraccion([
+      { nombre: 'DE LEON CEDILLO, YARETZI XIMENA', curp: 'LECY160830MNLNDRA3' },
+    ])
+
+    expect(fila?.nombre).toBe('De Leon Cedillo, Yaretzi Ximena')
+  })
+
   it('marca la que no tiene forma de CURP, sin tirar la fila', () => {
     const [fila] = normalizarExtraccion([{ nombre: 'Aguilar, Bruno', curp: 'AUVG160520' }])
 

@@ -1,5 +1,5 @@
 import { repos } from '@/data'
-import { curpValido, fechaDeCurp, normalizarCurp } from '@/domain/curp'
+import { curpValido, fechaDeCurp, normalizarCurp, partirNombre } from '@/domain/curp'
 import type { DatosAlumno } from '@/domain/entities'
 import { fechaValida } from '@/domain/fechas'
 import type { AlumnoExtraido } from '@/services/extraccion'
@@ -82,9 +82,15 @@ export function normalizarExtraccion(crudo: AlumnoExtraido[]): FilaImportada[] {
   return revalidar(
     crudo.map((alumno, i) => {
       const curp = normalizarCurp(alumno.curp ?? '')
+      const leido = limpiar(alumno.nombre ?? '')
+
+      // La lista oficial imprime el nombre completo sin coma, y con el CURP no
+      // hay que adivinar dónde acaban los apellidos. Solo cuando falta la coma:
+      // si el documento ya los separó, él sabe más que esta cuenta.
+      const nombre = leido.includes(',') ? leido : (partirNombre(leido, curp) ?? leido)
 
       return {
-        nombre: capitalizar(limpiar(alumno.nombre ?? '')),
+        nombre: capitalizar(nombre),
         numero_lista: alumno.numero_lista ?? i + 1,
         // Lo impreso gana; la CURP rellena. Nunca al revés: si el documento
         // trae las dos y no coinciden, la que se ve es la que se respeta y la

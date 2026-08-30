@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { curpValido, fechaDeCurp, normalizarCurp } from './curp'
+import { curpValido, fechaDeCurp, normalizarCurp, partirNombre } from './curp'
 
 // CURP inventadas: la forma es real, las personas no (docs/CLAUDE.md, «Datos
 // reales»). Se construyen a mano para poder mover una sola posición por prueba.
@@ -54,5 +54,38 @@ describe('curpValido', () => {
 describe('normalizarCurp', () => {
   it('sube a mayúsculas y quita los espacios que trae un OCR', () => {
     expect(normalizarCurp(' auvg 160520 mnlrlra3 ')).toBe('AUVG160520MNLRLRA3')
+  })
+})
+
+describe('partirNombre', () => {
+  it('encuentra dónde acaban los apellidos', () => {
+    // AUVG: A(rguelles), U vocal interna, V(illanueva), G(eronimo).
+    expect(
+      partirNombre('ARGUELLES VILLANUEVA GERONIMO ALEJANDRO', 'AUVG160520HNLRLRA3'),
+    ).toBe('ARGUELLES VILLANUEVA, GERONIMO ALEJANDRO')
+  })
+
+  it('no se traga la partícula de un apellido compuesto', () => {
+    // Es el caso con el que un modelo se equivoca: "De Leon" son dos palabras y
+    // un solo apellido. LECY: L(eon), E, C(edillo), Y(aretzi).
+    expect(
+      partirNombre('DE LEON CEDILLO YARETZI XIMENA', 'LECY160830MNLNDRA3'),
+    ).toBe('DE LEON CEDILLO, YARETZI XIMENA')
+  })
+
+  it('aguanta que las tres iniciales sean la misma letra', () => {
+    expect(partirNombre('GARCIA GOMEZ GABRIEL', 'GAGG160101HNLRMBA1')).toBe(
+      'GARCIA GOMEZ, GABRIEL',
+    )
+  })
+
+  it('no le estorban los acentos del documento', () => {
+    expect(partirNombre('NÚÑEZ ÁNGEL ÓSCAR', 'NUAO160101HNLXNSA1')).toBe('NÚÑEZ ÁNGEL, ÓSCAR')
+  })
+
+  it('devuelve null cuando las iniciales no cuadran: mejor dejarlo como vino', () => {
+    expect(partirNombre('ARGUELLES VILLANUEVA GERONIMO', 'ZZZZ160520HNLRLRA3')).toBeNull()
+    expect(partirNombre('ARGUELLES GERONIMO', 'AUVG160520HNLRLRA3')).toBeNull()
+    expect(partirNombre('ARGUELLES VILLANUEVA GERONIMO', 'no es un curp')).toBeNull()
   })
 })
