@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-import { colorDe, escalaDe, tocaOscuro } from '@/ui/lib/tema'
+import { escalaDe, fondoDe, marcaDe, tocaOscuro } from '@/ui/lib/tema'
 import { useApariencia } from '@/ui/store/apariencia'
 
 /**
@@ -37,8 +37,10 @@ export function useTema() {
   }, [])
 
   const oscuro = tocaOscuro(apariencia, prefiereOscuro)
-  const color = colorDe(apariencia)
-  const marca = oscuro ? color.oscuro : color.claro
+  // `marcaDe` es lo que hace seguro el color libre: si el elegido no contrasta con
+  // el papel del modo en que se está, lo acerca al negro o al blanco lo justo,
+  // conservando su tono.
+  const marca = marcaDe(apariencia, oscuro)
 
   useEffect(() => {
     const raiz = document.documentElement
@@ -50,13 +52,14 @@ export function useTema() {
 
     raiz.dataset.tema = oscuro ? 'oscuro' : 'claro'
     raiz.dataset.texto = apariencia.tamano
-    raiz.dataset.cuadricula = apariencia.cuadricula ? 'si' : 'no'
+    raiz.dataset.papel = apariencia.papel
+    raiz.dataset.lineas = apariencia.lineas
 
     // Sin esto, la barra de estado del iPad se queda con el azul del manifiesto y
     // pelea con el color elegido justo en el borde de la pantalla.
     document
       .querySelector('meta[name="theme-color"]')
-      ?.setAttribute('content', oscuro ? FONDO_OSCURO : marca)
+      ?.setAttribute('content', oscuro ? fondoDe(apariencia, true) : marca)
   }, [marca, oscuro, apariencia])
 
   useEffect(() => {
@@ -70,6 +73,3 @@ export function useTema() {
     document.title = nombre === '' ? 'Palomita' : `Palomita · ${nombre}`
   }, [apariencia.nombreDelGrupo])
 }
-
-/** El mismo `--color-papel` del modo oscuro de `index.css`. */
-const FONDO_OSCURO = '#15181b'

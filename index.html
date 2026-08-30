@@ -18,9 +18,15 @@
     <title>Palomita</title>
     <!--
       La apariencia se aplica antes de pintar. Si esto esperara a que React monte,
-      quien eligió el modo oscuro vería un destello blanco en cada arranque, y quien
-      subió el tamaño de texto vería la interfaz saltar de tamaño. Son ocho líneas
-      que no pueden fallar: cualquier problema deja la apariencia de siempre.
+      quien eligió el modo oscuro o el papel amarillo vería un destello blanco en cada
+      arranque, y quien subió el tamaño de texto vería la interfaz saltar de tamaño.
+      Son unas líneas que no pueden fallar: cualquier problema deja la apariencia de
+      siempre.
+
+      El color de la marca **no** va aquí, y es a propósito: un color libre hay que
+      ajustarlo para que contraste, y esa cuenta no cabe en un script en línea. Lo
+      pone React un cuadro después. Un acento que llega tarde no se nota; un fondo
+      que cambia de color, sí.
     -->
     <script>
       try {
@@ -30,7 +36,10 @@
           a.modo === 'oscuro' ||
           (a.modo !== 'claro' && matchMedia('(prefers-color-scheme: dark)').matches)
         r.dataset.tema = oscuro ? 'oscuro' : 'claro'
-        r.dataset.cuadricula = a.cuadricula === false ? 'no' : 'si'
+        r.dataset.papel = a.papel === 'amarillo' ? 'amarillo' : 'blanco'
+        // `cuadricula` es la preferencia vieja, de cuando esto era un interruptor.
+        r.dataset.lineas =
+          a.lineas || (a.cuadricula === false ? 'ninguna' : 'cuadricula')
         r.style.colorScheme = oscuro ? 'dark' : 'light'
         if (a.tamano === 'grande') r.style.fontSize = '112.5%'
         if (a.tamano === 'mayor') r.style.fontSize = '125%'

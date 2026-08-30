@@ -121,6 +121,30 @@
   --color-tinta-2: #9aa3ac;
 }
 
+/* ---------------------------------------------------------------------------
+   El papel.
+
+   El amarillo es el de una libreta de notas de verdad, no un tinte encima: cambia
+   `--color-papel` y con él la superficie y la línea, que en un cuaderno amarillo
+   tampoco son grises. La tinta no se toca —sigue contrastando de sobra— y el
+   bicolor tampoco: un ausente tiene que verse rojo en cualquier papel.
+
+   En oscuro el amarillo se vuelve un negro **cálido**. Un papel amarillo iluminado
+   no existe de noche; lo que sí existe es que la misma libreta se sienta la misma,
+   y eso es cuestión de temperatura, no de color.
+   --------------------------------------------------------------------------- */
+:root[data-papel='amarillo'] {
+  --color-papel: #fcf3d0;
+  --color-cuadro: #f2e7b8;
+  --color-linea: #e6d79b;
+}
+
+:root[data-tema='oscuro'][data-papel='amarillo'] {
+  --color-papel: #1a1712;
+  --color-cuadro: #27221a;
+  --color-linea: #3a3226;
+}
+
 /* Variables semánticas de shadcn, todas apuntadas a un token del bicolor.
    No agregar una variable de shadcn sin mapearla aquí. */
 :root {
@@ -228,35 +252,37 @@
     @apply bg-background text-foreground;
   }
 
-  :root[data-cuadricula='si'] body {
+  /* La cuadrícula del cuaderno de la escuela: 28 px en los dos sentidos. */
+  :root[data-lineas='cuadricula'] body {
     background-image:
-      repeating-linear-gradient(
-        to right,
-        var(--color-cuadro) 0 1px,
-        transparent 1px 28px
-      ),
-      repeating-linear-gradient(
-        to bottom,
-        var(--color-cuadro) 0 1px,
-        transparent 1px 28px
-      );
+      repeating-linear-gradient(to right, var(--raya) 0 1px, transparent 1px 28px),
+      repeating-linear-gradient(to bottom, var(--raya) 0 1px, transparent 1px 28px);
     background-attachment: fixed;
   }
 
-  /* En oscuro la retícula se insinúa: con el mismo peso que en papel se lee como
-     una rejilla encima del contenido en vez de como el fondo. */
-  :root[data-tema='oscuro'][data-cuadricula='si'] body {
-    background-image:
-      repeating-linear-gradient(
-        to right,
-        color-mix(in oklab, var(--color-cuadro) 60%, transparent) 0 1px,
-        transparent 1px 28px
-      ),
-      repeating-linear-gradient(
-        to bottom,
-        color-mix(in oklab, var(--color-cuadro) 60%, transparent) 0 1px,
-        transparent 1px 28px
-      );
+  /* Los renglones de una libreta de notas: solo horizontales, y **alineados con la
+     línea de base del texto** —de ahí el desplazamiento de 6 px—. Sin eso las rayas
+     cruzan los nombres por la mitad y la pantalla se vuelve ilegible en lugar de
+     parecerse a un cuaderno. */
+  :root[data-lineas='renglones'] body {
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0 27px,
+      var(--raya) 27px 28px
+    );
+    background-position: 0 6px;
+    background-attachment: fixed;
+  }
+
+  /* El tono de la raya, en un solo sitio para los dos patrones. En oscuro se
+     insinúa: con el mismo peso que en papel se lee como una rejilla encima del
+     contenido en vez de como el fondo. */
+  :root {
+    --raya: var(--color-cuadro);
+  }
+
+  :root[data-tema='oscuro'] {
+    --raya: color-mix(in oklab, var(--color-cuadro) 60%, transparent);
   }
 
   :where(input, output, td, th) {

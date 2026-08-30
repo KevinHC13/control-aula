@@ -1096,3 +1096,26 @@ la regla.
 **Lo que se decidió no hacer:** dejar que la usuaria elija el color de cada estado
 por separado. Es más libertad y es la manera de volver la lista ilegible de un
 vistazo, que es lo único que el producto no puede permitirse.
+
+**Ampliación del mismo día — el color libre y el papel de libreta.** Lo pidió el
+usuario después de ver los seis colores: que se pueda teclear cualquiera, y que el
+fondo pueda ser el amarillo de una libreta de notas.
+
+Lo primero parecía contradecir la decisión de arriba y no la contradice, porque lo
+que se protege no es la lista de colores sino la **legibilidad**. Un color libre se
+ajusta al pintarse: si no contrasta 4.5:1 con el papel del modo en que se está, se
+acerca al negro o al blanco de uno en uno hasta que sí, conservando el tono. Así no
+hay ningún color que la usuaria pueda elegir y deje un número sin leerse, y no hace
+falta rechazarle ninguno.
+
+El ajuste usa la **luminancia relativa de la WCAG, no la «claridad» de HSL**. La
+diferencia es exactamente la que rompería esto: un amarillo puro y un azul puro
+tienen la misma claridad en HSL y el amarillo es cuatro veces más luminoso, así que
+ajustar por claridad dejaría pasar un amarillo con texto blanco encima. Está fijado
+en una prueba que recorre los extremos del espectro contra los dos papeles y los dos
+modos.
+
+Lo segundo obligó a separar dos cosas que estaban juntas: el **papel** —el color del
+fondo— y las **líneas** —el patrón—. La cuadrícula era un interruptor; ahora son tres
+opciones, porque una libreta de verdad puede tener cuadrícula o renglones, y la
+preferencia guardada de quien ya la tenía se migra sola al leerla.

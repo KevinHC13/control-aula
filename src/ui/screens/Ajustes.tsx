@@ -1,5 +1,16 @@
 import { Cabecera } from '@/ui/components/Cabecera'
-import { IconoSiguiente } from '@/ui/components/iconos'
+import {
+  IconoAlumno,
+  IconoApariencia,
+  IconoArchivo,
+  IconoBalanza,
+  IconoCicloEscolar,
+  IconoHistorial,
+  IconoImportar,
+  IconoNube,
+  IconoRubrica,
+  IconoSiguiente,
+} from '@/ui/components/iconos'
 
 /**
  * Lo que no cabe en el camino diario.
@@ -15,11 +26,14 @@ import { IconoSiguiente } from '@/ui/components/iconos'
  * título del grupo ya descarta las tres cuartas partes que no son.
  *
  * El galón de la derecha no es adorno: dice que el renglón lleva a otra pantalla, y
- * era lo único que distinguía a estos botones de una lista de datos.
+ * era lo único que distinguía a estos botones de una lista de datos. El dibujo de la
+ * izquierda tampoco: nueve renglones de texto son nueve cosas que hay que leer para
+ * encontrar una, y el icono hace que la que se busca salte antes de leerla.
  */
 interface Opcion {
   etiqueta: string
   ayuda: string
+  Icono: (p: { className?: string }) => React.JSX.Element
   alTocar: () => void
 }
 
@@ -52,11 +66,13 @@ export function Ajustes({
       opciones: [
         {
           etiqueta: 'Cargar lista de alumnos',
+          Icono: IconoImportar,
           ayuda: 'Se leen los nombres de un archivo de Excel, de un PDF o de una fotografía de la lista oficial',
           alTocar: alCargarLista,
         },
         {
           etiqueta: 'Alumnos',
+          Icono: IconoAlumno,
           ayuda: 'Agregar a quien llegó después, corregir un nombre o dar de baja a quien se fue',
           alTocar: alAdministrarAlumnos,
         },
@@ -67,21 +83,25 @@ export function Ajustes({
       opciones: [
         {
           etiqueta: 'Ciclo escolar',
+          Icono: IconoCicloEscolar,
           ayuda: 'Las fechas de inicio y fin de cada trimestre',
           alTocar: alConfigurarCiclo,
         },
         {
           etiqueta: 'Criterios y pesos',
+          Icono: IconoBalanza,
           ayuda: 'Qué se toma en cuenta para calificar y cuánto vale cada cosa',
           alTocar: alConfigurarCriterios,
         },
         {
           etiqueta: 'Rúbricas',
+          Icono: IconoRubrica,
           ayuda: 'Los aspectos que se observan al revisar un trabajo y qué significa cada nivel',
           alTocar: alConfigurarRubricas,
         },
         {
           etiqueta: 'Ciclos anteriores',
+          Icono: IconoHistorial,
           ayuda: 'Las calificaciones de los ciclos que ya terminaron, tal como se reportaron',
           alTocar: alConsultarAnteriores,
         },
@@ -92,11 +112,13 @@ export function Ajustes({
       opciones: [
         {
           etiqueta: 'Respaldo',
+          Icono: IconoArchivo,
           ayuda: 'Guardar toda la información en un archivo, o recuperarla',
           alTocar: alRespaldar,
         },
         {
           etiqueta: 'Copia en la nube',
+          Icono: IconoNube,
           ayuda: 'Respaldar la información en internet, o traerla a un iPad nuevo',
           alTocar: alSincronizar,
         },
@@ -107,7 +129,8 @@ export function Ajustes({
       opciones: [
         {
           etiqueta: 'Apariencia',
-          ayuda: 'El color, el modo claro u oscuro, el tamaño del texto y el nombre del grupo',
+          Icono: IconoApariencia,
+          ayuda: 'El color, el papel, el modo claro u oscuro, el tamaño del texto y el nombre del grupo',
           alTocar: alPersonalizar,
         },
       ],
@@ -140,6 +163,7 @@ export function Ajustes({
                   onClick={opcion.alTocar}
                   className="foco-dentro flex min-h-14 w-full items-center gap-3 px-4 py-3 text-left active:bg-cuadro"
                 >
+                  <opcion.Icono className="size-6 shrink-0 text-tinta-2" />
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span className="text-base font-medium text-tinta">
                       {opcion.etiqueta}

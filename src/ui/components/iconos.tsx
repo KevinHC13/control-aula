@@ -124,3 +124,105 @@ export function IconoGrupo({ className }: { className?: string }) {
     </svg>
   )
 }
+
+/* Los de las opciones de Ajustes. Cada renglón lleva el suyo a la izquierda: nueve
+   renglones de texto son nueve cosas que hay que leer para encontrar una, y el
+   dibujo hace que la que se busca salte antes de leerla. Van con la etiqueta, nunca
+   solos. */
+
+/** Cargar lista de alumnos: la hoja que entra. */
+export function IconoImportar({ className }: { className?: string }) {
+  return (
+    <svg aria-hidden viewBox="0 0 24 24" className={className} {...trazo}>
+      <path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z" />
+      <path d="M14 3v5h5" />
+      <path d="M12 11v6M9.5 14.5L12 17l2.5-2.5" />
+    </svg>
+  )
+}
+
+/** Alumnos: una persona con su marca. */
+export function IconoAlumno({ className }: { className?: string }) {
+  return (
+    <svg aria-hidden viewBox="0 0 24 24" className={className} {...trazo}>
+      <circle cx="10" cy="7.5" r="3.5" />
+      <path d="M3.5 20c0-3.6 2.9-5.5 6.5-5.5 1.2 0 2.3.2 3.2.6" />
+      <path d="M15 18.5l2 2 4-4.5" />
+    </svg>
+  )
+}
+
+/** Ciclo escolar: el calendario del año. */
+export function IconoCicloEscolar({ className }: { className?: string }) {
+  return (
+    <svg aria-hidden viewBox="0 0 24 24" className={className} {...trazo}>
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M3 10h18M8 3v4M16 3v4" />
+      <path d="M11 14h2" />
+    </svg>
+  )
+}
+
+/** Criterios y pesos: lo que pesa cada cosa. */
+export function IconoBalanza({ className }: { className?: string }) {
+  return (
+    <svg aria-hidden viewBox="0 0 24 24" className={className} {...trazo}>
+      <path d="M12 4v16M8 20h8" />
+      <path d="M4 8h16" />
+      <path d="M4 8l-2 5a3 3 0 006 0zM20 8l-2 5a3 3 0 006 0z" />
+    </svg>
+  )
+}
+
+/** Rúbricas: los renglones y sus niveles. */
+export function IconoRubrica({ className }: { className?: string }) {
+  return (
+    <svg aria-hidden viewBox="0 0 24 24" className={className} {...trazo}>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M3 9h18M9 9v11" />
+      <path d="M12.5 13.5l1.5 1.5 3-3" />
+    </svg>
+  )
+}
+
+/** Ciclos anteriores: lo que ya pasó. */
+export function IconoHistorial({ className }: { className?: string }) {
+  return (
+    <svg aria-hidden viewBox="0 0 24 24" className={className} {...trazo}>
+      <path d="M3.5 10a8.5 8.5 0 112 6.5" />
+      <path d="M3 5v5h5" />
+      <path d="M12 8v4.5l3 1.5" />
+    </svg>
+  )
+}
+
+/** Respaldo: la copia que se guarda. */
+export function IconoArchivo({ className }: { className?: string }) {
+  return (
+    <svg aria-hidden viewBox="0 0 24 24" className={className} {...trazo}>
+      <path d="M3 7h18v12a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+      <path d="M3 7l2-4h14l2 4" />
+      <path d="M10 12h4" />
+    </svg>
+  )
+}
+
+/** Copia en la nube. */
+export function IconoNube({ className }: { className?: string }) {
+  return (
+    <svg aria-hidden viewBox="0 0 24 24" className={className} {...trazo}>
+      <path d="M7 18a4 4 0 01-.4-8A5.5 5.5 0 0117.4 11 3.5 3.5 0 0117 18z" />
+      <path d="M12 20v-6M9.5 16.5L12 14l2.5 2.5" />
+    </svg>
+  )
+}
+
+/** Apariencia: el pincel. */
+export function IconoApariencia({ className }: { className?: string }) {
+  return (
+    <svg aria-hidden viewBox="0 0 24 24" className={className} {...trazo}>
+      <path d="M19.5 3.5a2.1 2.1 0 010 3L11 15l-3.5 1 1-3.5z" />
+      <path d="M6 14c-1.7 0-3 1.3-3 3 0 1.2-.5 2-1.5 2.5 1 1 2.3 1.5 3.5 1.5a3.5 3.5 0 003.5-3.5c0-1.9-1.1-3.5-2.5-3.5z" />
+    </svg>
+  )
+}

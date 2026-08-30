@@ -263,10 +263,18 @@ la información que la lista da de un vistazo.
 
 | Preferencia | Qué hace |
 |---|---|
-| Color | Seis tonos de la familia del lápiz. Pinta la identidad, nunca el estado |
+| Color | Seis tonos de la familia del lápiz, **o el que ella teclee**. Pinta la identidad, nunca el estado |
 | Modo | Claro, oscuro o el del iPad |
 | Tamaño del texto | 16, 18 o 20 px. Escala la raíz |
-| Fondo de cuaderno | La cuadrícula, encendida o apagada |
+| Papel | Blanco o amarillo de libreta. En oscuro, el amarillo es un negro cálido |
+| Líneas del papel | Cuadrícula de escuela, renglones de libreta, o nada |
+
+**El color libre no puede romper nada, y esa es la única razón por la que se puede
+ofrecer.** Un color que no contraste con el papel se acerca al negro o al blanco lo
+justo para pasar 4.5:1, conservando su tono: quien elige un amarillo canario obtiene
+un amarillo, oscurecido, y la pantalla se lo dice. El ajuste se hace con la
+**luminancia de la WCAG y no con la «claridad» de HSL**, que es lo que dejaría pasar
+ese mismo amarillo con texto blanco encima.
 
 Más el **nombre del grupo**, que aparece bajo el título de la pestaña Grupo y en
 el nombre del archivo de respaldo.

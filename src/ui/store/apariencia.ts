@@ -3,8 +3,11 @@ import { create } from 'zustand'
 import {
   type Apariencia,
   leerApariencia,
+  type Lineas,
   type ModoDeColor,
+  type Papel,
   POR_OMISION,
+  PROPIO,
   type TamanoDeTexto,
 } from '@/ui/lib/tema'
 
@@ -42,9 +45,12 @@ function recuperar(): Apariencia {
 
 interface EstadoApariencia extends Apariencia {
   elegirColor: (color: string) => void
+  /** El color libre. Se guarda tal cual; el ajuste de contraste ocurre al pintar. */
+  elegirPropio: (hex: string) => void
   elegirModo: (modo: ModoDeColor) => void
   elegirTamano: (tamano: TamanoDeTexto) => void
-  alternarCuadricula: (encendida: boolean) => void
+  elegirPapel: (papel: Papel) => void
+  elegirLineas: (lineas: Lineas) => void
   nombrarGrupo: (nombre: string) => void
 }
 
@@ -58,9 +64,11 @@ export const useApariencia = create<EstadoApariencia>((set, get) => {
     const s = get()
     guardar({
       color: s.color,
+      propio: s.propio,
       modo: s.modo,
       tamano: s.tamano,
-      cuadricula: s.cuadricula,
+      papel: s.papel,
+      lineas: s.lineas,
       nombreDelGrupo: s.nombreDelGrupo,
     })
   }
@@ -68,9 +76,12 @@ export const useApariencia = create<EstadoApariencia>((set, get) => {
   return {
     ...recuperar(),
     elegirColor: (color) => cambiar({ color }),
+    // Elegir un color libre lo activa: sería raro teclear uno y no verlo.
+    elegirPropio: (propio) => cambiar({ propio, color: PROPIO }),
     elegirModo: (modo) => cambiar({ modo }),
     elegirTamano: (tamano) => cambiar({ tamano }),
-    alternarCuadricula: (cuadricula) => cambiar({ cuadricula }),
+    elegirPapel: (papel) => cambiar({ papel }),
+    elegirLineas: (lineas) => cambiar({ lineas }),
     nombrarGrupo: (nombreDelGrupo) => cambiar({ nombreDelGrupo }),
   }
 })
