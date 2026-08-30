@@ -14,6 +14,7 @@ import {
 import type { ConteoPorTabla } from '@/data/ports/respaldo'
 import { Cabecera } from '@/ui/components/Cabecera'
 import { Button } from '@/ui/components/ui/button'
+import { comoDiaConAnio } from '@/ui/lib/fechas'
 import { plural } from '@/ui/lib/plural'
 
 /**
@@ -186,7 +187,7 @@ export function Respaldo({ alVolver }: { alVolver: () => void }) {
               {porRestaurar.generado_en !== '' && (
                 <>
                   , generados el{' '}
-                  <span className="cifra">{porRestaurar.generado_en.slice(0, 10)}</span>
+                  {comoDiaConAnio(porRestaurar.generado_en.slice(0, 10))}
                 </>
               )}
               .

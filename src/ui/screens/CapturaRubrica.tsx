@@ -13,6 +13,7 @@ import type { Trimestre } from '@/domain/entities'
 import { NIVELES } from '@/domain/values'
 import type { Nivel } from '@/domain/values'
 import { Cabecera } from '@/ui/components/Cabecera'
+import { comoDiaCorto } from '@/ui/lib/fechas'
 import { Button } from '@/ui/components/ui/button'
 import { useEvaluacionesDeActividad } from '@/ui/hooks/useEvaluacionesDeActividad'
 import { useRubricas } from '@/ui/hooks/useRubricas'
@@ -81,7 +82,7 @@ export function CapturaRubrica({
         etiquetaVolver={indice === null ? 'Volver' : 'Volver a la lista'}
         detalle={
           <>
-            <span className="cifra">{actividad.actividad.fecha}</span>
+            {comoDiaCorto(actividad.actividad.fecha)}
             {campo && ` · ${campo}`}
             {rubrica && ` · ${rubrica.rubrica.nombre}`}
           </>

@@ -5,6 +5,7 @@ import type { CicloEnCurso } from '@/data/ports/evaluacion'
 import type { Trimestre } from '@/domain/entities'
 import { Cabecera } from '@/ui/components/Cabecera'
 import { Cargando } from '@/ui/components/Cargando'
+import { comoRango } from '@/ui/lib/fechas'
 import { ReporteDelTrimestre } from '@/ui/screens/ReporteDelTrimestre'
 
 /**
@@ -127,7 +128,7 @@ function Trimestres({
               Trimestre {trimestre.numero}
             </span>
             <span className="cifra text-base text-tinta-2">
-              {trimestre.inicio} al {trimestre.fin}
+              {comoRango(trimestre.inicio, trimestre.fin)}
             </span>
           </button>
         </li>

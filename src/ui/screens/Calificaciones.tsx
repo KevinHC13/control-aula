@@ -21,6 +21,7 @@ import { useActividadesDelTrimestre } from '@/ui/hooks/useActividadesDelTrimestr
 import { useCicloEnCurso } from '@/ui/hooks/useCicloEnCurso'
 import { useExamenesDelTrimestre } from '@/ui/hooks/useExamenesDelTrimestre'
 import { useRubricas } from '@/ui/hooks/useRubricas'
+import { comoDiaCorto } from '@/ui/lib/fechas'
 import { cn } from '@/ui/lib/utils'
 import { CapturaEntregas } from '@/ui/screens/CapturaEntregas'
 import { CapturaExamen } from '@/ui/screens/CapturaExamen'
@@ -293,7 +294,7 @@ function FilaActividad({
         <span className="flex min-w-0 flex-1 flex-col py-2">
           <span className="truncate text-base font-medium text-tinta">{actividad.nombre}</span>
           <span className="text-apoyo text-tinta-2">
-            <span className="cifra">{actividad.fecha}</span>
+            {comoDiaCorto(actividad.fecha)}
             {campo && ` · ${campo}`}
             {conQue && ` · ${conQue}`}
           </span>

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import { comoDate, fechaMas, ventanaDeDias } from '@/domain/fechas'
 import type { Fecha } from '@/domain/values'
 import { IconoAnterior, IconoCalendario, IconoSiguiente } from '@/ui/components/iconos'
+import { comoDiaConNombre } from '@/ui/lib/fechas'
 import { cn } from '@/ui/lib/utils'
 
 /**
@@ -124,7 +125,7 @@ export function TiraDeDias({
                 onClick={() => alSeleccionar(fecha)}
                 data-seleccionado={seleccionado}
                 aria-current={seleccionado ? 'date' : undefined}
-                aria-label={fecha}
+                aria-label={comoDiaConNombre(fecha)}
                 className={cn(
                   'flex min-h-14 w-12 flex-col items-center justify-center rounded-lg border',
                   'foco',

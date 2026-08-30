@@ -6,6 +6,7 @@ import type { ActividadConEstado } from '@/data/ports/evaluacion'
 import type { Trimestre } from '@/domain/entities'
 import { Cabecera } from '@/ui/components/Cabecera'
 import { FilaEntregaAlumno } from '@/ui/components/FilaEntregaAlumno'
+import { comoDiaCorto } from '@/ui/lib/fechas'
 import { Button } from '@/ui/components/ui/button'
 import { useEntregasDeActividad } from '@/ui/hooks/useEntregasDeActividad'
 
@@ -54,7 +55,7 @@ export function CapturaEntregas({
         alVolver={alVolver}
         detalle={
           <>
-            <span className="cifra">{actividad.actividad.fecha}</span>
+            {comoDiaCorto(actividad.actividad.fecha)}
             {campo && ` · ${campo}`}
           </>
         }

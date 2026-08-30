@@ -16,6 +16,7 @@ import { Cargando } from '@/ui/components/Cargando'
 import { Button } from '@/ui/components/ui/button'
 import { useBitacoraDelTrimestre } from '@/ui/hooks/useBitacoraDelTrimestre'
 import { useCicloEnCurso } from '@/ui/hooks/useCicloEnCurso'
+import { comoDiaCorto } from '@/ui/lib/fechas'
 import { plural } from '@/ui/lib/plural'
 import { cn } from '@/ui/lib/utils'
 
@@ -150,7 +151,7 @@ function FilaDeAlumno({ fila, alAbrir }: { fila: FilaBitacora; alAbrir: () => vo
           <span className="truncate text-base text-tinta">{fila.alumno.nombre}</span>
           {ultimo && (
             <span className="truncate text-apoyo text-tinta-2">
-              <span className="cifra">{ultimo.fecha}</span> · {ultimo.texto}
+              {comoDiaCorto(ultimo.fecha)} · {ultimo.texto}
             </span>
           )}
         </span>
@@ -251,7 +252,7 @@ function DetalleAlumno({
               Registrar el reporte
             </Button>
             <span className="text-apoyo text-tinta-2">
-              Se registrará con la fecha de hoy, <span className="cifra">{hoy}</span>
+              Se registrará con la fecha de hoy, {comoDiaCorto(hoy)}
             </span>
           </div>
         </div>
@@ -290,7 +291,9 @@ function FilaDeReporte({ reporte }: { reporte: Reporte }) {
 
   return (
     <li className="flex items-start gap-2 border-b border-linea py-3">
-      <span className="cifra shrink-0 pt-0.5 text-apoyo text-tinta-2">{reporte.fecha}</span>
+      <span className="w-28 shrink-0 pt-0.5 text-apoyo text-tinta-2">
+        {comoDiaCorto(reporte.fecha)}
+      </span>
       <p className="min-w-0 flex-1 text-base text-tinta">{reporte.texto}</p>
       {confirmando ? (
         <Button
