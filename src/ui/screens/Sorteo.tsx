@@ -99,7 +99,7 @@ export function Sorteo({ fecha, trimestre }: { fecha: Fecha; trimestre: Trimestr
         <p className="text-base text-tinta">
           No hay alumnos entre los que sortear: hoy ninguno está registrado como presente.
         </p>
-        <p className="text-[13px] text-tinta-2">
+        <p className="text-apoyo text-tinta-2">
           Participan en el sorteo los alumnos que están en el salón, es decir los presentes
           y los que llegaron con retardo. Las faltas justificadas cuentan como asistencia,
           pero el alumno no está para pasar al frente.
@@ -162,7 +162,7 @@ export function Sorteo({ fecha, trimestre }: { fecha: Fecha; trimestre: Trimestr
 
       {/* Se dice que el sorteo no es uniforme: es la mitad de para qué sirve, y
           se puede decir en voz alta —«le toca a quien menos ha pasado»—. */}
-      <p className="border-t border-linea pt-3 text-[13px] text-tinta-2">
+      <p className="border-t border-linea pt-3 text-apoyo text-tinta-2">
         El sorteo favorece a quienes menos han participado en el trimestre, para que el turno
         no recaiga siempre en los mismos. Participan{' '}
         <span className="cifra">{candidatos.length}</span> alumnos: los presentes de hoy.

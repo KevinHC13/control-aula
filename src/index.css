@@ -68,6 +68,17 @@
   --font-sans: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "DM Mono", ui-monospace, "SF Mono", monospace;
 
+  /* El segundo tamaño de la app —la línea que explica, el desglose, el pie de una
+     fila— estaba escrito `text-apoyo` en una treintena de sitios: un valor mágico
+     repetido, sin nombre y sin un lugar donde cambiarlo.
+
+     Va en `rem` y no en píxeles a propósito: es lo que permite que el tamaño de
+     texto de Ajustes escale la interfaz entera moviendo la raíz. Con 13 px fijos,
+     subirlo agrandaría los títulos y dejaría la letra chica igual de chica, que es
+     justo al revés de lo que hace falta. */
+  --text-apoyo: 0.8125rem;
+  --text-apoyo--line-height: 1.25rem;
+
   --radius: 0.625rem;
 }
 
@@ -133,6 +144,33 @@
 @utility cifra {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
+}
+
+/* El anillo de foco, que estaba copiado a mano en una veintena de sitios. Da el
+   mismo resultado que `ring-[3px] ring-ring/50` escrito a mano; lo que cambia es
+   que ahora se toca en un solo lugar.
+
+   Escrito como `box-shadow` y no con `@apply`: aplicar una utilidad con variante
+   dentro de un `@utility` es una dependencia circular para Tailwind. Estos
+   elementos no llevan ninguna otra sombra, así que el resultado es el mismo.
+
+   `foco-dentro` existe porque hay objetivos que ocupan todo el ancho de la
+   pantalla —la barra de pestañas, las filas de la lista— y con el anillo por fuera
+   se les corta contra el borde. */
+@utility foco {
+  outline: none;
+
+  &:focus-visible {
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-ring) 50%, transparent);
+  }
+}
+
+@utility foco-dentro {
+  outline: none;
+
+  &:focus-visible {
+    box-shadow: inset 0 0 0 3px color-mix(in oklab, var(--color-ring) 50%, transparent);
+  }
 }
 
 @layer base {

@@ -225,7 +225,7 @@ function Configurado({ ciclo }: { ciclo: CicloEnCurso }) {
       {porAbrir !== null && <Siguiente ciclo={ciclo} numero={porAbrir} />}
 
       {ciclo.trimestres.some((t) => t.estado === 'cerrado') && (
-        <p className="text-[13px] text-tinta-2">
+        <p className="text-apoyo text-tinta-2">
           Un trimestre cerrado no permite cambiar sus fechas: sus calificaciones ya se
           reportaron.
         </p>
@@ -373,7 +373,7 @@ function Siguiente({ ciclo, numero }: { ciclo: CicloEnCurso; numero: 1 | 2 | 3 }
         </Button>
       </div>
 
-      {problema && <p className="text-[13px] text-rojo">{problema}</p>}
+      {problema && <p className="text-apoyo text-rojo">{problema}</p>}
       {error && <Aviso>{error}</Aviso>}
     </section>
   )
@@ -415,7 +415,7 @@ function FilaPeriodo({
 
         <span className="w-28 shrink-0 text-base font-medium text-tinta">
           Trimestre {periodo.numero}
-          {cerrado && <span className="block text-[13px] text-tinta-2">cerrado</span>}
+          {cerrado && <span className="block text-apoyo text-tinta-2">cerrado</span>}
         </span>
 
         {/* type="date" y no un campo de texto: abre el selector de iPadOS y no
@@ -443,7 +443,7 @@ function FilaPeriodo({
         />
       </div>
 
-      {malo && <p className="pb-2 pl-[3.25rem] text-[13px] text-rojo">{periodo.problema}</p>}
+      {malo && <p className="pb-2 pl-[3.25rem] text-apoyo text-rojo">{periodo.problema}</p>}
     </li>
   )
 }

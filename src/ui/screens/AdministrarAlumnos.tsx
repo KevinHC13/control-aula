@@ -129,7 +129,7 @@ function Renglon({
         </span>
         <span className="min-w-0 flex-1 truncate text-base text-tinta">{alumno.nombre}</span>
         {alumno.fecha_nacimiento && (
-          <span className="cifra shrink-0 text-[13px] text-tinta-2">
+          <span className="cifra shrink-0 text-apoyo text-tinta-2">
             {alumno.fecha_nacimiento}
           </span>
         )}
@@ -274,7 +274,7 @@ function Formulario({
     <div className="flex flex-col gap-3 rounded-md border border-linea bg-papel p-3">
       <div className="flex gap-2">
         <label className="flex w-16 shrink-0 flex-col gap-1">
-          <span className="text-[13px] text-tinta-2">Número</span>
+          <span className="text-apoyo text-tinta-2">Número</span>
           <input
             type="text"
             inputMode="numeric"
@@ -284,7 +284,7 @@ function Formulario({
           />
         </label>
         <label className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className="text-[13px] text-tinta-2">Nombre</span>
+          <span className="text-apoyo text-tinta-2">Nombre</span>
           <input
             type="text"
             value={formulario.nombre}
@@ -299,7 +299,7 @@ function Formulario({
           fecha de abajo se llena sola. Es el mismo trato que en la carga de la
           lista, donde la fecha impresa casi nunca aparece. */}
       <label className="flex flex-col gap-1">
-        <span className="text-[13px] text-tinta-2">CURP (opcional)</span>
+        <span className="text-apoyo text-tinta-2">CURP (opcional)</span>
         <input
           type="text"
           value={formulario.curp}
@@ -313,7 +313,7 @@ function Formulario({
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-[13px] text-tinta-2">
+        <span className="text-apoyo text-tinta-2">
           Fecha de nacimiento (opcional, para el aviso de cumpleaños)
         </span>
         <input

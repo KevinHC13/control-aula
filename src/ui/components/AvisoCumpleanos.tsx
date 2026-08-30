@@ -59,7 +59,7 @@ export function AvisoCumpleanos({ alumnos, hoy }: { alumnos: readonly Alumno[]; 
       )}
 
       {despues.length > 0 && (
-        <p className={deHoy.length > 0 ? 'mt-1 text-[13px] text-tinta-2' : 'text-base text-tinta'}>
+        <p className={deHoy.length > 0 ? 'mt-1 text-apoyo text-tinta-2' : 'text-base text-tinta'}>
           {deHoy.length > 0 ? 'Esta semana: ' : 'Esta semana cumple años: '}
           {despues.map((c: Cumpleanos, i) => (
             <span key={c.alumno.id}>

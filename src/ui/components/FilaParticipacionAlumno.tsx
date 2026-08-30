@@ -81,7 +81,7 @@ export function FilaParticipacionAlumno({
       className={cn(
         'flex min-h-14 w-full touch-manipulation items-center gap-3 border-b border-linea',
         'bg-papel pr-3 text-left select-none',
-        'outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset',
+        'foco-dentro',
         'active:bg-cuadro',
       )}
     >
@@ -97,7 +97,7 @@ export function FilaParticipacionAlumno({
 
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate text-base text-tinta">{alumno.nombre}</span>
-        <span className="text-[13px] text-tinta-2">
+        <span className="text-apoyo text-tinta-2">
           {delTrimestre === 0 ? (
             'sin participaciones en el trimestre'
           ) : (

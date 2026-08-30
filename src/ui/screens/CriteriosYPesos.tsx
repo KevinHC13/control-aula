@@ -90,7 +90,7 @@ export function CriteriosYPesos({ alVolver }: { alVolver: () => void }) {
               onClick={() => setElegido(t.numero)}
               className={cn(
                 'h-11 flex-1 rounded-md border px-3 text-base outline-none',
-                'focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                'foco',
                 t.numero === numeroActivo
                   ? 'border-azul bg-azul text-papel'
                   : 'border-linea text-tinta hover:bg-cuadro',
@@ -98,7 +98,7 @@ export function CriteriosYPesos({ alVolver }: { alVolver: () => void }) {
             >
               T{t.numero}
               {t.estado === 'cerrado' && (
-                <span className="block text-[13px] opacity-80">cerrado</span>
+                <span className="block text-apoyo opacity-80">cerrado</span>
               )}
             </button>
           ))}
@@ -123,7 +123,7 @@ export function CriteriosYPesos({ alVolver }: { alVolver: () => void }) {
         </div>
 
         {!reparto.cierra && (
-          <p className="text-[13px] text-tinta-2">
+          <p className="text-apoyo text-tinta-2">
             Cada criterio recibe un porcentaje, y entre todos deben sumar 100. Los cambios
             se guardan automáticamente, así que puede dejarse a medias y continuar después:
             los 100 solo se exigen al cerrar el trimestre.
@@ -229,7 +229,7 @@ function FilaCriterio({
 
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="truncate text-base font-medium text-tinta">{catalogo.nombre}</span>
-          <span className="text-[13px] text-tinta-2">{etiqueta}</span>
+          <span className="text-apoyo text-tinta-2">{etiqueta}</span>
         </span>
 
         <Input
@@ -255,7 +255,7 @@ function FilaCriterio({
           aria-label={`Quitar ${catalogo.nombre} del trimestre ${trimestre.numero}`}
           className={cn(
             'flex size-11 shrink-0 items-center justify-center rounded-md text-tinta-2',
-            'outline-none hover:bg-cuadro hover:text-rojo focus-visible:ring-[3px] focus-visible:ring-ring/50',
+            'foco hover:bg-cuadro hover:text-rojo',
             'disabled:pointer-events-none disabled:opacity-50',
           )}
         >
@@ -299,7 +299,7 @@ function ParametrosAutomaticos({
     // Conducta no pide nada: su escala es fija. Se dice para que no parezca que
     // falta configurarla.
     return (
-      <p className="pb-3 pl-[15px] text-[13px] text-tinta-2">
+      <p className="pb-3 pl-[15px] text-apoyo text-tinta-2">
         Esta calificación se obtiene de los reportes anotados en la Bitácora. Un solo
         reporte no la baja; dos la dejan en cinco y tres o más la dejan en cero. No hay nada
         que configurar aquí.
@@ -310,7 +310,7 @@ function ParametrosAutomaticos({
   if (tipo === 'auto_puntualidad') {
     return (
       <div className="flex flex-col gap-1 pb-3 pl-[15px]">
-        <p className="text-[13px] text-tinta-2">
+        <p className="text-apoyo text-tinta-2">
           Esta calificación se obtiene de la asistencia del trimestre: cada falta la baja.
           ¿Cuántos retardos equivalen a una falta?
         </p>
@@ -324,7 +324,7 @@ function ParametrosAutomaticos({
               onClick={() => void fijarRetardosPorFalta(trimestre, ponderado, opcion)}
               className={cn(
                 'h-11 min-w-11 rounded-md border px-3 text-base outline-none',
-                'focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                'foco',
                 'disabled:pointer-events-none disabled:opacity-50',
                 ponderado.retardos_por_falta === opcion
                   ? 'border-azul bg-azul/10 text-tinta'
@@ -335,7 +335,7 @@ function ParametrosAutomaticos({
             </button>
           ))}
         </div>
-        <p className="text-[13px] text-tinta-2">
+        <p className="text-apoyo text-tinta-2">
           Las faltas justificadas nunca bajan esta calificación. Este valor puede cambiarse
           en cualquier momento y nada se pierde: la puntualidad se vuelve a calcular sola a
           partir de la asistencia registrada.
@@ -384,7 +384,7 @@ function MetaDeParticipacion({
 
   return (
     <div className="flex flex-col gap-1 pb-3 pl-[15px]">
-      <p className="text-[13px] text-tinta-2">
+      <p className="text-apoyo text-tinta-2">
         Esta calificación se obtiene de las participaciones registradas en la pantalla de
         Asistencia.
       </p>
@@ -403,7 +403,7 @@ function MetaDeParticipacion({
           className="cifra w-16 shrink-0 text-center"
         />
       </div>
-      <p className={cn('text-[13px]', incompleto ? 'text-rojo' : 'text-tinta-2')}>
+      <p className={cn('text-apoyo', incompleto ? 'text-rojo' : 'text-tinta-2')}>
         {incompleto
           ? 'Falta indicar este número. Sin él, la participación no se puede calificar.'
           : 'Quien alcance esa cantidad obtiene diez; con menos, la calificación es proporcional.'}
@@ -468,20 +468,20 @@ function Alta({ trimestre }: { trimestre: Trimestre }) {
             }}
             className={cn(
               'flex h-11 flex-col items-start justify-center rounded-md border px-3 outline-none',
-              'focus-visible:ring-[3px] focus-visible:ring-ring/50',
+              'foco',
               tipo === opcion.tipo
                 ? 'border-azul bg-azul/10 text-tinta'
                 : 'border-linea text-tinta-2 hover:bg-cuadro',
             )}
           >
             <span className="text-base leading-tight">{opcion.etiqueta}</span>
-            <span className="text-[13px] leading-tight opacity-80">{opcion.ayuda}</span>
+            <span className="text-apoyo leading-tight opacity-80">{opcion.ayuda}</span>
           </button>
         ))}
       </fieldset>
 
       {error && (
-        <p role="alert" className="text-[13px] text-rojo">
+        <p role="alert" className="text-apoyo text-rojo">
           {error}
         </p>
       )}
@@ -615,7 +615,7 @@ function CierreDelTrimestre({
       </Button>
 
       {!reparto.cierra && (
-        <p className="text-[13px] text-tinta-2">
+        <p className="text-apoyo text-tinta-2">
           Para cerrar el trimestre, los porcentajes de los criterios deben sumar 100.
         </p>
       )}

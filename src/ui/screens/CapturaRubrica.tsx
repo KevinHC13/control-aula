@@ -87,7 +87,7 @@ export function CapturaRubrica({
           <h1 id="titulo-rubrica" className="truncate text-2xl font-bold text-tinta">
             {actividad.actividad.nombre}
           </h1>
-          <p className="text-[13px] text-tinta-2">
+          <p className="text-apoyo text-tinta-2">
             <span className="cifra">{actividad.actividad.fecha}</span>
             {campo && ` · ${campo}`}
             {rubrica && ` · ${rubrica.rubrica.nombre}`}
@@ -109,7 +109,7 @@ export function CapturaRubrica({
       </p>
 
       {abierto && total > 0 && (
-        <p className="text-[13px] text-tinta-2">
+        <p className="text-apoyo text-tinta-2">
           Seleccione un alumno y marque el nivel que le corresponde en cada aspecto de la
           rúbrica. Los cambios se guardan solos, y un alumno cuenta como calificado cuando
           tiene todos sus aspectos marcados.
@@ -117,7 +117,7 @@ export function CapturaRubrica({
       )}
 
       {!abierto && (
-        <p className="text-[13px] text-tinta-2">
+        <p className="text-apoyo text-tinta-2">
           Este trimestre está cerrado: se puede consultar, no cambiar.
         </p>
       )}
@@ -169,7 +169,7 @@ export function CapturaRubrica({
               </span>{' '}
               {fila.alumno.nombre}
             </p>
-            <p className="text-[13px] text-tinta-2">
+            <p className="text-apoyo text-tinta-2">
               {fila.completa
                 ? 'Calificado'
                 : `${fila.capturados} de ${renglones.length} aspectos`}
@@ -201,7 +201,7 @@ export function CapturaRubrica({
                     <th
                       key={nombre}
                       scope="col"
-                      className="px-1 pb-1 text-center text-[13px] font-medium text-tinta-2"
+                      className="px-1 pb-1 text-center text-apoyo font-medium text-tinta-2"
                     >
                       {nombre}
                     </th>
@@ -291,7 +291,7 @@ function FilaCalificacionAlumno({
       }`}
       className={cn(
         'flex min-h-14 w-full items-center gap-3 border-b border-linea bg-papel pr-3 text-left',
-        'outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset',
+        'foco-dentro',
         'active:bg-cuadro',
       )}
     >
@@ -347,7 +347,7 @@ function CeldaNivel({
       aria-label={`${renglon}, ${nivel}: ${descriptor}`}
       className={cn(
         'flex h-full min-h-14 w-full items-start break-words rounded-md border px-2 py-2 text-left text-base',
-        'outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+        'foco',
         'active:bg-cuadro disabled:opacity-60',
         elegido
           ? 'border-azul bg-azul text-papel active:bg-azul'

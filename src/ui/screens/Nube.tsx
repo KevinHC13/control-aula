@@ -199,7 +199,7 @@ export function Nube({ alVolver }: { alVolver: () => void }) {
                 nombra la suya. Antes se leía «cambios en espera» —sin número, porque
                 la cifra vive dos renglones más arriba— y encima explicaba por dónde
                 viajan los datos, que no es asunto de quien mira. */}
-            <p className="text-[13px] text-tinta-2">
+            <p className="text-apoyo text-tinta-2">
               {porSubir === 0
                 ? 'toda la información está respaldada en la nube'
                 : `${plural(porSubir ?? 0, 'cambio', 'cambios')} sin respaldar`}
@@ -284,7 +284,7 @@ function Restaurado({ conteo }: { conteo: ConteoPorTabla }) {
         Restaurados <span className="cifra">{total}</span>{' '}
         {plural(total, 'registro', 'registros')}.
       </p>
-      <ul className="text-[13px] text-tinta-2">
+      <ul className="text-apoyo text-tinta-2">
         {conFilas.map(([tabla, cuantas]) => (
           <li key={tabla}>
             {tabla}: <span className="cifra">{cuantas}</span>

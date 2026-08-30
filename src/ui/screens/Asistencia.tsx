@@ -138,7 +138,7 @@ export function Asistencia() {
           onClick={() => setModoDesde(participacion ? null : diaSeleccionado)}
           className={cn(
             'flex min-h-11 items-center gap-2 rounded-md border px-3 text-base',
-            'outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+            'foco',
             participacion
               ? 'border-verde bg-verde text-papel'
               : 'border-linea text-tinta-2 hover:bg-cuadro',
@@ -153,7 +153,7 @@ export function Asistencia() {
           className={cn(
             'flex min-h-11 items-center gap-2 rounded-md border border-linea px-3 text-base',
             'text-tinta-2 outline-none hover:bg-cuadro',
-            'focus-visible:ring-[3px] focus-visible:ring-ring/50',
+            'foco',
           )}
         >
           Sortear quién pasa
@@ -193,7 +193,7 @@ export function Asistencia() {
            camino. */
         <div className="flex flex-col items-start gap-3 pt-2">
           <p className="text-base text-tinta">Todavía no hay alumnos en el grupo.</p>
-          <p className="text-[13px] text-tinta-2">
+          <p className="text-apoyo text-tinta-2">
             La lista se carga una sola vez al empezar el ciclo, desde Ajustes. Puede
             leerse de un archivo de Excel, de un PDF o de una fotografía de la lista
             oficial.
@@ -216,7 +216,7 @@ export function Asistencia() {
                 toque —es texto— y sin ella el ciclo de cuatro estados hay que
                 descubrirlo tocando. */}
             {filas.length > 0 && (
-              <p className="text-[13px] text-tinta-2">
+              <p className="text-apoyo text-tinta-2">
                 Todos los alumnos empiezan como presentes. Toque el nombre de quien faltó
                 para ir cambiando su estado: ausente, retardo y falta justificada.
               </p>

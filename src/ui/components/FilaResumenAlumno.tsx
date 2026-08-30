@@ -26,7 +26,7 @@ export function FilaResumenAlumno({ fila }: { fila: FilaResumen }) {
 
       <span className="flex min-w-0 flex-1 flex-col py-2">
         <span className="truncate text-base text-tinta">{alumno.nombre}</span>
-        <span className="text-[13px] text-tinta-2">
+        <span className="text-apoyo text-tinta-2">
           {dias === 0 ? (
             'sin días capturados'
           ) : (

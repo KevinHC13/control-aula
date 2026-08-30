@@ -56,7 +56,7 @@ export function CapturaEntregas({
           <h1 id="titulo-captura" className="truncate text-2xl font-bold text-tinta">
             {actividad.actividad.nombre}
           </h1>
-          <p className="text-[13px] text-tinta-2">
+          <p className="text-apoyo text-tinta-2">
             <span className="cifra">{actividad.actividad.fecha}</span>
             {campo && ` · ${campo}`}
           </p>
@@ -72,7 +72,7 @@ export function CapturaEntregas({
         <p className="cifra text-4xl font-semibold text-tinta" aria-live="polite">
           {entregadas} <span className="text-tinta-2">/ {total}</span>
         </p>
-        <p className="mt-1 text-[13px] text-tinta-2">
+        <p className="mt-1 text-apoyo text-tinta-2">
           {total === 0
             ? ''
             : entregadas === total
@@ -84,14 +84,14 @@ export function CapturaEntregas({
       {/* Lo más importante de la pantalla, y no estaba escrito: al abrirla todos
           quedan como entregado. Sin decirlo, se guarda un diez sin querer. */}
       {abierto && total > 0 && (
-        <p className="text-[13px] text-tinta-2">
+        <p className="text-apoyo text-tinta-2">
           Todos los alumnos aparecen como entregado. Toque el nombre de quien no entregó
           para marcarlo. Los cambios se guardan solos.
         </p>
       )}
 
       {!abierto && (
-        <p className="text-[13px] text-tinta-2">
+        <p className="text-apoyo text-tinta-2">
           Este trimestre está cerrado: se puede consultar, no cambiar.
         </p>
       )}

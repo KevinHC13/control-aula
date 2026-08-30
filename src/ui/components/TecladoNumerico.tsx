@@ -74,7 +74,7 @@ function Tecla({
         // tecla en una captura de 30 alumnos se paga treinta veces.
         'flex h-14 items-center justify-center rounded-md border border-linea bg-papel',
         'cifra text-2xl text-tinta outline-none',
-        'focus-visible:ring-[3px] focus-visible:ring-ring/50',
+        'foco',
         'active:bg-cuadro disabled:opacity-60',
       )}
     >

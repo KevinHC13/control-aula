@@ -64,7 +64,7 @@ export function ResumenDelGrupo() {
             onClick={() => setElegido(t.numero)}
             className={cn(
               'h-11 flex-1 rounded-md border px-3 text-base outline-none',
-              'focus-visible:ring-[3px] focus-visible:ring-ring/50',
+              'foco',
               t.numero === numeroActivo
                 ? 'border-azul bg-azul text-papel'
                 : 'border-linea text-tinta hover:bg-cuadro',
@@ -72,7 +72,7 @@ export function ResumenDelGrupo() {
           >
             T{t.numero}
             {t.estado === 'cerrado' && (
-              <span className="block text-[13px] opacity-80">cerrado</span>
+              <span className="block text-apoyo opacity-80">cerrado</span>
             )}
           </button>
         ))}
@@ -87,7 +87,7 @@ export function ResumenDelGrupo() {
               ? '—'
               : `${Math.round(resumen.asistencia)}%`}
           </p>
-          <p className="mt-1 text-[13px] text-tinta-2">
+          <p className="mt-1 text-apoyo text-tinta-2">
             asistencia
             {resumen && resumen.diasCapturados > 0 && (
               <>
@@ -102,7 +102,7 @@ export function ResumenDelGrupo() {
           <p className="cifra text-4xl font-semibold text-tinta" aria-live="polite">
             {comoCalificacion(resumen?.promedio ?? null)}
           </p>
-          <p className="mt-1 text-[13px] text-tinta-2">
+          <p className="mt-1 text-apoyo text-tinta-2">
             promedio {cargando && '· cargando…'}
           </p>
         </div>
@@ -122,9 +122,9 @@ export function ResumenDelGrupo() {
           <div className="flex items-end gap-3 border-b border-linea pb-1 pr-3">
             <span aria-hidden className="w-[7px] shrink-0" />
             <span className="w-7 shrink-0" />
-            <span className="min-w-0 flex-1 text-[13px] text-tinta-2">alumno</span>
-            <span className="w-14 shrink-0 text-right text-[13px] text-tinta-2">asist.</span>
-            <span className="w-12 shrink-0 text-right text-[13px] text-tinta-2">prom.</span>
+            <span className="min-w-0 flex-1 text-apoyo text-tinta-2">alumno</span>
+            <span className="w-14 shrink-0 text-right text-apoyo text-tinta-2">asist.</span>
+            <span className="w-12 shrink-0 text-right text-apoyo text-tinta-2">prom.</span>
           </div>
 
           <ul className="-mx-4">
@@ -141,7 +141,7 @@ export function ResumenDelGrupo() {
         </p>
       )}
 
-      <p className="border-t border-linea pt-3 text-[13px] text-tinta-2">
+      <p className="border-t border-linea pt-3 text-apoyo text-tinta-2">
         Se marca a quien baje de <span className="cifra">{UMBRALES.asistencia}%</span> de
         asistencia o de <span className="cifra">{UMBRALES.promedio}.0</span> de promedio.
         Son los umbrales de arranque y están por confirmar; un alumno sin días capturados

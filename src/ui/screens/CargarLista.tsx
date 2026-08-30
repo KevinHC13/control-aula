@@ -155,7 +155,7 @@ export function CargarLista({ alVolver }: { alVolver: () => void }) {
             corregir. Si la lista trae CURP, la fecha de cumpleaños sale de ahí sola. Con
             un archivo de Excel no hace falta conexión; con un PDF o una foto, sí.
           </p>
-          <p className="text-[13px] text-tinta-2">
+          <p className="text-apoyo text-tinta-2">
             Si la lista viene en varias páginas, puede elegirlas todas de una vez, o
             agregarlas de una en una después.
           </p>
@@ -185,7 +185,7 @@ export function CargarLista({ alVolver }: { alVolver: () => void }) {
               ? `Leyendo la hoja ${avance.hoja} de ${avance.de}…`
               : 'Leyendo la lista…'}
           </p>
-          <p className="text-[13px] text-tinta-2">
+          <p className="text-apoyo text-tinta-2">
             Puede tardar unos segundos. No cierre la aplicación mientras termina.
           </p>
           <Button variant="outline" onClick={() => cancelacion.current?.abort()}>
@@ -215,7 +215,7 @@ export function CargarLista({ alVolver }: { alVolver: () => void }) {
                 alumnos{hojas > 1 ? ` · ${hojas} hojas` : ''}
               </span>
             </p>
-            <p className="text-[13px] text-tinta-2" aria-live="polite">
+            <p className="text-apoyo text-tinta-2" aria-live="polite">
               {pendientes === 0 ? (
                 'Revise los datos antes de guardar. Seleccione cualquier dato para corregirlo.'
               ) : (
@@ -232,7 +232,7 @@ export function CargarLista({ alVolver }: { alVolver: () => void }) {
               sabe qué es. Va oculto a lectores porque cada campo ya se nombra. */}
           <div
             aria-hidden
-            className="flex items-center gap-1 border-b border-linea pb-1 text-[13px] text-tinta-2"
+            className="flex items-center gap-1 border-b border-linea pb-1 text-apoyo text-tinta-2"
           >
             <span className="w-[7px] shrink-0" />
             <span className="w-11 shrink-0 px-2 text-center">Nº</span>
@@ -256,7 +256,7 @@ export function CargarLista({ alVolver }: { alVolver: () => void }) {
           {/* Agregar otra hoja va debajo de la lista y no arriba: lo primero que
               hay que hacer con lo leído es revisarlo. */}
           <div className="flex flex-col gap-2 pt-4">
-            <p className="text-[13px] text-tinta-2">
+            <p className="text-apoyo text-tinta-2">
               ¿La lista sigue en otra página? Agréguela y se suma a esta: quien ya esté no
               se duplica.
             </p>
@@ -300,7 +300,7 @@ export function CargarLista({ alVolver }: { alVolver: () => void }) {
           <p className="cifra text-3xl font-semibold text-tinta">
             {filas.length} <span className="font-sans text-base text-tinta-2">alumnos guardados</span>
           </p>
-          <p className="text-[13px] text-tinta-2">
+          <p className="text-apoyo text-tinta-2">
             Ya aparecen en la pantalla de Asistencia. Si la lista cambia, puede volver a
             cargarse: los alumnos que ya existen se actualizan y no se duplican.
           </p>

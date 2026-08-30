@@ -138,7 +138,7 @@ function FilaRubrica({
           className="flex min-w-0 flex-1 flex-col items-start py-2 text-left"
         >
           <span className="truncate text-base font-medium text-tinta">{rubrica.nombre}</span>
-          <span className="text-[13px] text-tinta-2">
+          <span className="text-apoyo text-tinta-2">
             {criterios.length === 1 ? '1 renglón' : `${criterios.length} renglones`}
             {/* Escrito y no en un `title`: en el iPad no hay hover, así que ahí ese
                 texto sencillamente no existe y el botón de borrar queda apagado sin
@@ -167,7 +167,7 @@ function FilaRubrica({
           aria-label={`Borrar la rúbrica ${rubrica.nombre}`}
           className={cn(
             'flex size-11 shrink-0 items-center justify-center rounded-md text-tinta-2',
-            'outline-none hover:bg-cuadro hover:text-rojo focus-visible:ring-[3px] focus-visible:ring-ring/50',
+            'foco hover:bg-cuadro hover:text-rojo',
             'disabled:pointer-events-none disabled:opacity-40',
           )}
         >
@@ -176,7 +176,7 @@ function FilaRubrica({
       </div>
 
       {error && (
-        <p role="alert" className="pb-2 pl-[3.25rem] text-[13px] text-rojo">
+        <p role="alert" className="pb-2 pl-[3.25rem] text-apoyo text-rojo">
           {error}
         </p>
       )}
@@ -239,7 +239,7 @@ function Editor({
         />
       </div>
 
-      <p className="text-[13px] text-tinta-2">
+      <p className="text-apoyo text-tinta-2">
         Los cuatro niveles son iguales en todas las rúbricas y valen{' '}
         <span className="cifra">10, 8.3, 6.7 y 0</span>. Lo que cambia es qué significa cada
         uno aquí, y eso es lo que se escribe abajo.
@@ -274,7 +274,7 @@ function Editor({
                 aria-label={`Quitar el renglón ${i + 1}`}
                 className={cn(
                   'flex size-11 shrink-0 items-center justify-center rounded-md text-tinta-2',
-                  'outline-none hover:bg-cuadro hover:text-rojo focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                  'foco hover:bg-cuadro hover:text-rojo',
                   'disabled:pointer-events-none disabled:opacity-40',
                 )}
               >
@@ -284,7 +284,7 @@ function Editor({
 
             {NIVELES.map((nivel, n) => (
               <div key={nivel} className="flex items-center gap-2">
-                <span className="w-20 shrink-0 text-[13px] text-tinta-2">{nivel}</span>
+                <span className="w-20 shrink-0 text-apoyo text-tinta-2">{nivel}</span>
                 <Input
                   aria-label={`${nivel} del renglón ${i + 1}`}
                   value={renglon.descriptores[n] ?? ''}
@@ -295,7 +295,7 @@ function Editor({
             ))}
 
             {tocado && renglon.problema && (
-              <p className="text-[13px] text-rojo">{renglon.problema}</p>
+              <p className="text-apoyo text-rojo">{renglon.problema}</p>
             )}
           </li>
         ))}

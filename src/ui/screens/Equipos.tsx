@@ -91,7 +91,7 @@ export function Equipos({ alVolver }: { alVolver: () => void }) {
               onClick={() => setModo(opcion.valor)}
               className={cn(
                 'h-11 flex-1 rounded-md border px-3 text-base outline-none',
-                'focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                'foco',
                 modo === opcion.valor
                   ? 'border-azul bg-azul text-papel'
                   : 'border-linea text-tinta hover:bg-cuadro',
@@ -116,7 +116,7 @@ export function Equipos({ alVolver }: { alVolver: () => void }) {
                 onClick={() => setCantidad(n)}
                 className={cn(
                   'cifra h-11 min-w-11 rounded-md border px-3 text-base outline-none',
-                  'focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                  'foco',
                   cantidad === n
                     ? 'border-azul bg-azul/10 text-tinta'
                     : 'border-linea text-tinta-2 hover:bg-cuadro',
@@ -136,7 +136,7 @@ export function Equipos({ alVolver }: { alVolver: () => void }) {
           onClick={() => setSoloPresentes((solo) => !solo)}
           className={cn(
             'min-h-11 self-start rounded-md border px-3 text-base outline-none',
-            'focus-visible:ring-[3px] focus-visible:ring-ring/50',
+            'foco',
             soloPresentes
               ? 'border-verde bg-verde/10 text-tinta'
               : 'border-linea text-tinta-2 hover:bg-cuadro',
@@ -145,7 +145,7 @@ export function Equipos({ alVolver }: { alVolver: () => void }) {
           {soloPresentes ? 'Solo los presentes de hoy' : 'Todo el grupo'}
         </button>
 
-        <p className="text-[13px] text-tinta-2">
+        <p className="text-apoyo text-tinta-2">
           {cargando
             ? 'Cargando…'
             : soloPresentes

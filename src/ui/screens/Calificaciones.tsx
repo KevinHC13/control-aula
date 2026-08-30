@@ -154,7 +154,7 @@ export function Calificaciones() {
                 onClick={() => setElegido(t.numero)}
                 className={cn(
                   'h-11 flex-1 rounded-md border px-3 text-base outline-none',
-                  'focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                  'foco',
                   t.numero === numeroActivo
                     ? 'border-azul bg-azul text-papel'
                     : 'border-linea text-tinta hover:bg-cuadro',
@@ -162,7 +162,7 @@ export function Calificaciones() {
               >
                 T{t.numero}
                 {t.estado === 'cerrado' && (
-                  <span className="block text-[13px] opacity-80">cerrado</span>
+                  <span className="block text-apoyo opacity-80">cerrado</span>
                 )}
               </button>
             ))}
@@ -243,7 +243,7 @@ function GrupoDeCriterio({
           {grupo.criterio.nombre}{' '}
           <span className="cifra font-normal text-tinta-2">{grupo.ponderado.peso}%</span>
         </h2>
-        <p className="text-[13px] text-tinta-2" aria-live="polite">
+        <p className="text-apoyo text-tinta-2" aria-live="polite">
           {grupo.actividades.length === 0
             ? 'sin actividades'
             : sinCalificar === 0
@@ -309,7 +309,7 @@ function FilaActividad({
 
         <span className="flex min-w-0 flex-1 flex-col py-2">
           <span className="truncate text-base font-medium text-tinta">{actividad.nombre}</span>
-          <span className="text-[13px] text-tinta-2">
+          <span className="text-apoyo text-tinta-2">
             <span className="cifra">{actividad.fecha}</span>
             {campo && ` · ${campo}`}
             {conQue && ` · ${conQue}`}
@@ -318,7 +318,7 @@ function FilaActividad({
 
         <span
           className={cn(
-            'shrink-0 pr-1 text-[13px]',
+            'shrink-0 pr-1 text-apoyo',
             calificada ? 'text-tinta-2' : 'text-rojo',
           )}
         >
@@ -355,7 +355,7 @@ function FilaDeExamen({
           {examen.criterio.nombre}{' '}
           <span className="cifra font-normal text-tinta-2">{examen.ponderado.peso}%</span>
         </h2>
-        <p className="text-[13px] text-tinta-2">
+        <p className="text-apoyo text-tinta-2">
           {listo ? `${campos.length} campos` : 'sin preguntas'}
         </p>
       </header>
@@ -376,7 +376,7 @@ function FilaDeExamen({
           <span className="truncate text-base font-medium text-tinta">
             {listo ? 'Registrar los aciertos' : 'Indicar cuántas preguntas tiene'}
           </span>
-          <span className="text-[13px] text-tinta-2">
+          <span className="text-apoyo text-tinta-2">
             {listo ? (
               <>
                 <span className="cifra">{preguntas}</span> preguntas en total

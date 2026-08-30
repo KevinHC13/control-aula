@@ -65,7 +65,7 @@ export function Bitacora() {
         </h1>
         {/* La consecuencia va arriba y no en letra chica al final: es lo que
             distingue esta pantalla de un anecdotario. */}
-        <p className="mt-1 text-[13px] text-tinta-2">
+        <p className="mt-1 text-apoyo text-tinta-2">
           Cada anotación cuenta como un reporte de conducta y afecta esa calificación. Un
           solo reporte no la baja; dos la dejan en cinco y tres o más la dejan en cero.
         </p>
@@ -91,7 +91,7 @@ export function Bitacora() {
                 onClick={() => setElegido(t.numero)}
                 className={cn(
                   'h-11 flex-1 rounded-md border px-3 text-base outline-none',
-                  'focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                  'foco',
                   t.numero === numeroActivo
                     ? 'border-azul bg-azul text-papel'
                     : 'border-linea text-tinta hover:bg-cuadro',
@@ -102,7 +102,7 @@ export function Bitacora() {
             ))}
           </nav>
 
-          <p className="text-[13px] text-tinta-2" aria-live="polite">
+          <p className="text-apoyo text-tinta-2" aria-live="polite">
             {cargandoFilas
               ? 'Cargando…'
               : conReportes === 0
@@ -155,14 +155,14 @@ function FilaDeAlumno({ fila, alAbrir }: { fila: FilaBitacora; alAbrir: () => vo
                 : 'bg-rojo',
           )}
         />
-        <span className="cifra w-7 shrink-0 text-right text-[13px] text-tinta-2">
+        <span className="cifra w-7 shrink-0 text-right text-apoyo text-tinta-2">
           {fila.alumno.numero_lista}
         </span>
 
         <span className="flex min-w-0 flex-1 flex-col py-2">
           <span className="truncate text-base text-tinta">{fila.alumno.nombre}</span>
           {ultimo && (
-            <span className="truncate text-[13px] text-tinta-2">
+            <span className="truncate text-apoyo text-tinta-2">
               <span className="cifra">{ultimo.fecha}</span> · {ultimo.texto}
             </span>
           )}
@@ -234,7 +234,7 @@ function DetalleAlumno({
           <h1 id="titulo-detalle" className="truncate text-2xl font-bold text-tinta">
             {fila.alumno.nombre}
           </h1>
-          <p className="text-[13px] text-tinta-2">
+          <p className="text-apoyo text-tinta-2">
             <span className="cifra">{fila.reportes.length}</span>{' '}
             {fila.reportes.length === 1 ? 'reporte' : 'reportes'} en el trimestre{' '}
             <span className="cifra">{trimestre.numero}</span>
@@ -266,7 +266,7 @@ function DetalleAlumno({
             <Button onClick={() => void guardar()} disabled={!puedeGuardar}>
               Registrar el reporte
             </Button>
-            <span className="text-[13px] text-tinta-2">
+            <span className="text-apoyo text-tinta-2">
               Se registrará con la fecha de hoy, <span className="cifra">{hoy}</span>
             </span>
           </div>
@@ -306,7 +306,7 @@ function FilaDeReporte({ reporte }: { reporte: Reporte }) {
 
   return (
     <li className="flex items-start gap-2 border-b border-linea py-3">
-      <span className="cifra shrink-0 pt-0.5 text-[13px] text-tinta-2">{reporte.fecha}</span>
+      <span className="cifra shrink-0 pt-0.5 text-apoyo text-tinta-2">{reporte.fecha}</span>
       <p className="min-w-0 flex-1 text-base text-tinta">{reporte.texto}</p>
       {confirmando ? (
         <Button

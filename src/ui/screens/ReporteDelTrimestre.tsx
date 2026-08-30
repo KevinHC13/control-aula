@@ -79,7 +79,7 @@ export function ReporteDelTrimestre({
           <h1 id="titulo-reporte" className="text-2xl font-bold text-tinta">
             Calificaciones
           </h1>
-          <p className="text-[13px] text-tinta-2">
+          <p className="text-apoyo text-tinta-2">
             Trimestre {trimestre.numero} ·{' '}
             {trimestre.estado === 'cerrado' ? 'cerrado' : 'en curso'}
           </p>
@@ -98,7 +98,7 @@ export function ReporteDelTrimestre({
               recalculan, y no decirlo haría parecer que sí. */}
           <p
             className={cn(
-              'rounded-md border-l-[7px] px-3 py-2 text-[13px]',
+              'rounded-md border-l-[7px] px-3 py-2 text-apoyo',
               reporte.delSnapshot
                 ? 'border-azul bg-azul/5 text-tinta'
                 : 'border-linea bg-cuadro text-tinta-2',
@@ -110,7 +110,7 @@ export function ReporteDelTrimestre({
           </p>
 
           {incompletos > 0 && (
-            <p className="text-[13px] text-tinta-2">
+            <p className="text-apoyo text-tinta-2">
               {incompletos === alumnos.length
                 ? 'Todavía hay criterios sin calificar. Cada calificación se obtiene solamente de lo que ya está evaluado, no del trimestre completo.'
                 : `${incompletos} de ${alumnos.length} alumnos tienen criterios sin capturar: su calificación sale solo de lo que ya se calificó.`}
@@ -135,7 +135,7 @@ export function ReporteDelTrimestre({
                     onClick={() => setVista(modo)}
                     className={cn(
                       'h-11 flex-1 rounded-md border px-3 text-base outline-none',
-                      'focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                      'foco',
                       vista === modo
                         ? 'border-azul bg-azul text-papel'
                         : 'border-linea text-tinta hover:bg-cuadro',
@@ -215,14 +215,14 @@ function TablaDelGrupo({
         </caption>
         <thead>
           <tr className="border-b border-linea">
-            <th scope="col" className="px-2 pb-1 text-left text-[13px] font-medium text-tinta-2">
+            <th scope="col" className="px-2 pb-1 text-left text-apoyo font-medium text-tinta-2">
               Alumno
             </th>
             {columnas.map((c) => (
               <th
                 key={c.clave}
                 scope="col"
-                className="px-2 pb-1 align-bottom text-right text-[13px] font-medium text-tinta-2"
+                className="px-2 pb-1 align-bottom text-right text-apoyo font-medium text-tinta-2"
               >
                 <span className="block leading-tight">{c.corto}</span>
                 {/* El peso, a la vista. Antes vivía en un `title=` —un tooltip— y en
@@ -233,7 +233,7 @@ function TablaDelGrupo({
                 )}
               </th>
             ))}
-            <th scope="col" className="px-2 pb-1 text-right text-[13px] font-medium text-tinta">
+            <th scope="col" className="px-2 pb-1 text-right text-apoyo font-medium text-tinta">
               Final
             </th>
           </tr>
@@ -249,7 +249,7 @@ function TablaDelGrupo({
                   onClick={() => alAbrir(a.alumno.id)}
                   className={cn(
                     'flex min-h-14 w-full items-center gap-2 px-2 text-left',
-                    'outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset',
+                    'foco-dentro',
                     'active:bg-cuadro',
                   )}
                 >
@@ -288,7 +288,7 @@ function TablaDelGrupo({
                   /* «sobre 70» se leía como la fracción 5.2/70, que no significa
                      nada. Lo que falta por evaluar sí se entiende solo, y es
                      además lo accionable. */
-                  <span className="block text-[13px] font-normal text-ambar">
+                  <span className="block text-apoyo font-normal text-ambar">
                     falta {100 - a.pesoConsiderado}%
                   </span>
                 )}
@@ -332,7 +332,7 @@ function DetalleDeAlumno({ alumno }: { alumno: CalificacionDeAlumno }) {
         <p className="cifra mt-1 text-4xl font-semibold text-tinta">
           {comoCalificacion(alumno.general)}
         </p>
-        <p className="text-[13px] text-tinta-2">
+        <p className="text-apoyo text-tinta-2">
           {alumno.general === null
             ? 'Este alumno todavía no tiene ninguna evaluación registrada'
             : alumno.pesoConsiderado < 100
@@ -355,12 +355,12 @@ function DetalleDeAlumno({ alumno }: { alumno: CalificacionDeAlumno }) {
             segunda es lo que pone en el final, que depende de su porcentaje. Sin
             los encabezados, «3.3» y «0.7» en la misma fila parecen un error. */}
         <div className="flex items-end gap-2 border-b border-linea pb-1">
-          <span className="min-w-0 flex-1 text-[13px] text-tinta-2">criterio</span>
-          <span className="w-16 text-right text-[13px] leading-tight text-tinta-2">
+          <span className="min-w-0 flex-1 text-apoyo text-tinta-2">criterio</span>
+          <span className="w-16 text-right text-apoyo leading-tight text-tinta-2">
             su nota
             <span className="block text-tinta-2/70">de 10</span>
           </span>
-          <span className="w-16 text-right text-[13px] leading-tight text-tinta-2">
+          <span className="w-16 text-right text-apoyo leading-tight text-tinta-2">
             aporta
             <span className="block text-tinta-2/70">al final</span>
           </span>
@@ -376,7 +376,7 @@ function DetalleDeAlumno({ alumno }: { alumno: CalificacionDeAlumno }) {
               <div className="flex items-baseline gap-2">
                 <span className="min-w-0 flex-1 text-base text-tinta">
                   {c.nombre}{' '}
-                  <span className="cifra text-[13px] text-tinta-2">{c.peso}%</span>
+                  <span className="cifra text-apoyo text-tinta-2">{c.peso}%</span>
                 </span>
                 <span
                   className={cn(
@@ -398,9 +398,9 @@ function DetalleDeAlumno({ alumno }: { alumno: CalificacionDeAlumno }) {
                 </span>
               </div>
               {c.general === null ? (
-                <p className="text-[13px] text-rojo">Sin calificar</p>
+                <p className="text-apoyo text-rojo">Sin calificar</p>
               ) : (
-                <p className="text-[13px] text-tinta-2">
+                <p className="text-apoyo text-tinta-2">
                   {CAMPOS_CON_NOMBRE.filter((campo) => c.porCampo[campo.campo] !== undefined)
                     .map(
                       (campo) =>
@@ -418,7 +418,7 @@ function DetalleDeAlumno({ alumno }: { alumno: CalificacionDeAlumno }) {
             cifras hay que descubrirla sumando de cabeza. */}
         {alumno.criterios.length > 0 && alumno.general !== null && (
           <div className="flex items-baseline gap-2 pt-2">
-            <span className="min-w-0 flex-1 text-[13px] text-tinta-2">
+            <span className="min-w-0 flex-1 text-apoyo text-tinta-2">
               La columna de la derecha suma la calificación final
             </span>
             <span className="w-16 shrink-0" />

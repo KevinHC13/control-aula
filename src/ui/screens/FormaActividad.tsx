@@ -133,7 +133,7 @@ export function FormaActividad({
                 onClick={() => setCampo(opcion.campo)}
                 className={cn(
                   'flex min-h-11 items-center rounded-md border px-3 py-2 text-left text-base outline-none',
-                  'focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                  'foco',
                   campo === opcion.campo
                     ? 'border-azul bg-azul/10 text-tinta'
                     : 'border-linea text-tinta-2 hover:bg-cuadro',
@@ -185,7 +185,7 @@ export function FormaActividad({
             onChange={(e) => setRubricaId(e.target.value === '' ? null : e.target.value)}
             className={cn(
               'h-11 max-w-md rounded-md border border-linea bg-papel px-2 text-base text-tinta',
-              'outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+              'foco',
             )}
           >
             <option value="">Solo entregado o no entregado</option>
@@ -197,13 +197,13 @@ export function FormaActividad({
             ))}
           </select>
           {!editando && rubricaPorOmision !== null && (
-            <p className="text-[13px] text-tinta-2">
+            <p className="text-apoyo text-tinta-2">
               Se propone la misma de la actividad anterior de este criterio. Puede
               cambiarse.
             </p>
           )}
           {perderia && (
-            <p className="text-[13px] text-rojo">
+            <p className="text-apoyo text-rojo">
               Cambiarla borra lo ya calificado en esta actividad: {actual?.registros}{' '}
               {actual?.registros === 1 ? 'registro' : 'registros'}.
             </p>
@@ -228,7 +228,7 @@ export function FormaActividad({
                   }
                   className={cn(
                     'min-h-11 rounded-md border px-3 py-1 text-base outline-none',
-                    'focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                    'foco',
                     puesto
                       ? 'border-azul bg-azul/10 text-tinta'
                       : 'border-linea text-tinta-2 hover:bg-cuadro',

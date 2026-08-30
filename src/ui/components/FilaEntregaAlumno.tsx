@@ -30,7 +30,7 @@ export function FilaEntregaAlumno({
       aria-label={`${alumno.nombre}, ${entregada ? 'Entregada' : 'No entregada'}`}
       className={cn(
         'flex min-h-14 w-full items-center gap-3 border-b border-linea bg-papel pr-3 text-left',
-        'outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset',
+        'foco-dentro',
         'active:bg-cuadro disabled:opacity-60',
       )}
     >

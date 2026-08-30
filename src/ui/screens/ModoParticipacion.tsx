@@ -47,23 +47,23 @@ export function ModoParticipacion({
     <>
       <div className="flex flex-col gap-1 rounded-md border-l-[7px] border-verde bg-verde/5 py-2 pl-3">
         <p className="text-base font-medium text-tinta">Registro de participaciones</p>
-        <p className="text-[13px] text-tinta-2">
+        <p className="text-apoyo text-tinta-2">
           Toque a un alumno para sumarle una participación. Para restarle una, mantenga el
           dedo sobre su nombre. Mientras esta opción esté activa, la asistencia no cambia.
         </p>
         {trimestre === null ? (
-          <p className="text-[13px] text-tinta-2">
+          <p className="text-apoyo text-tinta-2">
             Este día no pertenece a ningún trimestre —vacaciones o días no lectivos—, así
             que las participaciones se guardan pero no cuentan para ninguna calificación.
           </p>
         ) : criterio === undefined ? (
-          <p className="text-[13px] text-tinta-2">
+          <p className="text-apoyo text-tinta-2">
             El trimestre {trimestre.numero} no evalúa la participación. Lo que se registre
             aquí se guarda y contará en cuanto se agregue ese criterio en Grupo → Ajustes →
             Criterios y pesos.
           </p>
         ) : meta === null ? (
-          <p className="text-[13px] text-rojo">
+          <p className="text-apoyo text-rojo">
             Falta indicar cuántas participaciones equivalen a diez en este trimestre. Sin ese
             dato la participación no se puede calificar; se establece en Grupo → Ajustes →
             Criterios y pesos.
@@ -77,7 +77,7 @@ export function ModoParticipacion({
         <p className="cifra text-4xl font-semibold text-verde" aria-live="polite">
           {participaciones}
         </p>
-        <p className="mt-1 text-[13px] text-tinta-2">
+        <p className="mt-1 text-apoyo text-tinta-2">
           {cargando
             ? 'Cargando…'
             : participaciones === 0

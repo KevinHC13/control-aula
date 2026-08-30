@@ -85,7 +85,7 @@ export function TiraDeDias({
         className={cn(
           'flex min-h-14 w-12 shrink-0 items-center justify-center rounded-lg border border-linea',
           'bg-papel text-tinta-2',
-          'outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+          'foco',
         )}
       >
         <IconoCalendario className="size-6" />
@@ -127,7 +127,7 @@ export function TiraDeDias({
                 aria-label={fecha}
                 className={cn(
                   'flex min-h-14 w-12 flex-col items-center justify-center rounded-lg border',
-                  'outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                  'foco',
                   seleccionado
                     ? 'border-azul bg-azul text-papel'
                     : cn('border-linea bg-papel', fin ? 'text-tinta-2/60' : 'text-tinta-2'),
@@ -176,7 +176,7 @@ function FlechaDia({
       aria-label={etiqueta}
       className={cn(
         'flex min-h-14 w-11 shrink-0 items-center justify-center rounded-lg text-tinta-2',
-        'outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+        'foco',
         'active:bg-cuadro disabled:opacity-40 disabled:active:bg-transparent',
       )}
     >

@@ -38,7 +38,7 @@ export function BarraPestanas() {
                 // la app y 44 px es el piso, no la meta.
                 className={cn(
                   'flex min-h-14 w-full min-w-11 items-center justify-center px-2 text-base',
-                  'outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset',
+                  'foco-dentro',
                   activa ? 'font-semibold text-azul' : 'text-tinta-2',
                 )}
               >

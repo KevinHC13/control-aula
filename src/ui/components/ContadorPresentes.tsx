@@ -33,7 +33,7 @@ export function ContadorPresentes({ filas }: { filas: FilaAsistencia[] }) {
       <p className="cifra text-4xl font-semibold text-tinta" aria-live="polite">
         {presentes} <span className="text-tinta-2">/ {total}</span>
       </p>
-      <p className="mt-1 text-[13px] text-tinta-2">
+      <p className="mt-1 text-apoyo text-tinta-2">
         {desglose.length === 0
           ? 'Todos presentes'
           : desglose.map((d, i) => (

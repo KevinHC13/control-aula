@@ -101,7 +101,7 @@ function FlechaMes({
       className={cn(
         'flex size-11 shrink-0 items-center justify-center rounded-lg border border-linea',
         'text-2xl leading-none text-tinta-2',
-        'outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+        'foco',
         'disabled:opacity-40',
       )}
     >
@@ -133,7 +133,7 @@ function Mosaico({
       aria-label={`${diaLargo.format(comoDate(dia.fecha))}, ${estatus(dia)}`}
       className={cn(
         'flex aspect-square min-h-11 flex-col items-center justify-center rounded-lg border',
-        'outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+        'foco',
         !dia.registrado && 'border-linea bg-cuadro text-tinta-2/60',
         dia.registrado && !conFaltas && 'border-azul bg-azul text-papel',
         dia.registrado && conFaltas && 'border-rojo bg-rojo text-papel',

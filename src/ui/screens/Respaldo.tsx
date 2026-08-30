@@ -300,7 +300,7 @@ function ResumenRestaurado({ conteo }: { conteo: ConteoPorTabla }) {
         Restaurados <span className="cifra">{total}</span>{' '}
         {plural(total, 'registro', 'registros')}.
       </p>
-      <ul className="text-[13px] text-tinta-2">
+      <ul className="text-apoyo text-tinta-2">
         {conFilas.map(([tabla, cuantas]) => (
           <li key={tabla}>
             {tabla}: <span className="cifra">{cuantas}</span>

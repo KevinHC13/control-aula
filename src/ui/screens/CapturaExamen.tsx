@@ -113,7 +113,7 @@ export function CapturaExamen({
           <h1 id="titulo-examen" className="truncate text-2xl font-bold text-tinta">
             {examen.criterio.nombre}
           </h1>
-          <p className="text-[13px] text-tinta-2">
+          <p className="text-apoyo text-tinta-2">
             T{trimestre.numero} · <span className="cifra">{examen.ponderado.peso}%</span>
             {listo && ` · ${campos.length} de 4 campos`}
           </p>
@@ -133,7 +133,7 @@ export function CapturaExamen({
       </header>
 
       {!abierto && (
-        <p className="text-[13px] text-tinta-2">
+        <p className="text-apoyo text-tinta-2">
           Este trimestre está cerrado: se puede consultar, no cambiar.
         </p>
       )}
@@ -144,7 +144,7 @@ export function CapturaExamen({
             <h2 className="text-base font-medium text-tinta">
               ¿Cuántas preguntas tiene el examen en cada campo?
             </h2>
-            <p className="mt-1 text-[13px] text-tinta-2">
+            <p className="mt-1 text-apoyo text-tinta-2">
               Los campos que el examen no evalúa se dejan en blanco. La calificación de cada
               campo se obtiene de los aciertos sobre el total de preguntas. Este total puede
               corregirse después sin perder los aciertos ya registrados.
@@ -244,7 +244,7 @@ export function CapturaExamen({
                   </span>{' '}
                   {fila.alumno.nombre}
                 </p>
-                <p className="text-[13px] text-tinta-2">
+                <p className="text-apoyo text-tinta-2">
                   {fila.completa
                     ? 'Con resultado'
                     : `${fila.capturados} de ${campos.length} campos`}
@@ -352,7 +352,7 @@ function CajaDeCifra({
       }
       className={cn(
         'flex min-h-14 w-full items-center gap-3 rounded-md border px-3 text-left',
-        'outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+        'foco',
         'disabled:opacity-60',
         activa ? 'border-azul bg-cuadro' : 'border-linea bg-papel',
       )}
@@ -396,7 +396,7 @@ function FilaExamenAlumno({
       }`}
       className={cn(
         'flex min-h-14 w-full items-center gap-3 border-b border-linea bg-papel pr-3 text-left',
-        'outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset',
+        'foco-dentro',
         'active:bg-cuadro',
       )}
     >

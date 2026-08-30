@@ -75,7 +75,7 @@ export function FilaRevision({
           aria-label={`Quitar a ${fila.nombre || `la fila ${indice + 1}`} de la lista`}
           className={cn(
             'flex size-11 shrink-0 items-center justify-center rounded-md text-tinta-2',
-            'outline-none hover:bg-cuadro hover:text-rojo focus-visible:ring-[3px] focus-visible:ring-ring/50',
+            'foco hover:bg-cuadro hover:text-rojo',
           )}
         >
           <IconoCerrar className="size-5" />
@@ -87,13 +87,13 @@ export function FilaRevision({
           cuarto campo que quepa en el iPad. Se corrige en Ajustes → Alumnos.
           Está a la vista porque de él sale la fecha de la izquierda. */}
       {fila.curp !== '' && (
-        <p className={cn('cifra pb-1 pl-[3.25rem] text-[13px]', malo ? 'text-rojo' : 'text-tinta-2')}>
+        <p className={cn('cifra pb-1 pl-[3.25rem] text-apoyo', malo ? 'text-rojo' : 'text-tinta-2')}>
           {fila.curp}
         </p>
       )}
 
       {malo && (
-        <p className="pb-2 pl-[3.25rem] text-[13px] text-rojo">{fila.problema}</p>
+        <p className="pb-2 pl-[3.25rem] text-apoyo text-rojo">{fila.problema}</p>
       )}
     </li>
   )
