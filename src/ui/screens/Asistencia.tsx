@@ -10,6 +10,7 @@ import { ContadorPresentes } from '@/ui/components/ContadorPresentes'
 import { EtiquetaTrimestre } from '@/ui/components/EtiquetaTrimestre'
 import { FilaAlumno } from '@/ui/components/FilaAlumno'
 import { TiraDeDias } from '@/ui/components/TiraDeDias'
+import { Button } from '@/ui/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -28,6 +29,7 @@ import { useInterfaz } from '@/ui/store/interfaz'
 export function Asistencia() {
   const diaSeleccionado = useInterfaz((s) => s.diaSeleccionado)
   const seleccionarDia = useInterfaz((s) => s.seleccionarDia)
+  const irA = useInterfaz((s) => s.irA)
   const { filas, cargando } = useAsistenciaDelDia(diaSeleccionado)
   const { ciclo, cargando: cargandoCiclo } = useCicloEnCurso()
 
@@ -74,6 +76,7 @@ export function Asistencia() {
   }
 
   const diaSinRegistrar = filas.some((f) => !f.registrado)
+  const sinAlumnos = !cargando && filas.length === 0
 
   async function alTocar(fila: FilaAsistencia) {
     // El primer toque del día lo materializa completo: los demás quedan
@@ -183,6 +186,20 @@ export function Asistencia() {
           fecha={diaSeleccionado}
           trimestre={trimestreDe(diaSeleccionado, ciclo)}
         />
+      ) : sinAlumnos ? (
+        /* Sin lista, el contador y la etiqueta del trimestre no dicen nada: lo que
+           hace falta es cargar el grupo. Por eso el vacío los **sustituye** en vez
+           de esperar debajo de ellos, y lleva el botón en vez de solo describir el
+           camino. */
+        <div className="flex flex-col items-start gap-3 pt-2">
+          <p className="text-base text-tinta">Todavía no hay alumnos en el grupo.</p>
+          <p className="text-[13px] text-tinta-2">
+            La lista se carga una sola vez al empezar el ciclo, desde Ajustes. Puede
+            leerse de un archivo de Excel, de un PDF o de una fotografía de la lista
+            oficial.
+          </p>
+          <Button onClick={() => irA('grupo')}>Cargar la lista del grupo</Button>
+        </div>
       ) : (
         <>
           <div className="flex flex-col gap-1">
@@ -216,13 +233,6 @@ export function Asistencia() {
             ))}
           </ul>
         </>
-      )}
-
-      {!cargando && filas.length === 0 && (
-        <p className="text-base text-tinta-2">
-          Todavía no hay alumnos registrados. La lista del grupo se carga en Grupo →
-          Ajustes → Cargar lista de alumnos.
-        </p>
       )}
     </section>
   )

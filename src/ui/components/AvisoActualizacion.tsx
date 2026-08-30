@@ -9,6 +9,11 @@ import { useRegisterSW } from 'virtual:pwa-register/react'
  *
  * Va arriba y no abajo: abajo está la barra de pestañas, y un aviso encima del
  * pulgar se toca sin querer.
+ *
+ * `sticky` y no `fixed`: fijo se sale del flujo y se monta encima de la tira de
+ * días, o sea que tapa el primer control de la pantalla que más se usa justo el
+ * día que aparece. Pegajoso ocupa su lugar, empuja lo de abajo y sigue a la vista
+ * al desplazar.
  */
 export function AvisoActualizacion() {
   const {
@@ -28,7 +33,7 @@ export function AvisoActualizacion() {
   return (
     <div
       role="status"
-      className="fixed inset-x-0 top-0 z-10 flex items-center gap-3 border-b border-linea bg-cuadro px-4 py-2"
+      className="sticky top-0 z-20 -mx-4 mb-4 flex items-center gap-3 border-b border-linea bg-cuadro px-4 py-2"
     >
       <p className="flex-1 text-base text-tinta">Hay una versión nueva.</p>
       <button

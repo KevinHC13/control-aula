@@ -140,7 +140,10 @@ function FilaRubrica({
           <span className="truncate text-base font-medium text-tinta">{rubrica.nombre}</span>
           <span className="text-[13px] text-tinta-2">
             {criterios.length === 1 ? '1 renglón' : `${criterios.length} renglones`}
-            {enUso && ' · en uso'}
+            {/* Escrito y no en un `title`: en el iPad no hay hover, así que ahí ese
+                texto sencillamente no existe y el botón de borrar queda apagado sin
+                explicación (docs/UX.md). */}
+            {enUso && ' · en uso, ya no se puede borrar'}
             {!rubrica.activa && ' · desactivada'}
           </span>
         </button>
@@ -162,7 +165,6 @@ function FilaRubrica({
           onClick={() => void borrar()}
           disabled={enUso}
           aria-label={`Borrar la rúbrica ${rubrica.nombre}`}
-          title={enUso ? 'En uso: se puede desactivar, no borrar' : undefined}
           className={cn(
             'flex size-11 shrink-0 items-center justify-center rounded-md text-tinta-2',
             'outline-none hover:bg-cuadro hover:text-rojo focus-visible:ring-[3px] focus-visible:ring-ring/50',

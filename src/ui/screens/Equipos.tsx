@@ -161,9 +161,13 @@ export function Equipos({ alVolver }: { alVolver: () => void }) {
           {semilla === null ? 'Formar equipos' : 'Volver a sortear'}
         </Button>
 
+        {/* Los dos casos se dicen enteros. Antes, con «Todo el grupo» elegido, el
+            texto quedaba en «No hay a quién repartir.» y no explicaba nada. */}
         {alumnos.length === 0 && !cargando && (
           <p className="text-base text-tinta-2">
-            No hay a quién repartir. {soloPresentes ? 'Hoy no hay nadie presente.' : ''}
+            {soloPresentes
+              ? 'No hay a quién repartir: hoy nadie está registrado como presente. Con «Todo el grupo» se reparte a la lista completa.'
+              : 'No hay a quién repartir: todavía no hay alumnos en el grupo. La lista se carga en Grupo → Ajustes → Cargar lista de alumnos.'}
           </p>
         )}
 
@@ -183,7 +187,7 @@ export function Equipos({ alVolver }: { alVolver: () => void }) {
 
         {pedidos > posibles && (
           <p className="text-base text-tinta-2">
-            Pediste <span className="cifra">{pedidos}</span> equipos y hay{' '}
+            Se pidieron <span className="cifra">{pedidos}</span> equipos y hay{' '}
             <span className="cifra">{alumnos.length}</span>{' '}
             {plural(alumnos.length, 'alumno', 'alumnos')}: salen{' '}
             <span className="cifra">{posibles}</span>, de uno. No se arman equipos

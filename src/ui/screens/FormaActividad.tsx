@@ -257,9 +257,11 @@ export function FormaActividad({
             className="flex flex-col gap-3 rounded-md border-l-[7px] border-rojo bg-rojo/5 px-4 py-3"
           >
             <p className="text-base text-tinta">
+              {/* La rama «captura» es la confirmación de **guardar** un cambio de
+                  rúbrica, no de borrar la actividad: decía lo que no iba a pasar. */}
               {confirmando === 'captura'
-                ? `Esta actividad ya tiene ${actual?.registros} alumnos calificados. Al borrarla se pierden sus calificaciones y no se pueden recuperar.`
-                : `«${actual?.actividad.nombre}» ya está calificada: se va con sus ${actual?.registros} registros. No se pueden recuperar.`}
+                ? `Esta actividad ya está calificada. Al cambiar con qué se califica se descarta lo capturado de ${actual?.registros} ${actual?.registros === 1 ? 'alumno' : 'alumnos'}, y no se puede recuperar.`
+                : `«${actual?.actividad.nombre}» ya está calificada. Al borrarla se pierde lo capturado de ${actual?.registros} ${actual?.registros === 1 ? 'alumno' : 'alumnos'}, y no se puede recuperar.`}
             </p>
             <div className="flex gap-2">
               <Button
@@ -268,7 +270,9 @@ export function FormaActividad({
                   void (confirmando === 'captura' ? guardar(true) : borrar(true))
                 }
               >
-                {confirmando === 'captura' ? 'Guardar y borrar' : 'Borrar la actividad'}
+                {confirmando === 'captura'
+                  ? 'Guardar y descartar lo capturado'
+                  : 'Sí, borrar la actividad'}
               </Button>
               <Button variant="outline" onClick={() => setConfirmando(null)}>
                 Cancelar

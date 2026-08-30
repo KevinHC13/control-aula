@@ -16,6 +16,11 @@ const DESGLOSE: { estado: EstadoAsistencia; etiqueta: string; color: string }[] 
 export function ContadorPresentes({ filas }: { filas: FilaAsistencia[] }) {
   const { presentes, total } = contarPresentes(filas)
 
+  // Sin lista cargada no se pinta nada. «0 / 0 · Todos presentes» afirma que todos
+  // vinieron cuando no hay a quién contar, y una cifra que miente en la pantalla de
+  // entrada es peor que un hueco.
+  if (total === 0) return null
+
   const desglose = DESGLOSE.map((d) => ({
     ...d,
     cuantos: filas.filter((f) => f.estado === d.estado).length,

@@ -12,6 +12,12 @@
       "sourceType": "github",
       "skillPath": "skills/supabase-postgres-best-practices/SKILL.md",
       "computedHash": "128fac78002d916c8ca908245d398e634f540d8bcf20915b2b2359aeb18eba59"
+    },
+    "ui-ux-design": {
+      "source": "hicay/claude-code-skills",
+      "sourceType": "github",
+      "skillPath": "ui-ux-design/SKILL.md",
+      "computedHash": "e5023b124ebfa57f7295cea3aa061b3895f5a75842bee10cd4ef7a476dba356f"
     }
   }
 }

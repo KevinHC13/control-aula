@@ -195,10 +195,14 @@ export function Nube({ alVolver }: { alVolver: () => void }) {
             <p className="cifra text-4xl font-semibold text-tinta" aria-live="polite">
               {porSubir ?? '—'}
             </p>
+            {/* El renglón nombra la cifra de arriba, como el contador de presentes
+                nombra la suya. Antes se leía «cambios en espera» —sin número, porque
+                la cifra vive dos renglones más arriba— y encima explicaba por dónde
+                viajan los datos, que no es asunto de quien mira. */}
             <p className="text-[13px] text-tinta-2">
               {porSubir === 0
-                ? 'toda la información está respaldada'
-                : `${plural(porSubir ?? 0, 'cambio', 'cambios')} en espera · se suben en lotes, y cada lote sale de la cola solo cuando el servidor confirma`}
+                ? 'toda la información está respaldada en la nube'
+                : `${plural(porSubir ?? 0, 'cambio', 'cambios')} sin respaldar`}
             </p>
             <Button
               className="self-start"
