@@ -24,6 +24,20 @@ export function SelectorTrimestre({
 }) {
   if (trimestres.length === 0) return null
 
+  // Un ciclo con un solo trimestre es válido y normal —en agosto nadie sabe las
+  // fechas de los otros dos (D-017)—, y entonces esto no es una elección. Una
+  // pastilla sola, del ancho de la pantalla y en el color de la marca, se lee como
+  // un botón que hace algo; escrito, se lee como lo que es: dónde se está.
+  const unico = trimestres[0]
+  if (trimestres.length === 1 && unico !== undefined) {
+    return (
+      <p className="text-base text-tinta-2">
+        Trimestre {unico.numero}
+        {unico.estado === 'cerrado' && ' · cerrado'}
+      </p>
+    )
+  }
+
   return (
     <nav aria-label="Trimestre" className="flex gap-2">
       {trimestres.map((t) => {
