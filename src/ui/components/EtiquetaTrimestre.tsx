@@ -17,6 +17,11 @@ import type { Trimestre } from '@/domain/entities'
  * atribuyen a nada, pero este se arregla abriendo el trimestre —y lo capturado se
  * acomoda solo, porque la atribución se calcula de la fecha al leer—. Decir «fuera
  * de los trimestres» ahí la mandaría a buscar el error donde no está.
+ *
+ * Los tres casos en que no hay trimestre **dicen qué pasa con lo que se capture**,
+ * y no solo qué falta. «Falta registrar el ciclo escolar» era cierto y no servía:
+ * dejaba sin responder la única pregunta que importa a media lista, que es si vale
+ * la pena seguir pasándola.
  */
 export function EtiquetaTrimestre({
   trimestre,
@@ -34,12 +39,12 @@ export function EtiquetaTrimestre({
   if (cargando) return null
 
   const texto = !hayCiclo
-    ? 'Falta registrar el ciclo escolar'
+    ? 'Sin ciclo escolar: lo de hoy contará en cuanto se registre uno'
     : trimestre
       ? `Trimestre ${trimestre.numero}`
       : sinAbrir
-        ? 'El trimestre de este día todavía no se ha registrado'
-        : 'Día sin trimestre asignado'
+        ? 'El trimestre de este día todavía no se abre: lo de hoy contará en cuanto se abra'
+        : 'Día fuera de los trimestres: no cuenta para ninguna calificación'
 
   return (
     <p className="text-base text-tinta-2">

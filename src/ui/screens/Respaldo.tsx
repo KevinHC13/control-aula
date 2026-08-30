@@ -16,6 +16,7 @@ import { Cabecera } from '@/ui/components/Cabecera'
 import { Button } from '@/ui/components/ui/button'
 import { comoDiaConAnio } from '@/ui/lib/fechas'
 import { plural } from '@/ui/lib/plural'
+import { resumirPorTabla } from '@/ui/lib/tablas'
 import { useApariencia } from '@/ui/store/apariencia'
 
 /**
@@ -77,7 +78,12 @@ export function Respaldo({ alVolver }: { alVolver: () => void }) {
       // Cancelar la hoja de compartir lanza AbortError, y cancelar no es un
       // error que valga la pena mostrarle.
       if (!(e instanceof DOMException && e.name === 'AbortError')) {
-        setError('No se pudo generar el respaldo')
+        // Con el motivo: «no se pudo» a secas no deja nada que intentar.
+        setError(
+          e instanceof Error && e.message !== ''
+            ? `No se pudo generar el respaldo: ${e.message}`
+            : 'No se pudo generar el respaldo',
+        )
       }
     } finally {
       setGuardando(false)
@@ -121,8 +127,12 @@ export function Respaldo({ alVolver }: { alVolver: () => void }) {
     try {
       setBorrado(totalBorrado(await borrarTodo()))
       setConfirmandoBorrado(false)
-    } catch {
-      setError('No se pudo borrar la información')
+    } catch (e) {
+      setError(
+        e instanceof Error && e.message !== ''
+          ? `No se pudo borrar la información: ${e.message}`
+          : 'No se pudo borrar la información',
+      )
     } finally {
       setBorrando(false)
     }
@@ -243,7 +253,7 @@ export function Respaldo({ alVolver }: { alVolver: () => void }) {
                   disabled={borrando}
                   onClick={() => void borrar()}
                 >
-                  {borrando ? 'Borrando…' : 'Borrar toda la información'}
+                  {borrando ? 'Borrando…' : 'Sí, borrar toda la información'}
                 </Button>
                 <Button variant="outline" onClick={() => setConfirmandoBorrado(false)}>
                   Cancelar
@@ -285,23 +295,26 @@ export function Respaldo({ alVolver }: { alVolver: () => void }) {
 }
 
 /**
- * Qué quedó, tabla por tabla. Decir «restaurado» sin números no se puede creer, y
- * este es el momento en que ella necesita creerlo.
+ * Qué quedó, y de qué. Decir «restaurado» sin números no se puede creer, y este es
+ * justo el momento en que hace falta creerlo.
+ *
+ * El detalle iba antes con el nombre técnico de cada tabla —«eval_rubrica: 120»—,
+ * que además de ser jerga contaba cosas que no son cosas para quien lee.
  */
 function ResumenRestaurado({ conteo }: { conteo: ConteoPorTabla }) {
-  const conFilas = Object.entries(conteo).filter(([, cuantas]) => cuantas > 0)
-  const total = conFilas.reduce((suma, [, cuantas]) => suma + cuantas, 0)
+  const resumen = resumirPorTabla(conteo)
+  const total = resumen.reduce((suma, renglon) => suma + renglon.cuantas, 0)
 
   return (
     <div className="flex flex-col gap-1" aria-live="polite">
       <p className="text-base text-verde">
-        Restaurados <span className="cifra">{total}</span>{' '}
+        Se recuperaron <span className="cifra">{total}</span>{' '}
         {plural(total, 'registro', 'registros')}.
       </p>
       <ul className="text-apoyo text-tinta-2">
-        {conFilas.map(([tabla, cuantas]) => (
-          <li key={tabla}>
-            {tabla}: <span className="cifra">{cuantas}</span>
+        {resumen.map((renglon) => (
+          <li key={renglon.etiqueta}>
+            {renglon.etiqueta}: <span className="cifra">{renglon.cuantas}</span>
           </li>
         ))}
       </ul>

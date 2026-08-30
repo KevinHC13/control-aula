@@ -66,12 +66,34 @@ describe('leerRespaldo', () => {
 
   it('rechaza un archivo que no es JSON', () => {
     // El caso real: eligió el PDF de la lista en lugar del respaldo.
-    expect(() => leerRespaldo('%PDF-1.7 …', 3)).toThrow(/dañado o no es un respaldo/)
+    expect(() => leerRespaldo('%PDF-1.7 …', 3)).toThrow(/no es un respaldo/)
   })
 
   it('rechaza un respaldo sin versión de esquema', () => {
     const sinEsquema = { app: MARCA, generado_en: '', tablas: {} }
-    expect(() => leerRespaldo(JSON.stringify(sinEsquema), 3)).toThrow(/de qué versión/)
+    expect(() => leerRespaldo(JSON.stringify(sinEsquema), 3)).toThrow(/no es un respaldo/)
+  })
+
+  // Las cuatro formas de que un archivo no sirva dicen **lo mismo**, a propósito: a
+  // quien eligió el archivo equivocado le da igual si falló el JSON, la marca o la
+  // versión del esquema. Lo que necesita saber es que ese no es, y cuál sí.
+  it('todas las formas de no ser un respaldo se dicen igual', () => {
+    const mensajes = [
+      '%PDF-1.7 …',
+      JSON.stringify({ hola: 'mundo' }),
+      JSON.stringify({ app: MARCA, generado_en: '', tablas: {} }),
+      '42',
+    ].map((texto) => {
+      try {
+        leerRespaldo(texto, 3)
+        return 'no lanzó'
+      } catch (e) {
+        return e instanceof Error ? e.message : 'no es un Error'
+      }
+    })
+
+    expect(new Set(mensajes).size).toBe(1)
+    expect(mensajes[0]).not.toMatch(/esquema|JSON|undefined/)
   })
 
   it('rechaza tablas que no son listas de filas', () => {

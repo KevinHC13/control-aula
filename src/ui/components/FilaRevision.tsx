@@ -54,7 +54,7 @@ export function FilaRevision({
           type="text"
           aria-label={`Nombre del alumno ${indice + 1}`}
           value={fila.nombre}
-          placeholder="Escribe el nombre"
+          placeholder="Apellidos, Nombres"
           onChange={(e) => alEditar('nombre', e.target.value)}
           className={cn(CAMPO, 'flex-1')}
         />
@@ -84,7 +84,7 @@ export function FilaRevision({
 
       {/* El CURP se enseña pero no se edita aquí: son dieciocho caracteres que
           nadie va a teclear en una lista de treinta, y la fila no tiene un
-          cuarto campo que quepa en el iPad. Se corrige en Ajustes → Alumnos.
+          cuarto campo que quepa en el iPad. Se corrige en Grupo → Ajustes → Alumnos.
           Está a la vista porque de él sale la fecha de la izquierda. */}
       {fila.curp !== '' && (
         <p className={cn('cifra pb-1 pl-[3.25rem] text-apoyo', malo ? 'text-rojo' : 'text-tinta-2')}>

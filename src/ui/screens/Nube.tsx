@@ -16,6 +16,7 @@ import { Cargando } from '@/ui/components/Cargando'
 import { Button } from '@/ui/components/ui/button'
 import { Input } from '@/ui/components/ui/input'
 import { plural } from '@/ui/lib/plural'
+import { resumirPorTabla } from '@/ui/lib/tablas'
 
 /**
  * La copia en la nube: subir lo pendiente y restaurar todo.
@@ -87,9 +88,10 @@ export function Nube({ alVolver }: { alVolver: () => void }) {
             (pendientes > 0 ? ` Quedan ${pendientes}.` : ''),
       )
     } catch (fallo) {
-      // La cola queda intacta: el siguiente intento empieza donde este se quedó.
+      // Lo pendiente queda intacto: el siguiente intento empieza donde este se
+      // quedó. Se dice el efecto —no se perdió nada— sin describir el mecanismo.
       setError(
-        `${fallo instanceof Error ? fallo.message : 'No se pudo subir'}. Nada se perdió: los cambios siguen en la cola.`,
+        `${fallo instanceof Error ? fallo.message : 'No se pudo subir'}. No se perdió nada: lo capturado sigue en el iPad y se puede volver a intentar.`,
       )
       setPorSubir(await contarPendientes())
     } finally {
@@ -265,21 +267,21 @@ export function Nube({ alVolver }: { alVolver: () => void }) {
   )
 }
 
-/** Qué llegó, tabla por tabla. Igual que en el respaldo: sin números no se cree. */
+/** Qué llegó, y de qué. Igual que en el respaldo: sin números no se cree. */
 function Restaurado({ conteo }: { conteo: ConteoPorTabla }) {
-  const conFilas = Object.entries(conteo).filter(([, cuantas]) => cuantas > 0)
-  const total = conFilas.reduce((suma, [, cuantas]) => suma + cuantas, 0)
+  const resumen = resumirPorTabla(conteo)
+  const total = resumen.reduce((suma, renglon) => suma + renglon.cuantas, 0)
 
   return (
     <div className="flex flex-col gap-1" aria-live="polite">
       <p className="text-base text-verde">
-        Restaurados <span className="cifra">{total}</span>{' '}
+        Se recuperaron <span className="cifra">{total}</span>{' '}
         {plural(total, 'registro', 'registros')}.
       </p>
       <ul className="text-apoyo text-tinta-2">
-        {conFilas.map(([tabla, cuantas]) => (
-          <li key={tabla}>
-            {tabla}: <span className="cifra">{cuantas}</span>
+        {resumen.map((renglon) => (
+          <li key={renglon.etiqueta}>
+            {renglon.etiqueta}: <span className="cifra">{renglon.cuantas}</span>
           </li>
         ))}
       </ul>

@@ -20,7 +20,7 @@ export default defineConfig({
       manifest: {
         name: 'Palomita',
         short_name: 'Palomita',
-        description: 'Asistencia, calificaciones y notas de un grupo',
+        description: 'Asistencia, calificaciones y bitácora de un grupo',
         lang: 'es-MX',
         theme_color: '#1B4F9C',
         background_color: '#FBFAF7',

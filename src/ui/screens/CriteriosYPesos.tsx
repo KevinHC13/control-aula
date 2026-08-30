@@ -543,7 +543,7 @@ function CierreDelTrimestre({
             </p>
             <div className="flex gap-2">
               <Button variant="destructive" onClick={() => void reabrir()}>
-                Reabrir el trimestre
+                Sí, reabrir el trimestre
               </Button>
               <Button variant="outline" onClick={() => setConfirmando(null)}>
                 Cancelar

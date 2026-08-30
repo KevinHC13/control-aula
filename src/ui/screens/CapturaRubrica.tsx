@@ -142,7 +142,7 @@ export function CapturaRubrica({
 
           {!cargando && filas.length === 0 && (
             <p className="text-base text-tinta-2">
-              Todavía no hay alumnos. La lista se carga desde Grupo → Ajustes.
+              Todavía no hay alumnos. La lista se carga en Grupo → Ajustes → Cargar lista de alumnos.
             </p>
           )}
 

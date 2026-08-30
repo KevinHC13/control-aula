@@ -40,6 +40,36 @@ export async function sesionGuardada(): Promise<Sesion | null> {
 }
 
 /**
+ * Traduce lo que dice el servidor, o calla y devuelve algo que se pueda leer.
+ *
+ * Los mensajes de Supabase llegan en inglés y con jerga de Postgres —«duplicate key
+ * value violates unique constraint»—, y hasta ahora se pintaban tal cual, con el
+ * nombre de la tabla por delante. Quien está frente al iPad no puede hacer nada con
+ * eso; lo que sí puede hacer algo es saber si el problema es la contraseña, la red o
+ * el servidor.
+ *
+ * El texto original no se pierde: va a la consola, que es donde sirve.
+ */
+function enCastellano(mensaje: string, general: string): string {
+  const original = mensaje.toLowerCase()
+  console.error('Error de la nube:', mensaje)
+
+  if (original.includes('invalid login') || original.includes('credentials')) {
+    return 'El correo o la contraseña no son correctos'
+  }
+  if (original.includes('email not confirmed')) {
+    return 'Esta cuenta todavía no está confirmada'
+  }
+  if (original.includes('failed to fetch') || original.includes('network')) {
+    return 'No hay conexión con internet'
+  }
+  if (original.includes('jwt') || original.includes('expired')) {
+    return 'La sesión caducó. Hay que volver a entrar'
+  }
+  return general
+}
+
+/**
  * Entra con correo y contraseña. La sesión queda guardada en el dispositivo, así
  * que esto se hace una vez y no en cada arranque.
  */
@@ -48,7 +78,7 @@ export async function entrar(correo: string, contrasena: string): Promise<Sesion
     email: correo,
     password: contrasena,
   })
-  if (error) throw new Error(error.message)
+  if (error) throw new Error(enCastellano(error.message, 'No se pudo entrar'))
 
   return { correo: data.user?.email ?? correo }
 }
@@ -72,7 +102,7 @@ export async function subirFilas(tabla: string, filas: readonly unknown[]): Prom
     .from(tabla)
     .upsert(filas as Record<string, unknown>[], { onConflict: 'id' })
 
-  if (error) throw new Error(`${tabla}: ${error.message}`)
+  if (error) throw new Error(enCastellano(error.message, 'No se pudo subir la información'))
 }
 
 /**
@@ -86,7 +116,7 @@ export async function subirFilas(tabla: string, filas: readonly unknown[]): Prom
  */
 export async function bajarFilas(tabla: string): Promise<unknown[]> {
   const { data, error } = await cliente().from(tabla).select('*')
-  if (error) throw new Error(`${tabla}: ${error.message}`)
+  if (error) throw new Error(enCastellano(error.message, 'No se pudo traer la información'))
 
   return (data ?? []).map((fila) => sinOwner(fila as Record<string, unknown>))
 }

@@ -269,7 +269,7 @@ function Terminar({ ciclo }: { ciclo: CicloEnCurso }) {
         asistencia y las actividades de este ciclo dejan de aparecer en las pantallas de
         todos los días.{' '}
         <strong className="font-medium text-tinta">Nada se borra</strong>: las
-        calificaciones de este ciclo se siguen consultando en Ajustes → Ciclos
+        calificaciones de este ciclo se siguen consultando en Grupo → Ajustes → Ciclos
         anteriores.
       </p>
 
@@ -290,7 +290,7 @@ function Terminar({ ciclo }: { ciclo: CicloEnCurso }) {
           </p>
           <div className="flex flex-wrap gap-2">
             <Button variant="destructive" disabled={cerrando} onClick={() => void cerrar()}>
-              {cerrando ? 'Cerrando…' : 'Terminar el ciclo'}
+              {cerrando ? 'Cerrando…' : 'Sí, terminar el ciclo escolar'}
             </Button>
             <Button variant="outline" onClick={() => setConfirmando(false)}>
               Cancelar
@@ -363,7 +363,7 @@ function Siguiente({ ciclo, numero }: { ciclo: CicloEnCurso; numero: 1 | 2 | 3 }
           className="cifra w-40"
         />
         <Button onClick={() => void abrir()} disabled={!listo || abriendo}>
-          {abriendo ? 'Abriendo…' : `Abrir trimestre ${numero}`}
+          {abriendo ? 'Abriendo…' : `Abrir el trimestre ${numero}`}
         </Button>
       </div>
 

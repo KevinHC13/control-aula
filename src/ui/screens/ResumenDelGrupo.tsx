@@ -47,7 +47,7 @@ export function ResumenDelGrupo() {
     return (
       <p className="text-base text-tinta-2">
         Todavía no hay ciclo escolar. El resumen es de un trimestre, y los trimestres se
-        abren en Ajustes → Ciclo escolar.
+        abren en Grupo → Ajustes → Ciclo escolar.
       </p>
     )
   }
@@ -119,15 +119,15 @@ export function ResumenDelGrupo() {
 
       {resumen?.filas.length === 0 && (
         <p className="text-base text-tinta-2">
-          Todavía no hay alumnos. La lista se carga en Ajustes → Cargar lista de alumnos.
+          Todavía no hay alumnos. La lista se carga en Grupo → Ajustes → Cargar lista de alumnos.
         </p>
       )}
 
       <p className="border-t border-linea pt-3 text-apoyo text-tinta-2">
         Se marca a quien baje de <span className="cifra">{UMBRALES.asistencia}%</span> de
-        asistencia o de <span className="cifra">{UMBRALES.promedio}.0</span> de promedio.
-        Son los umbrales de arranque y están por confirmar; un alumno sin días capturados
-        no se marca. Los retardos y las faltas justificadas cuentan como asistencia.
+        asistencia o de <span className="cifra">{UMBRALES.promedio}.0</span> de promedio. Un
+        alumno sin días registrados no se marca, y los retardos y las faltas justificadas
+        cuentan como asistencia.
       </p>
     </div>
   )

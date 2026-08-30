@@ -48,7 +48,7 @@ export function AdministrarAlumnos({ alVolver }: { alVolver: () => void }) {
       <Cabecera titulo="Alumnos" id="titulo-alumnos" alVolver={alVolver} etiquetaVolver="Volver a Ajustes" />
 
       <p className="text-base text-tinta-2">
-        Para cargar el grupo entero conviene Ajustes → Cargar lista de alumnos. Aquí se
+        Para cargar el grupo entero conviene Grupo → Ajustes → Cargar lista de alumnos. Aquí se
         agrega a quien llegó después, se corrige un nombre y se da de baja a quien se fue.
       </p>
 
@@ -154,7 +154,7 @@ function Renglon({
               </p>
               <div className="flex flex-wrap gap-2">
                 <Button variant="destructive" onClick={() => void darDeBajaAlumno(alumno.id)}>
-                  Dar de baja
+                  Sí, dar de baja
                 </Button>
                 <Button variant="outline" onClick={() => setConfirmandoBaja(false)}>
                   Cancelar

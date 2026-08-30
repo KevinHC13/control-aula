@@ -73,10 +73,16 @@ async function pedir(
   señal?: AbortSignal,
 ): Promise<AlumnoExtraido[]> {
   if (!URL_SUPABASE || !CLAVE_SUPABASE) {
-    throw new Error('La app no tiene configurado el servidor de lectura')
+    throw new Error(
+      'Esta aplicación no está configurada para leer listas automáticamente. La lista ' +
+        'se puede cargar desde un archivo de Excel, que se lee en el propio iPad.',
+    )
   }
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-    throw new Error('Leer la lista necesita conexión. Conéctate e inténtalo de nuevo.')
+    throw new Error(
+      'Leer un PDF o una fotografía necesita conexión a internet. Un archivo de Excel ' +
+        'sí se puede leer sin conexión.',
+    )
   }
 
   let respuesta: Response
@@ -93,9 +99,10 @@ async function pedir(
     })
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') throw error
-    throw new Error('No se pudo conectar. Revisa tu conexión e inténtalo de nuevo.', {
-      cause: error,
-    })
+    throw new Error(
+      'No se pudo conectar. Conviene revisar la conexión a internet e intentarlo de nuevo.',
+      { cause: error },
+    )
   }
 
   const leido: { alumnos?: AlumnoExtraido[]; error?: string } = await respuesta
@@ -106,7 +113,10 @@ async function pedir(
     throw new Error(leido.error ?? 'No se pudo leer el archivo')
   }
   if (!Array.isArray(leido.alumnos)) {
-    throw new Error('No se reconoció ninguna lista en el archivo')
+    throw new Error(
+      'No se reconoció ninguna lista en el archivo. Conviene revisar que se vean los ' +
+        'nombres completos y que la imagen no esté borrosa.',
+    )
   }
 
   return leido.alumnos

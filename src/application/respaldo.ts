@@ -64,6 +64,18 @@ export function nombreDeArchivo(
     : `palomita-${etiqueta}-${hoy}.json`
 }
 
+/**
+ * Lo que se dice cuando el archivo no sirve.
+ *
+ * Uno solo, y no cuatro variantes casi iguales según en qué línea se descubrió: a
+ * quien eligió el archivo equivocado le da igual si falló el JSON, la marca o la
+ * versión —lo que necesita saber es que ese archivo no es el que busca, y qué
+ * archivo sí lo es—.
+ */
+const NO_ES_RESPALDO =
+  'Este archivo no es un respaldo de Palomita, o está dañado. Los respaldos son ' +
+  'archivos que empiezan con «palomita» y terminan en .json.'
+
 /** Cuántos registros trae el archivo, para poder decirlo antes de restaurar. */
 export function contarRegistros(archivo: ArchivoDeRespaldo): number {
   return Object.values(archivo.tablas).reduce((total, filas) => total + filas.length, 0)
@@ -83,21 +95,21 @@ export function leerRespaldo(texto: string, esquemaLocal: number): ArchivoDeResp
   try {
     crudo = JSON.parse(texto)
   } catch {
-    throw new Error('El archivo está dañado o no es un respaldo de Palomita')
+    throw new Error(NO_ES_RESPALDO)
   }
 
   if (typeof crudo !== 'object' || crudo === null) {
-    throw new Error('Este archivo no es un respaldo de Palomita')
+    throw new Error(NO_ES_RESPALDO)
   }
 
   const posible = crudo as Partial<ArchivoDeRespaldo>
 
   if (posible.app !== MARCA) {
-    throw new Error('El archivo no es un respaldo de Palomita')
+    throw new Error(NO_ES_RESPALDO)
   }
 
   if (typeof posible.esquema !== 'number') {
-    throw new Error('El respaldo no indica de qué versión de la aplicación viene')
+    throw new Error(NO_ES_RESPALDO)
   }
 
   if (posible.esquema > esquemaLocal) {
@@ -105,8 +117,9 @@ export function leerRespaldo(texto: string, esquemaLocal: number): ArchivoDeResp
     // y los que falten se leen como ausentes, que es lo que ya hace la app con
     // los datos de antes de cada migración.
     throw new Error(
-      `El respaldo viene de una versión más nueva de la app (esquema ${posible.esquema}, ` +
-        `esta app usa ${esquemaLocal}). Actualiza la app antes de restaurar.`,
+      'Este respaldo se hizo con una versión más nueva de la aplicación, y por eso ' +
+        'todavía no se puede leer aquí. Conviene actualizar la aplicación e intentarlo ' +
+        'de nuevo.',
     )
   }
 
