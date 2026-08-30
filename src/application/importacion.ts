@@ -138,6 +138,57 @@ function revisar(
   return undefined
 }
 
+/**
+ * Suma una hoja recién leída a lo que ya se estaba revisando.
+ *
+ * Una lista oficial de treinta y siete alumnos no cabe en una foto: viene en
+ * dos páginas, o en una hoja de cálculo y una foto de la que se agregó después.
+ * Leerlas por separado y quedarse con la última sería perder la mitad del grupo
+ * sin avisar.
+ *
+ * Dos reglas, y las dos existen por lo mismo —que se pueda repetir una hoja sin
+ * miedo—:
+ *
+ * 1. **Identidad por CURP y, si no la hay, por número de lista.** El CURP manda
+ *    porque es el único dato que no cambia entre páginas; el número, porque la
+ *    mayoría de las listas no trae CURP.
+ * 2. **Lo que ya estaba escrito gana**, y lo nuevo solo rellena huecos. Volver a
+ *    fotografiar una hoja que ya se cargó no pisa la corrección que ella acaba
+ *    de teclear.
+ *
+ * Al final se reordena por número de lista —dos páginas llegan en orden, pero
+ * dos fotos no tienen por qué— y se revalida, que es lo que marca los repetidos
+ * que esta fusión no supo unir.
+ */
+export function fusionarHojas(
+  previas: FilaImportada[],
+  nuevas: FilaImportada[],
+): FilaImportada[] {
+  const juntas = previas.map((fila) => ({ ...fila }))
+
+  for (const nueva of nuevas) {
+    const i = juntas.findIndex(
+      (previa) =>
+        (previa.curp !== '' && previa.curp === nueva.curp) ||
+        (previa.curp === '' && nueva.curp === '' && previa.numero_lista === nueva.numero_lista),
+    )
+
+    if (i === -1) {
+      juntas.push({ ...nueva })
+      continue
+    }
+
+    juntas[i] = {
+      ...juntas[i]!,
+      nombre: juntas[i]!.nombre || nueva.nombre,
+      fecha_nacimiento: juntas[i]!.fecha_nacimiento || nueva.fecha_nacimiento,
+      curp: juntas[i]!.curp || nueva.curp,
+    }
+  }
+
+  return revalidar(juntas.sort((a, b) => a.numero_lista - b.numero_lista))
+}
+
 /** La conversión final al tipo del dominio. La fecha vacía es un dato ausente. */
 export function aDatosAlumno(filas: FilaImportada[]): DatosAlumno[] {
   return filas.map((fila) => ({

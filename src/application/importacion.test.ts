@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { aDatosAlumno, normalizarExtraccion, revalidar } from './importacion'
+import { aDatosAlumno, fusionarHojas, normalizarExtraccion, revalidar } from './importacion'
 
 const problema = (crudo: Parameters<typeof normalizarExtraccion>[0]) =>
   normalizarExtraccion(crudo).map((f) => f.problema)
@@ -214,6 +214,81 @@ describe('revalidar', () => {
       { nombre: 'Aguilar, Bruno', numero_lista: 1, fecha_nacimiento: '', problema: 'Falta el nombre', curp: '' },
     ])
     expect(fila && 'problema' in fila).toBe(false)
+  })
+})
+
+describe('fusionarHojas', () => {
+  const CURP_1 = 'AUVG160520MNLRLRA3'
+  const CURP_2 = 'PEGJ151102HNLRRVA2'
+
+  const hoja = (crudo: Parameters<typeof normalizarExtraccion>[0]) =>
+    normalizarExtraccion(crudo)
+
+  it('la segunda página se suma a la primera', () => {
+    const primera = hoja([{ nombre: 'Aguilar, Bruno', numero_lista: 1 }])
+    const segunda = hoja([{ nombre: 'Zamora, Iván', numero_lista: 2 }])
+
+    expect(fusionarHojas(primera, segunda).map((f) => f.nombre)).toEqual([
+      'Aguilar, Bruno',
+      'Zamora, Iván',
+    ])
+  })
+
+  it('la misma hoja dos veces no duplica a nadie', () => {
+    const una = hoja([
+      { nombre: 'Aguilar, Bruno', numero_lista: 1, curp: CURP_1 },
+      { nombre: 'Pérez, Julia', numero_lista: 2, curp: CURP_2 },
+    ])
+
+    const juntas = fusionarHojas(una, una)
+    expect(juntas).toHaveLength(2)
+    expect(juntas.map((f) => f.problema)).toEqual([undefined, undefined])
+  })
+
+  it('reconoce a la misma persona aunque le hayan corregido el número', () => {
+    // Es lo que pasa al recortar una foto: el número se lee mal en una de las
+    // dos pasadas, pero el CURP no cambia.
+    const previas = hoja([{ nombre: 'Aguilar, Bruno', numero_lista: 1, curp: CURP_1 }])
+    const otra = hoja([{ nombre: 'Aguilar, Bruno', numero_lista: 11, curp: CURP_1 }])
+
+    const juntas = fusionarHojas(previas, otra)
+    expect(juntas).toHaveLength(1)
+    expect(juntas[0]?.numero_lista).toBe(1)
+  })
+
+  it('lo ya escrito gana; lo nuevo solo rellena huecos', () => {
+    // Ella corrigió el acento a mano y después agregó la hoja donde sí venía la
+    // fecha: se queda con su corrección y gana la fecha.
+    const previas = hoja([{ nombre: 'Ríos, Ana', numero_lista: 3, curp: CURP_1 }]).map((f) => ({
+      ...f,
+      fecha_nacimiento: '',
+    }))
+    const otra = hoja([
+      { nombre: 'Rios, Ana', numero_lista: 3, curp: CURP_1, fecha_nacimiento: '2016-05-20' },
+    ])
+
+    const [fila] = fusionarHojas(previas, otra)
+    expect(fila?.nombre).toBe('Ríos, Ana')
+    expect(fila?.fecha_nacimiento).toBe('2016-05-20')
+  })
+
+  it('ordena por número de lista: dos fotos no llegan en orden', () => {
+    const previas = hoja([{ nombre: 'Zamora, Iván', numero_lista: 20 }])
+    const otra = hoja([{ nombre: 'Aguilar, Bruno', numero_lista: 3 }])
+
+    expect(fusionarHojas(previas, otra).map((f) => f.numero_lista)).toEqual([3, 20])
+  })
+
+  it('marca el número repetido que la fusión no supo unir', () => {
+    // Sin CURP no hay forma de saber si son la misma persona: se marcan las dos
+    // y lo decide ella.
+    const previas = hoja([{ nombre: 'Aguilar, Bruno', numero_lista: 1, curp: CURP_1 }])
+    const otra = hoja([{ nombre: 'Zamora, Iván', numero_lista: 1, curp: CURP_2 }])
+
+    expect(fusionarHojas(previas, otra).map((f) => f.problema)).toEqual([
+      'Número de lista repetido',
+      'Número de lista repetido',
+    ])
   })
 })
 
