@@ -69,11 +69,13 @@ Las dos **herramientas de aula** (D-021) están hechas: `C30` —el sorteo de
 participación, en la pantalla de asistencia— y `C31` —formar equipos, en la pestaña
 Grupo, que no guarda nada—.
 
-**Están escritos cuarenta y dos commits**: los treinta y uno del plan, la **Fase 7**
+**Están escritos cincuenta y ocho commits**: los treinta y uno del plan, la **Fase 7**
 —`C32` a `C36`, el alcance que trajo el uso real: fuera la semilla, y varios ciclos
-guardados con uno abierto (D-025)—, `C37` —administrar alumnos— y la **Fase 9**
-—`C38` a `C42`, la lista real: Excel, CURP y varias hojas (D-027)—. Lo que queda no es código —los tres pasos de Supabase, una pasada con
-el iPad y dos validaciones con la usuaria—; está en `docs/ESTADO.md`.
+guardados con uno abierto (D-025)—, `C37` —administrar alumnos—, la **Fase 9**
+—`C38` a `C42`, la lista real: Excel, CURP y varias hojas (D-027)—, la **Fase 10** —la
+pasada de interfaz y la personalización (D-028)— y la **Fase 11** —`C43` a `C49`, el
+sexo del alumno (D-029)—. Lo que queda no es código —los pasos de Supabase, una pasada
+con el iPad y dos validaciones con la usuaria—; está en `docs/ESTADO.md`.
 
 Encima entran dos **herramientas de aula** (D-021): `C30` —sortear quién participa,
 que escribe en `participaciones` y no registra nada por sí solo— y `C31` —formar
@@ -263,6 +265,16 @@ y fórmulas en `docs/DATA-MODEL.md`; lo que no se negocia al escribir código:
   cerrados y **no borra nada**. `asistencia`, `bitacora` y `participaciones` no llevan
   ciclo: cuelgan de `alumno_id` y se atribuyen por fecha. `criterios` es catálogo global
   a propósito.
+- **El sexo del alumno sale de lo que ya está escrito, y en este orden** (D-029): la
+  columna «SEXO» del documento, el carácter 11 del CURP y, solo si no hay ninguno de los
+  dos, lo que la IA deduzca del nombre de pila. Los dos primeros son leer; el tercero es
+  suponer, y va al final para que no pise nunca un dato cierto. Qué significa la `M` se
+  decide **sobre la columna entera y no celda por celda** —con una `F` en la hoja, la `M`
+  es masculino—, y el encabezado se reconoce **exacto**, porque los días `L M M J V` van
+  justo al lado. `null` es «sin asignar» y es un resultado normal: el contador lo dice
+  aparte en vez de repartirlo. Entró **sin `version()`** —no lleva índice, igual que
+  `curp`— pero **la columna de Supabase va primero**, o la sincronía atora la cola entera
+  con `PGRST204`.
 - **La lista entra por Excel, PDF o fotos, y en varias hojas** (D-027). Un `.xlsx` se
   abre **en el dispositivo y sin red** —`services/xlsx.ts` para el zip, `application/hoja.ts`
   para reconocer las columnas—; la IA solo entra si los encabezados no se reconocen, o si

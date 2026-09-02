@@ -91,7 +91,8 @@ export interface Alumno extends Sincronizable {
   nombre: string          // "Apellidos, Nombres" — orden de la lista oficial
   numero_lista: number    // orden en la lista, 1-based dentro de su ciclo
   fecha_nacimiento: Fecha | null
-  curp: string | null     // 18 caracteres (D-027); de aquí sale la fecha
+  curp: string | null     // 18 caracteres (D-027); de aquí salen la fecha y el sexo
+  sexo: Sexo | null       // 'H' | 'M' (D-029); null es «sin asignar», no un hueco
 }
 
 /**
@@ -103,7 +104,20 @@ export interface Alumno extends Sincronizable {
  *
  * Sus cuatro primeras letras —inicial del paterno, su primera vocal interna,
  * inicial del materno, inicial del primer nombre— dicen además dónde acaban los
- * apellidos en un nombre impreso sin coma.
+ * apellidos en un nombre impreso sin coma. Y el carácter 11 es el sexo.
+ *
+ * `sexo` sale de tres sitios, en este orden: la columna «SEXO» que el documento
+ * imprime, el carácter 11 del CURP, y solo entonces lo que la IA deduzca del
+ * nombre de pila (D-029). Los dos primeros son leer; el tercero es suponer, y
+ * por eso va al final: el CURP de «Guadalupe» lo lleva escrito y un modelo lo
+ * adivina mal.
+ *
+ * `curp` y `sexo` entraron **sin `version()` de Dexie**: no llevan índice, y
+ * Dexie solo versiona índices. `VERSION_ESQUEMA` sigue en 4 y los respaldos son
+ * compatibles en los dos sentidos. Lo que sí es obligatorio es que la columna
+ * exista en Supabase **antes** de que el dispositivo escriba el campo: la
+ * sincronía sube la fila completa y PostgREST rechaza el lote entero —no solo
+ * el de alumnos— con `PGRST204`.
  */
 
 export interface RegistroAsistencia extends Sincronizable {

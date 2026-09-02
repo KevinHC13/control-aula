@@ -1,10 +1,15 @@
 # Estado del proyecto
 
-Actualizado el **2026-08-29**, con **cincuenta y un commits escritos**: los treinta y
-uno del plan, la Fase 7 —el alcance que trajo el uso real—, `C37`, la **Fase 9** —la
-lista de verdad: Excel, CURP y varias hojas— y la **Fase 10**, la pasada de interfaz
-que trajo la auditoría de UX: los defectos que engañaban, el sistema de diseño
-recuperado y **la personalización** (D-028).
+Actualizado el **2026-09-02**, con **cincuenta y ocho commits escritos**: los treinta
+y uno del plan, la Fase 7 —el alcance que trajo el uso real—, `C37`, la **Fase 9** —la
+lista de verdad: Excel, CURP y varias hojas—, la **Fase 10**, la pasada de interfaz que
+trajo la auditoría de UX, y la **Fase 11** —el sexo del alumno (D-029), que trajo el uso
+real de la asistencia—.
+
+De la Fase 11 falta un paso que **no es código**: los treinta y ocho alumnos que ya
+están en el iPad no tienen ni sexo ni CURP, y se arreglan con un `UPDATE` en Supabase y
+un *Restaurar de la nube*. El orden y sus seguros están abajo, en «Alcance nuevo: el
+sexo del alumno».
 
 Lo anterior, del 2026-08-21:
 la Fase 4 completa —C18 a C29, más los fixes C19b y C21c—, el alcance nuevo que la
@@ -407,6 +412,48 @@ arranca con el tema de siempre en vez de romperse. **En el iPad, nada de esto se
 visto todavía** —como el resto de la Fase 4 en adelante—: falta comprobar los tres
 tamaños de texto con el dispositivo en la mano y que el modo oscuro no pelee con la
 barra de estado.
+
+## Alcance nuevo: el sexo del alumno (2026-09-02)
+
+Lo trajo el uso real: la hoja oficial pide al pie de cada día «H: __  M: __  T: __» y
+la maestra lo contaba a mano sobre la pantalla. El dato ya estaba escrito en dos sitios
+que la aplicación leía y tiraba —la columna SEXO del Excel y el carácter 11 del CURP—
+(D-029). Son los commits `C43` a `C49`, más el fix `C47b`.
+
+**El código está escrito y verificado en el navegador.** Con el Excel real de la
+escuela: 38 alumnos, **18 niños y 20 niñas**, ninguno sin asignar, leídos de la columna
+sin pasar por la IA. El contador dice «Faltaron 1 niño · 1 niña · 1 sin asignar», y al
+pasar esa falta a retardo sale de la cuenta. En *Ajustes → Alumnos*, teclear el CURP
+llena el sexo y la fecha a la vez, y no pisa lo que ya estuviera puesto.
+
+### Lo que falta, y no es código
+
+El grupo que ya está cargado en el iPad no tiene sexo ni CURP: entró por el Excel de la
+escuela, que **no trae columna CURP**, así que en la nube había cero CURP guardados y el
+carácter 11 no tenía de dónde salir. Se arregla con una operación de datos, en este
+orden:
+
+| | Paso | Quién | El seguro |
+|---|---|---|---|
+| 1 | Aplicar la migración `20260902000000_alumnos_sexo.sql` | Desarrollo | Independiente: puede ir días antes y no rompe la app en uso |
+| 2 | *Grupo → Ajustes → Nube → Subir pendientes* | La maestra | **No seguir si no dice 0 pendientes** |
+| 3 | `UPDATE` de los 38 con su CURP y su sexo | Desarrollo | Solo `curp`, `sexo` y `updated_at`; un `SELECT` antes y después |
+| 4 | *Nube → Restaurar de la nube* | La maestra | Baja las 16 tablas y escribe encima: por eso el paso 2 |
+| 5 | Desplegar el front y `supabase functions deploy extraer-lista` | Desarrollo | Puede ir antes o después del 4 |
+
+**Los pasos 2, 3 y 4 van pegados, sin que ella use el iPad en medio.** Es el riesgo que
+no se ve: el cliente viejo **sí conoce `curp`** —existe desde el 2026-08-29— y su copia
+local lo tiene vacío, así que si sincroniza entre el `UPDATE` y el restaurar, sube
+`curp: null` y borra lo recién escrito. El `sexo` no corre ese riesgo, porque el cliente
+viejo no manda esa clave y PostgREST la conserva.
+
+Los CURP salen de la lista de Control Escolar, que está en `.gitignore` y ahí se queda.
+El mapeo por `numero_lista` está comprobado dos veces: los nombres coinciden uno a uno
+con los de la nube, y la `fecha_nacimiento` ya guardada coincide con la que codifica cada
+CURP, incluidos los tres alumnos que no nacieron en 2016.
+
+Falta el CURP de **uno solo, el 38** —Zermeño Cruz, Luis Santiago—, que queda sin asignar
+hasta que llegue; se le puede poner a mano en *Ajustes → Alumnos* mientras tanto.
 
 ## Supuestos que siguen abiertos
 

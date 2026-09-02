@@ -1119,3 +1119,100 @@ Lo segundo obligó a separar dos cosas que estaban juntas: el **papel** —el co
 fondo— y las **líneas** —el patrón—. La cuadrícula era un interruptor; ahora son tres
 opciones, porque una libreta de verdad puede tener cuadrícula o renglones, y la
 preferencia guardada de quien ya la tenía se migra sola al leerla.
+
+---
+
+## D-029 · El sexo del alumno entra al modelo, y sale de lo que ya está escrito
+
+**Estado:** aceptada — 2026-09-02
+
+Lo pidió el usuario con la aplicación ya en uso: la maestra necesita saber cuántos
+niños y cuántas niñas faltaron cada día, porque es lo que la hoja oficial pide al
+pie de cada columna —«H: __  M: __  T: __»— y hasta ahora lo contaba a mano sobre
+la pantalla.
+
+`Alumno.sexo` es `'H'`, `'M'` o `null`. Las letras son las que usa la lista
+oficial; la pantalla las traduce a «Niño» y «Niña» al presentarlas, que es como
+habla la maestra.
+
+### Tres fuentes, y el orden importa
+
+| | Fuente | Qué es |
+|---|---|---|
+| 1 | La columna «SEXO» del documento | Lo impreso. Gana siempre |
+| 2 | El dígito 11 del CURP | **Decodificar, no adivinar** — igual que la fecha (D-027) |
+| 3 | La IA, del nombre de pila | Una conjetura, y va al final por eso |
+
+La tercera es la única que puede equivocarse, y por eso es la última: «Guadalupe»,
+«Cruz», «Yael» y «Ariel» son justo donde un modelo falla, y el CURP de esa misma
+persona lo lleva escrito. Que la conjetura no pise nunca un dato cierto no es una
+sutileza: es la diferencia entre un dato y un dato inventado que nadie va a volver
+a mirar.
+
+Por eso la Edge Function devuelve **dos campos separados**, `sexo` y
+`sexo_supuesto`. Mezclados en uno, la aplicación no tendría forma de saber si el
+modelo lo leyó o lo supuso, y el orden de arriba sería imposible de aplicar. Al
+modelo se le pide además que devuelva `null` ante un nombre ambiguo en vez de
+elegir: un hueco que la revisión enseña vale más que una letra puesta al azar.
+
+### Qué significa la `M` se decide por columna, no por celda
+
+Es la parte que se puede hacer mal sin enterarse. En la lista mexicana —`H` / `M`—
+la `M` es **Mujer**. En una lista escrita a la inglesa —`M` / `F`— la misma letra
+es **Masculino**. Leyendo una celda suelta no hay manera de saber cuál de las dos
+es.
+
+Mirando la columna entera, sí: una `F` en cualquier renglón solo puede ser
+Femenino, y donde hay `F`, la `M` es Masculino. `interpretarHoja` recoge la columna
+cruda, decide una vez y traduce después. Resolverlo celda a celda dejaría medio
+grupo con el sexo invertido, en silencio y sin que ninguna prueba de unidad se
+enterara.
+
+Por lo mismo, el reconocimiento del encabezado es **exacto** y no un `includes`: la
+fila de encabezados de la escuela sigue con los días de la semana `L M M J V`, y esa
+`M` está a una columna de la buena.
+
+### Sin `version(5)` en Dexie, y con migración en Supabase antes que nada
+
+En el iPad no hace falta versión: Dexie solo versiona los **índices**, y nadie busca
+alumnos por sexo. `VERSION_ESQUEMA` se queda en 4, así que un respaldo hecho antes
+se sigue restaurando y uno hecho después se sigue abriendo en una app que todavía no
+tenga el campo. Es el precedente literal de `curp` (D-027).
+
+En la nube sí, y **primero**: la sincronía sube la fila completa sin proyectar
+columnas, así que si el dispositivo escribe `sexo` antes de que la columna exista,
+PostgREST rechaza el lote con `PGRST204` y atora la cola entera, no solo la de
+alumnos. No se pierde nada —la `outbox` se confirma solo después de que el servidor
+contesta— pero deja de sincronizar.
+
+La migración **sola** no rompe la app en producción, y por eso puede ir días antes:
+el cliente viejo no manda esa clave, así que PostgREST la deja intacta al
+actualizar, y al bajarla la lee como una propiedad de más que nadie mira.
+
+Y una consecuencia que ya había mordido con el CURP y habría vuelto a morder: la
+comparación campo por campo de `sembrar()` tiene que incluirlo, o recargar la lista
+de la escuela —que sí trae la columna— no escribiría nada, porque el resto ya
+coincide. Lo mismo con `revalidar()`, que reconstruye la fila a mano en cada tecla
+de la pantalla de revisión.
+
+### El contador cuenta a los que faltaron, y dice a quién no sabe
+
+Solo `estado === 'ausente'`. Retardo y falta justificada cuentan como asistencia
+(`cuentaComoAsistencia`), y lo que se copia a la hoja es quién no vino.
+
+Los ausentes sin sexo asignado se dicen aparte —«· 1 sin asignar»— y no se reparten
+entre los otros dos. Un alumno sin sexo no es medio niño, y vale más un hueco que se
+ve que dos cifras que suman bien y mienten. Es el mismo criterio por el que el
+contador no se pinta con el grupo vacío.
+
+### El grupo que ya estaba cargado
+
+No se arregla con código. Los treinta y ocho alumnos entraron por el Excel de la
+escuela, que trae `No | NOMBRE (×3) | EDAD | SEXO` y **no trae columna CURP**, así
+que en la nube había cero CURP guardados y el dígito 11 no tenía de dónde salir.
+
+Se resuelve con una operación de datos: un `UPDATE` en Supabase con los CURP de la
+lista de Control Escolar y el sexo que cada uno codifica, y *Restaurar de la nube*
+en el iPad. El orden y sus dos seguros están en `docs/ESTADO.md`; el que no se ve es
+que los dos pasos van pegados, porque el cliente viejo sí conoce `curp` y su copia
+local lo tiene vacío: si sincroniza en medio, sube `curp: null` y borra lo escrito.

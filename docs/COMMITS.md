@@ -1452,3 +1452,62 @@ lo único que hace falta probar, porque es lo único que decide algo.
 - [x] «DE LEON CEDILLO YARETZI XIMENA» se parte bien, que es donde un modelo falla
 - [x] Si las iniciales no cuadran, el nombre se deja como vino
 - [x] Un nombre que ya trae coma no se toca: el documento sabe más que esta cuenta
+
+## Fase 11 — El sexo del alumno
+
+Lo trajo el uso real, con la aplicación ya en el iPad: la hoja oficial pide al pie de
+cada día «H: __  M: __  T: __» y la maestra lo contaba a mano sobre la pantalla. El
+dato ya estaba escrito en dos sitios que la aplicación leía y tiraba —la columna SEXO
+del Excel y el dígito 11 del CURP— (docs/DECISIONES.md D-029).
+
+### ✅ C43 · `feat(data): columna sexo en la nube`
+
+- [x] `alter table public.alumnos add column if not exists sexo text`, nullable y sin índice
+- [x] **Va antes que nada de cliente**, o la sincronía atora la cola entera con `PGRST204`
+- [x] Se puede aplicar días antes: el cliente viejo no manda esa clave y PostgREST la deja intacta
+- [x] Las políticas de RLS no se tocan: son por `owner` y la columna viaja dentro de la fila
+
+### ✅ C44 · `feat(domain): el sexo del alumno, y sacarlo del CURP`
+
+- [x] `Alumno.sexo` es `'H'`, `'M'` o `null`, y el `null` es un dato ausente normal
+- [x] `sexoDeCurp()` lee el carácter 11, hermana de `fechaDeCurp()`: se decodifica, no se adivina
+- [x] **Sin `version(5)`**: Dexie solo versiona índices, `VERSION_ESQUEMA` se queda en 4
+- [x] Una fila escrita antes del campo se lee como `null`, no como `undefined`
+- [x] `sembrar()` lo compara, o recargar la lista de la escuela no escribiría nada
+
+### ✅ C45 · `feat(app): leer el sexo de la lista`
+
+- [x] Tres fuentes en orden: la columna del documento, el CURP, y por último la IA
+- [x] El encabezado se reconoce **exacto**: los días `L M M J V` no son columna de sexo
+- [x] Qué significa la `M` se decide **por columna**: con una `F` en la hoja, `M` es masculino
+- [x] `AlumnoExtraido` lleva `sexo` y `sexo_supuesto` separados, o el orden no se puede aplicar
+- [x] `revalidar()` no se lo come al teclear, que es donde se perdería sin aviso
+- [x] Una prueba de ida y vuelta: de la hoja a lo que sale hacia la nube
+
+### ✅ C46 · `feat(ui): asignar el sexo a mano`
+
+- [x] Dos botones H/M de 44×44; tocar el puesto lo quita y vuelve a «sin asignar»
+- [x] Azul y no marca: es un dato del alumno, no la identidad de la app (D-028)
+- [x] En *Ajustes → Alumnos* y en cada renglón de la revisión de la carga
+- [x] En el renglón principal y no debajo: abajo duplicaba el alto de las 38 filas
+- [x] Verificado con el Excel real: 38 alumnos, 18 niños y 20 niñas, ninguno sin asignar
+
+### ✅ C47 · `feat(asistencia): decir cuántos niños y cuántas niñas faltaron`
+
+- [x] «Faltaron 1 niño · 1 niña» debajo del desglose, y solo si hay ausentes
+- [x] **Solo `ausente`**: el retardo y la justificada cuentan como asistencia
+- [x] El que falta sin sexo se dice aparte, no se reparte: no es medio niño
+- [x] Sin tocar ningún hook: `FilaAsistencia` ya trae el `Alumno` completo
+
+### ✅ C47b · `fix(asistencia): «1 retardo», no «1 retardos»`
+
+Apareció al verificar C47 en el navegador. Los números eran correctos, así que ninguna
+prueba de unidad iba a encontrarlo. Es el defecto para el que se escribió `plural.ts`.
+
+### ✅ C48 · `feat(sync): pedir el sexo al leer un PDF o una foto`
+
+- [x] `sexo` es lo impreso y `sexo_supuesto` la conjetura, en dos campos del esquema
+- [x] Ante un nombre ambiguo devuelve `null` en vez de elegir
+- [x] Se despliega aparte: `supabase functions deploy extraer-lista`
+
+### ✅ C49 · `docs: asentar el sexo del alumno`
