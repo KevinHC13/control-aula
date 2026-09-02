@@ -3,10 +3,15 @@ import { contarFaltantesPorSexo, contarPresentes } from '@/application/asistenci
 import type { EstadoAsistencia } from '@/domain/values'
 import { plural } from '@/ui/lib/plural'
 
-const DESGLOSE: { estado: EstadoAsistencia; etiqueta: string; color: string }[] = [
-  { estado: 'ausente', etiqueta: 'ausentes', color: 'text-rojo' },
-  { estado: 'retardo', etiqueta: 'retardos', color: 'text-ambar' },
-  { estado: 'justificada', etiqueta: 'justificadas', color: 'text-verde' },
+const DESGLOSE: {
+  estado: EstadoAsistencia
+  singular: string
+  plural: string
+  color: string
+}[] = [
+  { estado: 'ausente', singular: 'ausente', plural: 'ausentes', color: 'text-rojo' },
+  { estado: 'retardo', singular: 'retardo', plural: 'retardos', color: 'text-ambar' },
+  { estado: 'justificada', singular: 'justificada', plural: 'justificadas', color: 'text-verde' },
 ]
 
 /**
@@ -53,7 +58,7 @@ export function ContadorPresentes({ filas }: { filas: FilaAsistencia[] }) {
               <span key={d.estado}>
                 {i > 0 && ' · '}
                 <span className={d.color}>
-                  {d.cuantos} {d.etiqueta}
+                  {d.cuantos} {plural(d.cuantos, d.singular, d.plural)}
                 </span>
               </span>
             ))}
