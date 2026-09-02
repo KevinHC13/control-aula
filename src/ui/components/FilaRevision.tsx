@@ -1,5 +1,6 @@
 import type { FilaImportada } from '@/application/importacion'
 import { IconoCerrar } from '@/ui/components/iconos'
+import { SelectorSexo } from '@/ui/components/SelectorSexo'
 import { cn } from '@/ui/lib/utils'
 
 /**
@@ -69,6 +70,17 @@ export function FilaRevision({
           className={cn(CAMPO, 'cifra w-32 shrink-0 text-tinta-2')}
         />
 
+        {/* Va en el renglón principal y no en la línea de abajo: son dos toques
+            de 44 px que caben de sobra al lado de la fecha, y bajarlos duplicaba
+            el alto de cada fila —con treinta y ocho alumnos, el doble de
+            recorrido para leer la misma lista—. */}
+        <SelectorSexo
+          compacto
+          valor={fila.sexo}
+          etiqueta={`Niño o niña: ${fila.nombre || `fila ${indice + 1}`}`}
+          alElegir={(sexo) => alEditar('sexo', sexo)}
+        />
+
         <button
           type="button"
           onClick={alQuitar}
@@ -85,7 +97,7 @@ export function FilaRevision({
       {/* El CURP se enseña pero no se edita aquí: son dieciocho caracteres que
           nadie va a teclear en una lista de treinta, y la fila no tiene un
           cuarto campo que quepa en el iPad. Se corrige en Grupo → Ajustes → Alumnos.
-          Está a la vista porque de él sale la fecha de la izquierda. */}
+          Está a la vista porque de él salen la fecha y el sexo del renglón. */}
       {fila.curp !== '' && (
         <p className={cn('cifra pb-1 pl-[3.25rem] text-apoyo', malo ? 'text-rojo' : 'text-tinta-2')}>
           {fila.curp}

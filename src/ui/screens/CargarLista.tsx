@@ -234,6 +234,7 @@ export function CargarLista({ alVolver }: { alVolver: () => void }) {
             <span className="w-11 shrink-0 px-2 text-center">Nº</span>
             <span className="flex-1 px-2">Nombre</span>
             <span className="w-32 shrink-0 px-2">Nacimiento</span>
+            <span className="w-[5.75rem] shrink-0 text-center">Niño o niña</span>
             <span className="size-11 shrink-0" />
           </div>
 

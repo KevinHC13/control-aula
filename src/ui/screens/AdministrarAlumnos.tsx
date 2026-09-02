@@ -16,6 +16,7 @@ import type { Alumno } from '@/domain/entities'
 import { EstadoVacio } from '@/ui/components/EstadoVacio'
 import { Cabecera } from '@/ui/components/Cabecera'
 import { Cargando } from '@/ui/components/Cargando'
+import { SelectorSexo } from '@/ui/components/SelectorSexo'
 import { Button } from '@/ui/components/ui/button'
 import { useAlumnosConBajas } from '@/ui/hooks/useAlumnosConBajas'
 import { cn } from '@/ui/lib/utils'
@@ -309,6 +310,18 @@ function Formulario({
           className={cn(CAMPO, 'cifra')}
         />
       </label>
+
+      {/* Debajo de la CURP y por lo mismo que la fecha: al escribirla, esto se
+          pone solo. Queda a la vista para el que llegó sin CURP y para
+          corregir lo que la lista trajera mal. */}
+      <div className="flex flex-col gap-1">
+        <span className="text-apoyo text-tinta-2">Niño o niña (opcional)</span>
+        <SelectorSexo
+          valor={formulario.sexo}
+          etiqueta="Niño o niña"
+          alElegir={(sexo) => editar('sexo', sexo)}
+        />
+      </div>
 
       <label className="flex flex-col gap-1">
         <span className="text-apoyo text-tinta-2">
