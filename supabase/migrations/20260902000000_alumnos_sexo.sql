@@ -1,0 +1,23 @@
+-- Los alumnos guardan su sexo (docs/DECISIONES.md D-029).
+--
+-- Sale de tres sitios, en este orden: la columna «SEXO» que la lista de la
+-- escuela ya imprime, el dígito 11 del CURP —que es decodificar, no adivinar,
+-- igual que la fecha de nacimiento— y, solo si no hay ninguno de los dos, lo que
+-- la IA deduzca del nombre de pila.
+--
+-- Sin esta columna aquí, la sincronía subiría filas con `sexo` y PostgREST las
+-- rechazaría con PGRST204, atorando la cola entera y no solo la de alumnos: el
+-- cliente sube la fila completa, sin proyectar columnas.
+--
+-- Se puede aplicar antes de desplegar el cliente nuevo, y conviene: una columna
+-- `text` nullable sin default es metadata-only, el cliente viejo no manda esa
+-- clave —así que PostgREST la deja intacta al actualizar— y al bajar la lee como
+-- una propiedad de más que nadie mira.
+--
+-- Nullable a propósito: una lista puede no traer la columna, un alumno dado de
+-- alta a mano puede quedarse sin asignar, y ninguno de los dos casos es un
+-- error. En la pantalla eso se dice, no se inventa.
+alter table public.alumnos add column if not exists sexo text;
+
+-- Las políticas de RLS son por `owner` y no cambian: la columna nueva viaja
+-- dentro de filas que ya estaban acotadas a su dueña.
