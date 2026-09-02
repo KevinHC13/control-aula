@@ -33,6 +33,22 @@ export type Sexo = 'H' | 'M'
 export const SEXOS = ['H', 'M'] as const satisfies readonly Sexo[]
 
 /**
+ * La letra que sea, venga como venga —`h`, `H`, `Hombre`—, o `null` si no se
+ * reconoce. Vive en el dominio y no en cada pantalla porque qué cuenta como
+ * sexo válido es una regla, no un detalle de la carga ni del formulario.
+ *
+ * Deliberadamente **no** entiende `F` de femenino: esa letra solo aparece en
+ * listas escritas a la inglesa, donde la `M` significa lo contrario que aquí, y
+ * resolver esa ambigüedad necesita mirar la columna entera. Eso se hace al leer
+ * la hoja (`application/hoja.ts`), que es el único sitio que tiene la columna
+ * delante.
+ */
+export function comoSexo(texto: string | null | undefined): Sexo | null {
+  const letra = (texto ?? '').trim().charAt(0).toUpperCase()
+  return letra === 'H' || letra === 'M' ? letra : null
+}
+
+/**
  * Orden del ciclo al tocar una fila de asistencia. Cuatro estados es el límite:
  * un quinto vuelve el ciclo más lento que un menú (docs/UX.md).
  */

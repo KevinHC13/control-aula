@@ -1,7 +1,8 @@
 import { repos } from '@/data'
-import { curpValido, fechaDeCurp, normalizarCurp, partirNombre } from '@/domain/curp'
+import { curpValido, fechaDeCurp, normalizarCurp, partirNombre, sexoDeCurp } from '@/domain/curp'
 import type { DatosAlumno } from '@/domain/entities'
 import { fechaValida } from '@/domain/fechas'
+import { comoSexo, type Sexo } from '@/domain/values'
 import type { AlumnoExtraido } from '@/services/extraccion'
 
 /**
@@ -19,9 +20,12 @@ export interface FilaImportada {
   fecha_nacimiento: string
   /** 18 caracteres o vacío. Lo que trae la lista oficial de Control Escolar. */
   curp: string
+  /** `H`, `M` o vacío. Vacío es «sin asignar», que es un dato ausente normal. */
+  sexo: Sexo | ''
   /** Ausente cuando la fila está bien. Mensaje para mostrar tal cual. */
   problema?: string
 }
+
 
 /** Espacios de sobra, los típicos de un OCR que leyó una tabla. */
 function limpiar(texto: string): string {
@@ -97,6 +101,16 @@ export function normalizarExtraccion(crudo: AlumnoExtraido[]): FilaImportada[] {
         // maestra decide en la revisión.
         fecha_nacimiento: limpiar(alumno.fecha_nacimiento ?? '') || (fechaDeCurp(curp) ?? ''),
         curp,
+        // Las tres fuentes del sexo, en orden de autoridad: lo que el documento
+        // imprime, el dígito 11 del CURP —que es leer, no adivinar— y, solo si
+        // no hay ninguno de los dos, lo que la IA dedujo del nombre de pila.
+        // La conjetura va al final justo para que nunca pise un dato cierto
+        // (docs/DECISIONES.md D-029).
+        sexo:
+          comoSexo(alumno.sexo) ??
+          sexoDeCurp(curp) ??
+          comoSexo(alumno.sexo_supuesto) ??
+          '',
       }
     }),
   )
@@ -117,8 +131,12 @@ export function revalidar(filas: FilaImportada[]): FilaImportada[] {
     if (curp !== '') vecesCurp.set(curp, (vecesCurp.get(curp) ?? 0) + 1)
   }
 
-  return filas.map(({ nombre, numero_lista, fecha_nacimiento, curp }) => {
-    const fila = { nombre, numero_lista, fecha_nacimiento, curp }
+  return filas.map(({ nombre, numero_lista, fecha_nacimiento, curp, sexo }) => {
+    // Ojo al armar esto a mano: un campo que no se liste aquí se pierde en cada
+    // tecla de la pantalla de revisión, sin error y sin aviso. Se reconstruye y
+    // no se copia con `...` porque es lo que deja fuera a `problema`, que se
+    // vuelve a calcular abajo.
+    const fila = { nombre, numero_lista, fecha_nacimiento, curp, sexo }
     const problema = revisar(fila, veces, vecesCurp)
     return problema ? { ...fila, problema } : fila
   })
@@ -189,6 +207,7 @@ export function fusionarHojas(
       nombre: juntas[i]!.nombre || nueva.nombre,
       fecha_nacimiento: juntas[i]!.fecha_nacimiento || nueva.fecha_nacimiento,
       curp: juntas[i]!.curp || nueva.curp,
+      sexo: juntas[i]!.sexo || nueva.sexo,
     }
   }
 
@@ -202,7 +221,7 @@ export function aDatosAlumno(filas: FilaImportada[]): DatosAlumno[] {
     numero_lista: fila.numero_lista,
     fecha_nacimiento: fila.fecha_nacimiento === '' ? null : fila.fecha_nacimiento,
     curp: fila.curp === '' ? null : fila.curp,
-    sexo: null,
+    sexo: fila.sexo === '' ? null : fila.sexo,
   }))
 }
 

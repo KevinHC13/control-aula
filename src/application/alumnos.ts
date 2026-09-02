@@ -1,8 +1,8 @@
 import { repos } from '@/data'
-import { curpValido, fechaDeCurp, normalizarCurp } from '@/domain/curp'
+import { curpValido, fechaDeCurp, normalizarCurp, sexoDeCurp } from '@/domain/curp'
 import type { Alumno, DatosAlumno } from '@/domain/entities'
 import { fechaValida } from '@/domain/fechas'
-import type { Id } from '@/domain/values'
+import { comoSexo, type Id } from '@/domain/values'
 
 /**
  * Administrar el grupo uno por uno: alta, corrección y baja (D-026).
@@ -23,6 +23,8 @@ export interface FormularioAlumno {
   numero_lista: string
   fecha_nacimiento: string
   curp: string
+  /** `'H'`, `'M'` o vacío. Vacío es «sin asignar», y es una opción legítima. */
+  sexo: string
 }
 
 /** El formulario vacío para un alta, con el número ya propuesto. */
@@ -32,6 +34,7 @@ export function formularioNuevo(alumnos: readonly Alumno[]): FormularioAlumno {
     numero_lista: String(siguienteNumero(alumnos)),
     fecha_nacimiento: '',
     curp: '',
+    sexo: '',
   }
 }
 
@@ -42,6 +45,7 @@ export function formularioDe(alumno: Alumno): FormularioAlumno {
     numero_lista: String(alumno.numero_lista),
     fecha_nacimiento: alumno.fecha_nacimiento ?? '',
     curp: alumno.curp ?? '',
+    sexo: alumno.sexo ?? '',
   }
 }
 
@@ -53,6 +57,10 @@ export function formularioDe(alumno: Alumno): FormularioAlumno {
  * la lista: lo escrito gana, la CURP rellena. Rellena y no sobrescribe —quien ya
  * puso una fecha la puso por algo—, y solo cuando la CURP está completa y bien
  * formada, para no ir cambiando la fecha a cada tecla.
+ *
+ * Vale para las dos cosas que la CURP trae dentro: la fecha de nacimiento y el
+ * sexo. Es lo que hace que teclear la CURP del alumno que llegó en noviembre
+ * deje los dos campos puestos sin escribirlos.
  */
 export function editarFormulario(
   formulario: FormularioAlumno,
@@ -63,12 +71,12 @@ export function editarFormulario(
   if (campo !== 'curp') return siguiente
 
   const curp = normalizarCurp(valor)
-  const deLaCurp = fechaDeCurp(curp)
 
   return {
     ...siguiente,
     curp,
-    fecha_nacimiento: siguiente.fecha_nacimiento || (deLaCurp ?? ''),
+    fecha_nacimiento: siguiente.fecha_nacimiento || (fechaDeCurp(curp) ?? ''),
+    sexo: siguiente.sexo || (sexoDeCurp(curp) ?? ''),
   }
 }
 
@@ -126,7 +134,7 @@ function aDatos(formulario: FormularioAlumno): DatosAlumno {
     fecha_nacimiento:
       formulario.fecha_nacimiento === '' ? null : formulario.fecha_nacimiento,
     curp: formulario.curp === '' ? null : normalizarCurp(formulario.curp),
-    sexo: null,
+    sexo: comoSexo(formulario.sexo),
   }
 }
 

@@ -13,9 +13,25 @@
 export interface AlumnoExtraido {
   nombre?: string | null
   numero_lista?: number | null
-  /** De aquí sale la fecha de nacimiento cuando el documento no la imprime. */
+  /** De aquí salen la fecha de nacimiento y el sexo cuando no vienen impresos. */
   curp?: string | null
   fecha_nacimiento?: string | null
+  /**
+   * El sexo **tal como lo imprime el documento**: la columna «SEXO» de la lista
+   * de la escuela, o lo que el modelo lea de un PDF. `H`, `M` o nada.
+   */
+  sexo?: string | null
+  /**
+   * Lo que el modelo **dedujo del nombre de pila**, y solo cuando el documento
+   * no imprime el sexo ni trae CURP.
+   *
+   * Va en un campo aparte y no mezclado con el de arriba porque es lo único que
+   * le permite a la app ordenar las tres fuentes: lo impreso le gana al CURP, y
+   * el CURP le gana a la conjetura. En un solo campo no habría forma de saber
+   * cuál de los dos casos ocurrió, y «Guadalupe» o «Cruz» pisarían un dato
+   * cierto con uno inventado (docs/DECISIONES.md D-029).
+   */
+  sexo_supuesto?: string | null
 }
 
 const URL_SUPABASE: string = import.meta.env.VITE_SUPABASE_URL

@@ -90,3 +90,86 @@ describe('interpretarHoja', () => {
     expect(interpretarHoja([])).toBeNull()
   })
 })
+
+describe('la columna de sexo', () => {
+  it('la lee de la lista de la escuela', () => {
+    const alumnos = interpretarHoja(LISTA_DE_ASISTENCIA)
+
+    expect(alumnos?.map((a) => a.sexo)).toEqual(['H', 'M', 'M'])
+  })
+
+  it('no confunde los días de la semana con la columna de sexo', () => {
+    // El encabezado de la escuela sigue con `L M M J V`, y esa `M` está a una
+    // columna de la buena. Con un `includes` en vez de una coincidencia exacta,
+    // el lunes decidiría el sexo de todo el grupo.
+    const alumnos = interpretarHoja(LISTA_DE_ASISTENCIA)
+
+    expect(alumnos?.[0]?.sexo).toBe('H')
+  })
+
+  it('en una lista M/F la M es masculino', () => {
+    // La misma letra significa lo contrario según la lista, y decidirlo celda
+    // por celda dejaría medio grupo invertido en silencio. La `F` de cualquier
+    // renglón es lo que resuelve la columna entera.
+    const alumnos = interpretarHoja([
+      ['No', 'NOMBRE', 'GÉNERO'],
+      ['1', 'Aguilar, Bruno', 'M'],
+      ['2', 'Barrera, Ana', 'F'],
+    ])
+
+    expect(alumnos?.map((a) => a.sexo)).toEqual(['H', 'M'])
+  })
+
+  it('sin una sola F, la M es mujer: es la lista mexicana', () => {
+    const alumnos = interpretarHoja([
+      ['No', 'NOMBRE', 'SEXO'],
+      ['1', 'Aguilar, Bruno', 'H'],
+      ['2', 'Barrera, Ana', 'M'],
+    ])
+
+    expect(alumnos?.map((a) => a.sexo)).toEqual(['H', 'M'])
+  })
+
+  it('entiende la palabra completa y el encabezado con espacios o acento', () => {
+    const alumnos = interpretarHoja([
+      ['No', 'NOMBRE', 'S E X O'],
+      ['1', 'Aguilar, Bruno', 'Hombre'],
+      ['2', 'Barrera, Ana', 'mujer'],
+      ['3', 'Cruz, Niño', 'Masculino'],
+      ['4', 'Diaz, Nina', 'Femenino'],
+    ])
+
+    expect(alumnos?.map((a) => a.sexo)).toEqual(['H', 'M', 'H', 'M'])
+  })
+
+  it('la encuentra aunque vaya antes del nombre', () => {
+    const alumnos = interpretarHoja([
+      ['No', 'SEXO', 'NOMBRE DEL ALUMNO'],
+      ['1', 'H', 'Aguilar, Bruno'],
+    ])
+
+    expect(alumnos?.[0]?.sexo).toBe('H')
+    expect(alumnos?.[0]?.nombre).toBe('Aguilar, Bruno')
+  })
+
+  it('sin columna de sexo nadie queda con sexo, y eso no es un error', () => {
+    const alumnos = interpretarHoja([
+      ['No', 'NOMBRE', 'C U R P'],
+      ['1', 'Aguilar, Bruno', 'AUVG160520MNLRLRA3'],
+    ])
+
+    expect(alumnos?.[0]?.sexo).toBeNull()
+    expect(alumnos?.[0]?.curp).toBe('AUVG160520MNLRLRA3')
+  })
+
+  it('una celda vacía o ilegible es sin asignar, no medio grupo mal', () => {
+    const alumnos = interpretarHoja([
+      ['No', 'NOMBRE', 'SEXO'],
+      ['1', 'Aguilar, Bruno', 'H'],
+      ['2', 'Barrera, Ana', ''],
+      ['3', 'Cruz, Regina', '-'],
+    ])
+
+    expect(alumnos?.map((a) => a.sexo)).toEqual(['H', null, null])
+  })
+})

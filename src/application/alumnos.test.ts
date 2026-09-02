@@ -71,7 +71,7 @@ describe('revisarFormulario', () => {
   it('acepta un alumno nuevo bien escrito', () => {
     expect(
       revisarFormulario(
-        { nombre: 'Nueva, Ana', numero_lista: '3', fecha_nacimiento: '', curp: '' },
+        { nombre: 'Nueva, Ana', numero_lista: '3', fecha_nacimiento: '', curp: '', sexo: '' },
         GRUPO,
       ),
     ).toBeUndefined()
@@ -79,14 +79,14 @@ describe('revisarFormulario', () => {
 
   it('pide el nombre', () => {
     expect(
-      revisarFormulario({ nombre: '  ', numero_lista: '3', fecha_nacimiento: '', curp: '' }, GRUPO),
+      revisarFormulario({ nombre: '  ', numero_lista: '3', fecha_nacimiento: '', curp: '', sexo: '' }, GRUPO),
     ).toMatch(/Falta el nombre/)
   })
 
   it('rechaza un número que no es número, o menor que uno', () => {
     for (const numero of ['', 'x', '0', '-2', '1.5']) {
       expect(
-        revisarFormulario({ nombre: 'Ana', numero_lista: numero, fecha_nacimiento: '', curp: '' }, GRUPO),
+        revisarFormulario({ nombre: 'Ana', numero_lista: numero, fecha_nacimiento: '', curp: '', sexo: '' }, GRUPO),
         numero,
       ).toMatch(/no es válido/)
     }
@@ -94,14 +94,14 @@ describe('revisarFormulario', () => {
 
   it('rechaza un número ya ocupado', () => {
     expect(
-      revisarFormulario({ nombre: 'Ana', numero_lista: '2', fecha_nacimiento: '', curp: '' }, GRUPO),
+      revisarFormulario({ nombre: 'Ana', numero_lista: '2', fecha_nacimiento: '', curp: '', sexo: '' }, GRUPO),
     ).toMatch(/ya está ocupado/)
   })
 
   it('al editar, su propio número no cuenta como repetido', () => {
     expect(
       revisarFormulario(
-        { nombre: 'Corregido', numero_lista: '2', fecha_nacimiento: '', curp: '' },
+        { nombre: 'Corregido', numero_lista: '2', fecha_nacimiento: '', curp: '', sexo: '' },
         GRUPO,
         'alumno-2',
       ),
@@ -111,7 +111,7 @@ describe('revisarFormulario', () => {
   it('cuenta el número de un dado de baja como ocupado', () => {
     expect(
       revisarFormulario(
-        { nombre: 'Ana', numero_lista: '3', fecha_nacimiento: '', curp: '' },
+        { nombre: 'Ana', numero_lista: '3', fecha_nacimiento: '', curp: '', sexo: '' },
         [...GRUPO, alumno(3, 'Se fue', true)],
       ),
     ).toMatch(/ya está ocupado/)
@@ -119,11 +119,11 @@ describe('revisarFormulario', () => {
 
   it('la fecha es opcional, pero si viene tiene que ser AAAA-MM-DD', () => {
     expect(
-      revisarFormulario({ nombre: 'Ana', numero_lista: '3', fecha_nacimiento: '', curp: '' }, GRUPO),
+      revisarFormulario({ nombre: 'Ana', numero_lista: '3', fecha_nacimiento: '', curp: '', sexo: '' }, GRUPO),
     ).toBeUndefined()
     expect(
       revisarFormulario(
-        { nombre: 'Ana', numero_lista: '3', fecha_nacimiento: '14/03/2017', curp: '' },
+        { nombre: 'Ana', numero_lista: '3', fecha_nacimiento: '14/03/2017', curp: '', sexo: '' },
         GRUPO,
       ),
     ).toMatch(/AAAA-MM-DD/)
@@ -137,6 +137,7 @@ describe('formularioNuevo y formularioDe', () => {
       numero_lista: '2',
       fecha_nacimiento: '',
       curp: '',
+      sexo: '',
     })
   })
 
@@ -146,6 +147,7 @@ describe('formularioNuevo y formularioDe', () => {
       numero_lista: '7',
       fecha_nacimiento: '2017-03-14',
       curp: '',
+      sexo: '',
     })
   })
 
@@ -155,7 +157,7 @@ describe('formularioNuevo y formularioDe', () => {
 })
 
 describe('editarFormulario', () => {
-  const VACIO = { nombre: '', numero_lista: '3', fecha_nacimiento: '', curp: '' }
+  const VACIO = { nombre: '', numero_lista: '3', fecha_nacimiento: '', curp: '', sexo: '' }
 
   it('escribir la CURP llena la fecha de nacimiento', () => {
     // La misma regla que en la carga de la lista: la CURP la trae dentro.
@@ -174,6 +176,25 @@ describe('editarFormulario', () => {
     expect(con.fecha_nacimiento).toBe('2016-05-21')
   })
 
+  it('escribir la CURP llena también el sexo', () => {
+    // Son las dos cosas que la CURP trae dentro. Teclearla al alumno que llegó
+    // en noviembre deja los dos campos puestos sin escribirlos.
+    expect(editarFormulario(VACIO, 'curp', 'AUVG160520MNLRLRA3').sexo).toBe('M')
+    expect(editarFormulario(VACIO, 'curp', 'PEGJ151102HNLRRVA2').sexo).toBe('H')
+  })
+
+  it('no pisa un sexo que ya estaba puesto', () => {
+    // Rellena y no sobrescribe, igual que la fecha: quien lo puso a mano lo
+    // puso por algo, y puede ser que la CURP impresa esté mal.
+    const con = editarFormulario({ ...VACIO, sexo: 'H' }, 'curp', 'AUVG160520MNLRLRA3')
+
+    expect(con.sexo).toBe('H')
+  })
+
+  it('una CURP a medias no cambia el sexo a cada tecla', () => {
+    expect(editarFormulario(VACIO, 'curp', 'AUVG1605').sexo).toBe('')
+  })
+
   it('una CURP a medias no cambia la fecha a cada tecla', () => {
     expect(editarFormulario(VACIO, 'curp', 'AUVG1605').fecha_nacimiento).toBe('')
   })
@@ -190,7 +211,7 @@ describe('editarFormulario', () => {
 describe('agregarAlumno', () => {
   it('guarda al alumno con los datos limpios', async () => {
     await agregarAlumno(
-      { nombre: '  Llegó Después, Ana  ', numero_lista: '31', fecha_nacimiento: '', curp: '' },
+      { nombre: '  Llegó Después, Ana  ', numero_lista: '31', fecha_nacimiento: '', curp: '', sexo: '' },
       [],
     )
 
@@ -204,7 +225,7 @@ describe('agregarAlumno', () => {
   it('vuelve a validar aunque la pantalla ya lo hiciera', async () => {
     // El caso de uso no puede confiar en que alguien lo llame bien.
     await expect(
-      agregarAlumno({ nombre: '', numero_lista: '1', fecha_nacimiento: '', curp: '' }, []),
+      agregarAlumno({ nombre: '', numero_lista: '1', fecha_nacimiento: '', curp: '', sexo: '' }, []),
     ).rejects.toThrow(/Falta el nombre/)
     expect(await repos.alumnos.lista()).toHaveLength(0)
   })
@@ -212,12 +233,12 @@ describe('agregarAlumno', () => {
 
 describe('editarAlumno', () => {
   it('corrige conservando el id', async () => {
-    await agregarAlumno({ nombre: 'Mal Escrito', numero_lista: '1', fecha_nacimiento: '', curp: '' }, [])
+    await agregarAlumno({ nombre: 'Mal Escrito', numero_lista: '1', fecha_nacimiento: '', curp: '', sexo: '' }, [])
     const antes = (await repos.alumnos.lista())[0]!
 
     await editarAlumno(
       antes.id,
-      { nombre: 'Bien Escrito, Ana', numero_lista: '1', fecha_nacimiento: '2017-03-14', curp: '' },
+      { nombre: 'Bien Escrito, Ana', numero_lista: '1', fecha_nacimiento: '2017-03-14', curp: '', sexo: '' },
       [antes],
     )
 
@@ -230,7 +251,7 @@ describe('editarAlumno', () => {
 
 describe('darDeBajaAlumno y reactivarAlumno', () => {
   it('la baja lo saca del grupo sin borrar nada suyo', async () => {
-    await agregarAlumno({ nombre: 'Se Fue, Ana', numero_lista: '1', fecha_nacimiento: '', curp: '' }, [])
+    await agregarAlumno({ nombre: 'Se Fue, Ana', numero_lista: '1', fecha_nacimiento: '', curp: '', sexo: '' }, [])
     const id = (await repos.alumnos.lista())[0]!.id
     // Un registro suyo, para comprobar que sigue ahí.
     await db.asistencia.put({
@@ -250,7 +271,7 @@ describe('darDeBajaAlumno y reactivarAlumno', () => {
   })
 
   it('reactivar lo devuelve al grupo', async () => {
-    await agregarAlumno({ nombre: 'Toqué Mal, Ana', numero_lista: '1', fecha_nacimiento: '', curp: '' }, [])
+    await agregarAlumno({ nombre: 'Toqué Mal, Ana', numero_lista: '1', fecha_nacimiento: '', curp: '', sexo: '' }, [])
     const id = (await repos.alumnos.lista())[0]!.id
 
     await darDeBajaAlumno(id)

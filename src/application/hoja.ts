@@ -1,4 +1,5 @@
 import { fechaValida } from '@/domain/fechas'
+import type { Sexo } from '@/domain/values'
 import type { AlumnoExtraido } from '@/services/extraccion'
 
 /**
@@ -45,6 +46,11 @@ const ENCABEZADOS = {
   nombre: (t: string) => t.includes('nombre') || t.includes('alumno'),
   curp: (t: string) => t.includes('curp'),
   nacimiento: (t: string) => t.includes('nacimiento'),
+  // Estrecho a propósito, y es el único de los cuatro que no puede ser un
+  // `includes`: la fila de encabezados de la escuela sigue con los días de la
+  // semana —`L M M J V`— y un `'m'` suelto se colaría como columna de sexo.
+  sexo: (t: string) =>
+    t.startsWith('sexo') || t.startsWith('genero') || t === 'h/m' || t === 'm/h' || t === 'm/f',
 } as const
 
 interface Encabezados {
@@ -55,6 +61,7 @@ interface Encabezados {
   anchoNombre: number
   curp: number
   nacimiento: number
+  sexo: number
 }
 
 /**
@@ -89,6 +96,11 @@ function encabezados(celdas: readonly (readonly string[])[]): Encabezados | null
       anchoNombre: ancho,
       curp: textos.findIndex((t) => t !== '' && ENCABEZADOS.curp(t)),
       nacimiento: buscar(ENCABEZADOS.nacimiento),
+      // En toda la fila y no solo después del nombre, como el CURP: hay listas
+      // con `No | SEXO | NOMBRE`. Se puede porque el predicado es exacto —a
+      // diferencia del de `nacimiento`, que sí necesita el acote para no
+      // toparse con las columnas fusionadas del nombre—.
+      sexo: textos.findIndex((t) => t !== '' && ENCABEZADOS.sexo(t)),
     }
   }
 
@@ -131,6 +143,46 @@ function fechaDeExcel(valor: string): string {
 }
 
 /**
+ * Qué quiere decir la `M` de la columna, decidido **sobre la columna entera y no
+ * celda por celda**.
+ *
+ * Es una ambigüedad real y no un caso de laboratorio: en la lista mexicana
+ * —`H` / `M`— la `M` es Mujer, y en una lista escrita a la inglesa —`M` / `F`—
+ * la misma letra es Masculino. Leyendo una celda suelta no hay forma de saberlo;
+ * mirando la columna sí, porque una `F` en cualquier renglón solo puede ser
+ * Femenino, y donde hay `F` la `M` es Masculino.
+ *
+ * Sin esto, media lista quedaría con el sexo invertido y en silencio, que es
+ * exactamente lo que nadie revisaría.
+ */
+function laEmeEsMasculino(crudos: readonly string[]): boolean {
+  return crudos.some((c) => c === 'f' || c === 'femenino')
+}
+
+function sexoDeCelda(crudo: string, emeEsMasculino: boolean): Sexo | null {
+  switch (crudo) {
+    case 'h':
+    case 'hombre':
+    case 'masculino':
+    case 'v':
+    case 'varon':
+    case 'nino':
+      return 'H'
+    case 'f':
+    case 'femenino':
+    case 'mujer':
+    case 'nina':
+      return 'M'
+    case 'm':
+      return emeEsMasculino ? 'H' : 'M'
+    default:
+      // Una celda vacía, un guion o cualquier otra cosa. No es un error: hay
+      // listas a las que les falta el dato de alguien.
+      return null
+  }
+}
+
+/**
  * Los alumnos de la hoja, en la forma en la que los deja la IA para que el resto
  * del camino sea el mismo. `null` si la hoja no se supo leer.
  */
@@ -139,6 +191,9 @@ export function interpretarHoja(celdas: readonly (readonly string[])[]): AlumnoE
   if (donde === null) return null
 
   const alumnos: AlumnoExtraido[] = []
+  // El sexo se guarda crudo y se traduce al final: qué significa la `M` depende
+  // de la columna entera, y aquí todavía falta por leerla.
+  const sexos: string[] = []
 
   for (const fila of celdas.slice(donde.fila + 1)) {
     if (fila === undefined) continue
@@ -163,7 +218,14 @@ export function interpretarHoja(celdas: readonly (readonly string[])[]): AlumnoE
       curp: celda(donde.curp) || null,
       fecha_nacimiento: fechaValida(nacimiento) ? nacimiento : null,
     })
+    sexos.push(normalizar(celda(donde.sexo)))
   }
 
-  return alumnos.length === 0 ? null : alumnos
+  if (alumnos.length === 0) return null
+
+  const emeEsMasculino = laEmeEsMasculino(sexos)
+  return alumnos.map((alumno, i) => ({
+    ...alumno,
+    sexo: sexoDeCelda(sexos[i] ?? '', emeEsMasculino),
+  }))
 }
