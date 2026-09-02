@@ -36,8 +36,18 @@ Para cada alumno:
   null si el documento no la trae. No la deduzcas ni la completes.
 - "fecha_nacimiento": en formato YYYY-MM-DD. Las fechas del documento vienen en día/mes/año.
   null si no aparece. **No la deduzcas de la CURP**: de eso se encarga la aplicación.
+- "sexo": "H" (hombre) o "M" (mujer), **tal como lo imprime el documento**, normalmente en una
+  columna titulada SEXO o GÉNERO. null si el documento no lo trae. No lo deduzcas de nada:
+  ni de la CURP, ni del nombre. Ojo con las listas escritas "M/F", donde la M significa
+  masculino: ahí devuelve "H" para la M y "M" para la F.
+- "sexo_supuesto": "H" o "M" deducido del nombre de pila, y **solo** cuando el documento no
+  imprime el sexo y tampoco trae CURP. En cualquier otro caso, null. Es una conjetura y la
+  aplicación la trata como tal; si el nombre es ambiguo —Guadalupe, Cruz, Yael, Ariel—,
+  devuelve null en vez de elegir.
 
-No inventes alumnos ni completes datos que no estén en el documento.`
+No inventes alumnos ni completes datos que no estén en el documento. Los dos campos de sexo
+van separados a propósito: uno es lo que se lee y el otro lo que se supone, y la aplicación
+necesita distinguirlos para no dejar que una suposición pise un dato cierto.`
 
 /** Lo que se le agrega cuando lo que llega es una hoja de cálculo en texto. */
 const INSTRUCCIONES_TEXTO = `${INSTRUCCIONES}
@@ -57,6 +67,8 @@ const ESQUEMA = {
           numero_lista: { type: 'INTEGER', nullable: true },
           curp: { type: 'STRING', nullable: true },
           fecha_nacimiento: { type: 'STRING', nullable: true },
+          sexo: { type: 'STRING', nullable: true },
+          sexo_supuesto: { type: 'STRING', nullable: true },
         },
         required: ['nombre'],
       },
