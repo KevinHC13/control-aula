@@ -17,6 +17,7 @@ const alumno = (n: number): Alumno => ({
   numero_lista: n,
   fecha_nacimiento: null,
   curp: null,
+  sexo: null,
 })
 
 const dia = (n: number, fecha: string, estado: EstadoAsistencia): RegistroAsistencia => ({

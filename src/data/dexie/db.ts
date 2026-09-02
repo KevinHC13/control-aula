@@ -240,6 +240,16 @@ db.version(VERSION_ESQUEMA)
  * respaldo hecho antes de esto se sigue restaurando, y uno hecho después se
  * sigue abriendo en una app que todavía no tenga el campo —la fila viaja
  * entera, con su CURP dentro, y nadie la pierde—.
+ *
+ * `Alumno.sexo` entra igual y por lo mismo (docs/DECISIONES.md D-029): nadie
+ * busca alumnos por sexo —se cuentan los treinta que ya están en la mano— así
+ * que no necesita índice, y sin índice no necesita versión. `VERSION_ESQUEMA`
+ * sigue en 4.
+ *
+ * Lo que sí necesita, y esto no es Dexie sino la nube, es que la columna exista
+ * en Supabase **antes** de que el dispositivo escriba el campo: la sincronía
+ * sube la fila completa y PostgREST rechaza el lote entero con PGRST204 si le
+ * llega una columna que no conoce. La migración va primero, siempre.
  */
 
 /**

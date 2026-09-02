@@ -49,6 +49,7 @@ beforeAll(async () => {
       numero_lista: i + 1,
       fecha_nacimiento: null,
       curp: null,
+      sexo: null,
     })),
   )
 

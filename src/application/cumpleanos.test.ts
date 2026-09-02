@@ -12,6 +12,7 @@ const alumno = (n: number, nacimiento: Fecha | null): Alumno => ({
   numero_lista: n,
   fecha_nacimiento: nacimiento,
   curp: null,
+  sexo: null,
   updated_at: '2026-08-24T00:00:00.000Z',
   deleted_at: null,
 })

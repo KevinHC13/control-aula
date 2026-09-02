@@ -202,6 +202,7 @@ export function aDatosAlumno(filas: FilaImportada[]): DatosAlumno[] {
     numero_lista: fila.numero_lista,
     fecha_nacimiento: fila.fecha_nacimiento === '' ? null : fila.fecha_nacimiento,
     curp: fila.curp === '' ? null : fila.curp,
+    sexo: null,
   }))
 }
 

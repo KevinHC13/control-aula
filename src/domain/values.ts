@@ -18,6 +18,21 @@ export type Instante = string
 export type EstadoAsistencia = 'presente' | 'ausente' | 'retardo' | 'justificada'
 
 /**
+ * El sexo del alumno, con las dos letras que usa la lista oficial: `H` de
+ * hombre, `M` de mujer. Se guardan las letras y no palabras porque son las que
+ * imprime la lista de la escuela y las que codifica el dígito 11 del CURP; la
+ * pantalla las traduce a «Niños» y «Niñas» al presentarlas
+ * (docs/DECISIONES.md D-029).
+ *
+ * `Alumno.sexo` es `Sexo | null`, y el `null` no es un dato pendiente de
+ * arreglar: una lista puede no traer la columna. Lo que no se puede es
+ * inventarlo, así que la pantalla dice «sin asignar» y no lo reparte.
+ */
+export type Sexo = 'H' | 'M'
+
+export const SEXOS = ['H', 'M'] as const satisfies readonly Sexo[]
+
+/**
  * Orden del ciclo al tocar una fila de asistencia. Cuatro estados es el límite:
  * un quinto vuelve el ciclo más lento que un menú (docs/UX.md).
  */

@@ -126,6 +126,7 @@ function aDatos(formulario: FormularioAlumno): DatosAlumno {
     fecha_nacimiento:
       formulario.fecha_nacimiento === '' ? null : formulario.fecha_nacimiento,
     curp: formulario.curp === '' ? null : normalizarCurp(formulario.curp),
+    sexo: null,
   }
 }
 

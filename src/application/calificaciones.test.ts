@@ -41,6 +41,7 @@ const alumno = (i: number): Alumno => ({
   numero_lista: i,
   fecha_nacimiento: null,
   curp: null,
+  sexo: null,
 })
 
 const DOS = [alumno(1), alumno(2)]

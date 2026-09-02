@@ -47,6 +47,7 @@ const alumno = (n: number) => ({
   numero_lista: n,
   fecha_nacimiento: null,
   curp: null,
+  sexo: null,
 })
 
 async function encolar(tabla: string, registroId: string) {

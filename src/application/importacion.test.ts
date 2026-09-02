@@ -318,8 +318,14 @@ describe('aDatosAlumno', () => {
         { nombre: 'Bautista, Carla', numero_lista: 2, fecha_nacimiento: '2015-04-02', curp: '' },
       ]),
     ).toEqual([
-      { nombre: 'Aguilar, Bruno', numero_lista: 1, fecha_nacimiento: null, curp: null },
-      { nombre: 'Bautista, Carla', numero_lista: 2, fecha_nacimiento: '2015-04-02', curp: null },
+      { nombre: 'Aguilar, Bruno', numero_lista: 1, fecha_nacimiento: null, curp: null, sexo: null },
+      {
+        nombre: 'Bautista, Carla',
+        numero_lista: 2,
+        fecha_nacimiento: '2015-04-02',
+        curp: null,
+        sexo: null,
+      },
     ])
   })
 

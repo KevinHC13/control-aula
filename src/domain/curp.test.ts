@@ -1,11 +1,38 @@
 import { describe, expect, it } from 'vitest'
 
-import { curpValido, fechaDeCurp, normalizarCurp, partirNombre } from './curp'
+import { curpValido, fechaDeCurp, normalizarCurp, partirNombre, sexoDeCurp } from './curp'
 
 // CURP inventadas: la forma es real, las personas no (docs/CLAUDE.md, «Datos
 // reales»). Se construyen a mano para poder mover una sola posición por prueba.
 const NIÑA = 'AUVG160520MNLRLRA3' // 20 de mayo de 2016
 const NIÑO = 'PEGJ151102HNLRRVA2' // 2 de noviembre de 2015
+
+describe('sexoDeCurp', () => {
+  it('lee el carácter 11', () => {
+    expect(sexoDeCurp(NIÑA)).toBe('M')
+    expect(sexoDeCurp(NIÑO)).toBe('H')
+  })
+
+  it('no lo confunde con la letra de al lado', () => {
+    // La H de la entidad y la M del apellido están pegadas al dígito del sexo, y
+    // un `indexOf` en vez de una posición fija las tomaría por buenas.
+    expect(sexoDeCurp('MAHM160520HMCRRRA1')).toBe('H')
+    expect(sexoDeCurp('HEHM160520MHGRRRA1')).toBe('M')
+  })
+
+  it('sin CURP no hay sexo, y eso no es un error', () => {
+    expect(sexoDeCurp('')).toBeNull()
+    expect(sexoDeCurp('12938032')).toBeNull() // una matrícula
+    expect(sexoDeCurp('AUVG160520MNLRLRA')).toBeNull() // 17 caracteres
+    expect(sexoDeCurp('auvg160520mnlrlra3')).toBeNull() // minúsculas sin normalizar
+  })
+
+  it('una letra que no es H ni M no cuadra con la forma', () => {
+    // RENAPO ya emite alguna CURP con X. Hoy `FORMA` no la admite, así que se
+    // rechaza entera en vez de contarla como mujer por descarte.
+    expect(sexoDeCurp('AUVG160520XNLRLRA3')).toBeNull()
+  })
+})
 
 describe('fechaDeCurp', () => {
   it('lee los seis dígitos de en medio', () => {

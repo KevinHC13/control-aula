@@ -56,6 +56,7 @@ const alumno = (i: number): Alumno => ({
   numero_lista: i,
   fecha_nacimiento: null,
   curp: null,
+  sexo: null,
 })
 
 const renglon = (i: number): RubricaCriterio => ({

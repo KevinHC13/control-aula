@@ -18,6 +18,7 @@ const alumno = (numero_lista: number, nombre: string, deleted_at: string | null 
   numero_lista,
   fecha_nacimiento: null,
   curp: null,
+  sexo: null,
   updated_at: '2026-08-18T08:00:00.000Z',
   deleted_at,
 })
@@ -78,9 +79,9 @@ describe('observarLista', () => {
  */
 describe('sembrar', () => {
   const LISTA: DatosAlumno[] = [
-    { numero_lista: 1, nombre: 'Aguilar Mendoza, Bruno', fecha_nacimiento: '2017-03-14', curp: null },
-    { numero_lista: 2, nombre: 'Barrera Solís, Diego', fecha_nacimiento: null, curp: null },
-    { numero_lista: 3, nombre: 'Cruz Herrera, Regina', fecha_nacimiento: '2017-09-23', curp: null },
+    { numero_lista: 1, nombre: 'Aguilar Mendoza, Bruno', fecha_nacimiento: '2017-03-14', curp: null, sexo: null },
+    { numero_lista: 2, nombre: 'Barrera Solís, Diego', fecha_nacimiento: null, curp: null, sexo: null },
+    { numero_lista: 3, nombre: 'Cruz Herrera, Regina', fecha_nacimiento: '2017-09-23', curp: null, sexo: null },
   ]
 
   beforeEach(async () => {
@@ -130,11 +131,41 @@ describe('sembrar', () => {
     await repo.sembrar(LISTA)
     const original = (await repo.lista())[0]!
 
-    await repo.sembrar([{ ...LISTA[0]!, curp: 'AUVG160520MNLRLRA3' }])
+    await repo.sembrar([{ ...LISTA[0]!, curp: 'AUVG160520MNLRLRA3', sexo: null }])
 
     const despues = (await repo.lista())[0]!
     expect(despues.id).toBe(original.id)
     expect(despues.curp).toBe('AUVG160520MNLRLRA3')
+  })
+
+  it('recargar la lista con el sexo se lo escribe a quien ya existía', async () => {
+    // La gemela de la de arriba, y por la misma razón: sin el sexo en la
+    // comparación de `sembrar`, volver a cargar la lista de la escuela —que sí
+    // trae la columna— no escribiría nada, porque el resto ya coincide.
+    await repo.sembrar(LISTA)
+    const original = (await repo.lista())[0]!
+
+    await repo.sembrar([{ ...LISTA[0]!, sexo: 'H' }])
+
+    const despues = (await repo.lista())[0]!
+    expect(despues.id).toBe(original.id)
+    expect(despues.sexo).toBe('H')
+  })
+
+  it('una fila escrita antes de que el campo existiera se lee como sin asignar', async () => {
+    // `sexo` entró sin `version()` porque no lleva índice, así que las filas
+    // viejas lo traen `undefined`. Fuera del adaptador eso no puede verse: el
+    // dominio declara `null` y la pantalla sabe decir «sin asignar».
+    await repo.sembrar(LISTA)
+    const id = (await repo.lista())[0]!.id
+    const vieja = await db.alumnos.get(id)
+    delete (vieja as Partial<Alumno>).sexo
+    delete (vieja as Partial<Alumno>).curp
+    await db.alumnos.put(vieja!)
+
+    const leida = (await repo.lista())[0]!
+    expect(leida.sexo).toBeNull()
+    expect(leida.curp).toBeNull()
   })
 
   it('un nombre corregido se actualiza conservando el id', async () => {
@@ -233,7 +264,7 @@ describe('el grupo se acota al ciclo abierto', () => {
     await db.ciclos.put(ciclo('ciclo-a', 'abierto', '2026-08-01T00:00:00.000Z'))
 
     await repo.sembrar([
-      { numero_lista: 1, nombre: 'Aguilar, Bruno', fecha_nacimiento: null, curp: null },
+      { numero_lista: 1, nombre: 'Aguilar, Bruno', fecha_nacimiento: null, curp: null, sexo: null },
     ])
 
     expect((await repo.lista())[0]?.ciclo_id).toBe('ciclo-a')
@@ -247,7 +278,7 @@ describe('el grupo se acota al ciclo abierto', () => {
     await db.ciclos.put(ciclo('ciclo-nuevo', 'abierto', '2026-08-01T00:00:00.000Z'))
 
     await repo.sembrar([
-      { numero_lista: 1, nombre: 'De este año', fecha_nacimiento: null, curp: null },
+      { numero_lista: 1, nombre: 'De este año', fecha_nacimiento: null, curp: null, sexo: null },
     ])
 
     const nuevo = (await repo.lista())[0]
@@ -268,7 +299,7 @@ describe('administrar alumnos', () => {
     await db.outbox.clear()
   })
 
-  const DATOS = { nombre: 'Llegó Después, Ana', numero_lista: 31, fecha_nacimiento: null, curp: null }
+  const DATOS = { nombre: 'Llegó Después, Ana', numero_lista: 31, fecha_nacimiento: null, curp: null, sexo: null }
 
   it('agregar da de alta con id, updated_at y sin baja', async () => {
     await repo.agregar(DATOS)
@@ -362,6 +393,7 @@ describe('administrar alumnos', () => {
       numero_lista: 1,
       fecha_nacimiento: null,
       curp: null,
+      sexo: null,
       updated_at: '2025-08-25T00:00:00.000Z',
       deleted_at: null,
     })
@@ -371,6 +403,7 @@ describe('administrar alumnos', () => {
       numero_lista: 1,
       fecha_nacimiento: null,
       curp: null,
+      sexo: null,
     })
 
     expect((await db.alumnos.get('a-1'))?.ciclo_id).toBe('ciclo-viejo')

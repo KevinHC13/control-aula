@@ -27,6 +27,7 @@ const alumno = (n: number, nombre = `Apellido${n}, Nombre`, baja = false): Alumn
   numero_lista: n,
   fecha_nacimiento: null,
   curp: null,
+  sexo: null,
   updated_at: '2026-08-24T00:00:00.000Z',
   deleted_at: baja ? '2026-10-01T00:00:00.000Z' : null,
 })
@@ -140,7 +141,7 @@ describe('formularioNuevo y formularioDe', () => {
   })
 
   it('el de edición llega con lo que el alumno ya tiene', () => {
-    expect(formularioDe({ ...alumno(7, 'Ríos, Ana'), fecha_nacimiento: '2017-03-14', curp: null })).toEqual({
+    expect(formularioDe({ ...alumno(7, 'Ríos, Ana'), fecha_nacimiento: '2017-03-14', curp: null, sexo: null })).toEqual({
       nombre: 'Ríos, Ana',
       numero_lista: '7',
       fecha_nacimiento: '2017-03-14',

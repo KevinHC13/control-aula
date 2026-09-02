@@ -18,6 +18,20 @@ function vivos(alumnos: Alumno[]): Alumno[] {
 }
 
 /**
+ * Los campos que entraron sin migración —`curp` y `sexo`, que no llevan índice y
+ * por eso no llevan `version()` (ver la nota de `db.ts`)— los lee `undefined`
+ * una fila escrita antes de que existieran.
+ *
+ * Aquí se vuelven `null`, que es lo que el dominio declara y lo que el resto de
+ * la app sabe distinguir de un valor. Sin esto, «sin asignar» y «no existe el
+ * campo» serían dos cosas distintas en cada sitio que las mire, y la de arriba
+ * no debería salir nunca del adaptador.
+ */
+function normalizado(alumno: Alumno): Alumno {
+  return { ...alumno, curp: alumno.curp ?? null, sexo: alumno.sexo ?? null }
+}
+
+/**
  * El ciclo al que pertenece el grupo de hoy: el abierto, o `null` si todavía no
  * se configura ninguno.
  *
@@ -44,7 +58,7 @@ export class DexieAlumnosRepo implements AlumnosRepo {
    */
   async lista(): Promise<Alumno[]> {
     const ciclo = await cicloAbierto()
-    const todos = await db.alumnos.orderBy('numero_lista').toArray()
+    const todos = (await db.alumnos.orderBy('numero_lista').toArray()).map(normalizado)
     return vivos(todos).filter((a) => (a.ciclo_id ?? null) === ciclo)
   }
 
@@ -54,7 +68,7 @@ export class DexieAlumnosRepo implements AlumnosRepo {
    */
   async conBajas(): Promise<Alumno[]> {
     const ciclo = await cicloAbierto()
-    const todos = await db.alumnos.orderBy('numero_lista').toArray()
+    const todos = (await db.alumnos.orderBy('numero_lista').toArray()).map(normalizado)
     return todos.filter((a) => (a.ciclo_id ?? null) === ciclo)
   }
 
@@ -75,7 +89,7 @@ export class DexieAlumnosRepo implements AlumnosRepo {
   }
 
   async deCicloConBajas(cicloId: string): Promise<Alumno[]> {
-    const todos = await db.alumnos.orderBy('numero_lista').toArray()
+    const todos = (await db.alumnos.orderBy('numero_lista').toArray()).map(normalizado)
     return todos.filter((a) => a.ciclo_id === cicloId)
   }
 
@@ -106,18 +120,22 @@ export class DexieAlumnosRepo implements AlumnosRepo {
             id: nuevoId(),
             ciclo_id: ciclo,
             ...alumno,
+            curp: alumno.curp ?? null,
+            sexo: alumno.sexo ?? null,
             updated_at: momento,
             deleted_at: null,
           })
           continue
         }
 
-        // El CURP entra en la comparación o reimportar la misma lista con CURP
-        // no escribiría nada: el resto de los campos ya coincide.
+        // Cada campo nuevo entra en la comparación o reimportar la misma lista
+        // con ese campo no escribiría nada: el resto ya coincide. Pasó con el
+        // CURP y volvería a pasar con el sexo, y las dos veces en silencio.
         const igual =
           existente.nombre === alumno.nombre &&
           existente.fecha_nacimiento === alumno.fecha_nacimiento &&
           existente.curp === alumno.curp &&
+          (existente.sexo ?? null) === (alumno.sexo ?? null) &&
           existente.deleted_at === null
         if (igual) continue
 
@@ -126,6 +144,8 @@ export class DexieAlumnosRepo implements AlumnosRepo {
         porEscribir.push({
           ...existente,
           ...alumno,
+          curp: alumno.curp ?? null,
+          sexo: alumno.sexo ?? null,
           updated_at: momento,
           deleted_at: null,
         })
@@ -177,6 +197,8 @@ export class DexieAlumnosRepo implements AlumnosRepo {
         id: nuevoId(),
         ciclo_id: ciclo,
         ...datos,
+        curp: datos.curp ?? null,
+        sexo: datos.sexo ?? null,
         updated_at: momento,
         deleted_at: null,
       }
@@ -204,7 +226,13 @@ export class DexieAlumnosRepo implements AlumnosRepo {
       // El `id` y el `ciclo_id` se conservan: de uno cuelga toda su historia y
       // del otro, a qué generación pertenece. Editar corrige datos, no muda a
       // nadie de ciclo.
-      await db.alumnos.put({ ...alumno, ...datos, updated_at: momento })
+      await db.alumnos.put({
+        ...alumno,
+        ...datos,
+        curp: datos.curp ?? null,
+        sexo: datos.sexo ?? null,
+        updated_at: momento,
+      })
       await db.outbox.add({ tabla: 'alumnos', registro_id: id, op: 'upsert', at: momento })
     })
   }
@@ -232,7 +260,7 @@ export class DexieAlumnosRepo implements AlumnosRepo {
 
       const momento = ahora()
       await db.alumnos.put({
-        ...alumno,
+        ...normalizado(alumno),
         deleted_at: baja ? momento : null,
         updated_at: momento,
       })

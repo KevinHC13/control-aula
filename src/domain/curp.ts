@@ -1,8 +1,8 @@
 import { fechaValida } from './fechas'
-import type { Fecha } from './values'
+import type { Fecha, Sexo } from './values'
 
 /**
- * La CURP como fuente de la fecha de nacimiento.
+ * La CURP como fuente de la fecha de nacimiento y del sexo.
  *
  * La lista oficial de Control Escolar trae `No | MATRÍCULA | CURP | NOMBRE` y
  * **no trae fecha de nacimiento**: viene dentro de la CURP, en seis dígitos. Sin
@@ -62,6 +62,23 @@ export function fechaDeCurp(curp: string): Fecha | null {
   const fecha = `${siglo}${curp.slice(4, 6)}-${curp.slice(6, 8)}-${curp.slice(8, 10)}`
 
   return fechaValida(fecha) ? fecha : null
+}
+
+/**
+ * `AUVG160520HNLRLRA3` → `'H'`. El carácter 11 —índice 10, justo después de los
+ * seis dígitos de la fecha— es el sexo, y `FORMA` ya lo acota a `H` o `M`, así
+ * que no hay un tercer caso que contemplar.
+ *
+ * Es lo mismo que `fechaDeCurp` y por la misma razón: el dato está escrito ahí y
+ * solo hay que leerlo. A la IA se le pide el sexo únicamente cuando no hay CURP
+ * ni columna en el documento —adivinarlo por el nombre de pila falla con
+ * «Guadalupe», con «Cruz» y con la mitad de los nombres nuevos—, y esta función
+ * es justo lo que hace que ese caso sea raro (docs/DECISIONES.md D-029).
+ */
+export function sexoDeCurp(curp: string): Sexo | null {
+  if (!FORMA.test(curp)) return null
+
+  return curp.charAt(10) === 'H' ? 'H' : 'M'
 }
 
 /**

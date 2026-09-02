@@ -5,6 +5,7 @@ import type {
   Id,
   Instante,
   Nivel,
+  Sexo,
   Sincronizable,
 } from './values'
 
@@ -38,6 +39,19 @@ export interface Alumno extends Sincronizable {
    * calificaciones.
    */
   curp: string | null
+  /**
+   * `H` u `M`, o `null` mientras no se sepa (docs/DECISIONES.md D-029).
+   *
+   * Sale de tres sitios y en este orden: la columna «SEXO» de la lista, el
+   * dígito 11 del CURP y, en último lugar, lo que la IA deduzca del nombre de
+   * pila. Los dos primeros son leer un dato que ya está escrito; el tercero es
+   * una conjetura, y por eso va al final y se revisa.
+   *
+   * El `null` es un resultado normal, no un registro a medias: hay listas sin
+   * columna de sexo y sin CURP. Quien lo lea tiene que saber decir «sin
+   * asignar» en vez de repartirlo a la mitad.
+   */
+  sexo: Sexo | null
 }
 
 /**
@@ -48,7 +62,7 @@ export interface Alumno extends Sincronizable {
  */
 export type DatosAlumno = Pick<
   Alumno,
-  'nombre' | 'numero_lista' | 'fecha_nacimiento' | 'curp'
+  'nombre' | 'numero_lista' | 'fecha_nacimiento' | 'curp' | 'sexo'
 >
 
 export interface RegistroAsistencia extends Sincronizable {
