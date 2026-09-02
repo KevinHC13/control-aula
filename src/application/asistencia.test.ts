@@ -11,6 +11,7 @@ import type { EstadoAsistencia } from '@/domain/values'
 
 import {
   asistenciaDelDia,
+  contarFaltantesPorSexo,
   contarPresentes,
   filasDelDia,
   marcarEstado,
@@ -247,5 +248,58 @@ describe('pasarLista', () => {
     // La segunda pasada no crea nada, así que tampoco encola.
     await pasarLista(HOY)
     expect(await db.outbox.count()).toBe(3)
+  })
+})
+
+describe('contarFaltantesPorSexo', () => {
+  // La cifra del pie de la hoja oficial: «H: __  M: __  T: __».
+  const conSexo = (numero_lista: number, sexo: Alumno['sexo']): Alumno => ({
+    ...alumno(numero_lista, `Apellido${numero_lista}, Nombre`),
+    sexo,
+  })
+
+  const GRUPO_MIXTO = [conSexo(1, 'H'), conSexo(2, 'M'), conSexo(3, 'H'), conSexo(4, null)]
+
+  const filas = (estados: EstadoAsistencia[]) =>
+    filasDelDia(
+      GRUPO_MIXTO,
+      estados.map((estado, i) => ({
+        id: `r-${i}`,
+        alumno_id: `alumno-${i + 1}`,
+        fecha: HOY,
+        estado,
+        updated_at: '2026-08-18T08:00:00.000Z',
+        deleted_at: null,
+      })),
+    )
+
+  it('parte a los ausentes por sexo', () => {
+    expect(contarFaltantesPorSexo(filas(['ausente', 'ausente', 'presente', 'presente']))).toEqual({
+      ninos: 1,
+      ninas: 1,
+      sinAsignar: 0,
+    })
+  })
+
+  it('el retardo y la justificada no son faltas', () => {
+    // `cuentaComoAsistencia` dice que las dos cuentan como asistencia, y lo que
+    // se copia a la hoja es quién no vino.
+    expect(contarFaltantesPorSexo(filas(['retardo', 'justificada', 'presente', 'presente']))).toEqual(
+      { ninos: 0, ninas: 0, sinAsignar: 0 },
+    )
+  })
+
+  it('el que falta sin sexo asignado se dice aparte, no se reparte', () => {
+    // Un alumno sin sexo no es medio niño. Vale más un hueco que se ve que dos
+    // cifras que suman bien y mienten.
+    expect(contarFaltantesPorSexo(filas(['ausente', 'presente', 'presente', 'ausente']))).toEqual({
+      ninos: 1,
+      ninas: 0,
+      sinAsignar: 1,
+    })
+  })
+
+  it('un día sin faltas da ceros, no un hueco', () => {
+    expect(contarFaltantesPorSexo(filas([]))).toEqual({ ninos: 0, ninas: 0, sinAsignar: 0 })
   })
 })

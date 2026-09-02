@@ -1,6 +1,7 @@
 import type { FilaAsistencia } from '@/application/asistencia'
-import { contarPresentes } from '@/application/asistencia'
+import { contarFaltantesPorSexo, contarPresentes } from '@/application/asistencia'
 import type { EstadoAsistencia } from '@/domain/values'
+import { plural } from '@/ui/lib/plural'
 
 const DESGLOSE: { estado: EstadoAsistencia; etiqueta: string; color: string }[] = [
   { estado: 'ausente', etiqueta: 'ausentes', color: 'text-rojo' },
@@ -20,6 +21,18 @@ export function ContadorPresentes({ filas }: { filas: FilaAsistencia[] }) {
   // vinieron cuando no hay a quién contar, y una cifra que miente en la pantalla de
   // entrada es peor que un hueco.
   if (total === 0) return null
+
+  const { ninos, ninas, sinAsignar } = contarFaltantesPorSexo(filas)
+  // Las tres partes de la línea de abajo, ya en palabras. Se arma como lista y
+  // se une con « · » para no acabar con un separador suelto cuando falta una:
+  // «1 niño · » es peor que no enseñar la línea.
+  const porSexo = [
+    ninos > 0 && `${ninos} ${plural(ninos, 'niño', 'niños')}`,
+    ninas > 0 && `${ninas} ${plural(ninas, 'niña', 'niñas')}`,
+    // Un ausente sin sexo se dice, no se reparte: es lo que hace visible que
+    // falta un dato en vez de dar una cifra que suma bien y miente.
+    sinAsignar > 0 && `${sinAsignar} sin asignar`,
+  ].filter((parte): parte is string => parte !== false)
 
   const desglose = DESGLOSE.map((d) => ({
     ...d,
@@ -45,6 +58,16 @@ export function ContadorPresentes({ filas }: { filas: FilaAsistencia[] }) {
               </span>
             ))}
       </p>
+
+      {/* Quién faltó, partido por sexo: es lo que la hoja oficial pide al pie de
+          cada día. Solo cuando hay ausentes, igual que el desglose de arriba
+          desaparece con «Todos presentes» —la pantalla de entrada es una cifra
+          grande, no un tablero—. */}
+      {porSexo.length > 0 && (
+        <p className="mt-0.5 text-apoyo text-tinta-2" aria-live="polite">
+          Faltaron {porSexo.join(' · ')}
+        </p>
+      )}
     </div>
   )
 }

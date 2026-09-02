@@ -50,6 +50,39 @@ export function contarPresentes(filas: FilaAsistencia[]): {
   }
 }
 
+/** Los que faltaron, partidos por sexo. */
+export interface FaltantesPorSexo {
+  ninos: number
+  ninas: number
+  /** Los que faltaron y todavía no tienen sexo asignado. */
+  sinAsignar: number
+}
+
+/**
+ * Cuántos niños y cuántas niñas faltaron hoy.
+ *
+ * Es la cifra que la hoja oficial pide al pie de cada día —«H: __  M: __  T:
+ * __»— y que hasta ahora se contaba a mano sobre la pantalla.
+ *
+ * **Solo `ausente`.** Retardo y justificada cuentan como asistencia
+ * (`cuentaComoAsistencia`), y lo que se copia a la hoja es quién no vino.
+ *
+ * `sinAsignar` sale aparte y no se reparte entre los otros dos: un alumno sin
+ * sexo no es medio niño. Vale más un hueco que se ve que dos cifras que suman
+ * bien y mienten.
+ *
+ * Función pura: no lee la base.
+ */
+export function contarFaltantesPorSexo(filas: FilaAsistencia[]): FaltantesPorSexo {
+  const faltaron = filas.filter((f) => f.estado === 'ausente')
+
+  return {
+    ninos: faltaron.filter((f) => f.alumno.sexo === 'H').length,
+    ninas: faltaron.filter((f) => f.alumno.sexo === 'M').length,
+    sinAsignar: faltaron.filter((f) => f.alumno.sexo === null).length,
+  }
+}
+
 /**
  * Un día visto desde el calendario. `registrado` distingue un día que todavía no
  * se capturó de uno capturado sin faltas: el primero es un hueco, el segundo es
