@@ -2,11 +2,24 @@ import { liveQuery } from 'dexie'
 
 import type { AlumnosRepo } from '@/data/ports/alumnos'
 import type { Alumno, DatosAlumno } from '@/domain/entities'
+import { porNombre } from '@/domain/orden'
 import type { Id, Suscribible } from '@/domain/values'
 
 import { ahora, db, nuevoId } from './db'
 
 /**
+ * Dos notas sobre la lectura de este adaptador.
+ *
+ * Nota sobre el orden: se ordena **en memoria por apellido** (`porNombre`) y no
+ * con un `orderBy` de Dexie. No hay índice por `nombre` —y uno de IndexedDB
+ * ordenaría por punto de código, que manda «Ávila» después de la Z—, así que el
+ * orden del español solo lo sabe dar `localeCompare`. Con treinta o cuarenta
+ * alumnos no se nota, igual que el filtro de aquí abajo.
+ *
+ * Va en los métodos de lectura y en ninguna pantalla: ordenar una vez las ordena
+ * todas, y ninguna puede saltárselo por olvido —el mismo criterio que el acote
+ * por ciclo de `cicloAbierto()`—.
+ *
  * Nota sobre el filtro de borrados: no se puede resolver con el índice de
  * `deleted_at`. IndexedDB no admite `null` como clave, así que los registros
  * vivos —los que tienen `deleted_at: null`— simplemente no están en ese índice.
@@ -58,18 +71,20 @@ export class DexieAlumnosRepo implements AlumnosRepo {
    */
   async lista(): Promise<Alumno[]> {
     const ciclo = await cicloAbierto()
-    const todos = (await db.alumnos.orderBy('numero_lista').toArray()).map(normalizado)
-    return vivos(todos).filter((a) => (a.ciclo_id ?? null) === ciclo)
+    const todos = (await db.alumnos.toArray()).map(normalizado)
+    return vivos(todos)
+      .filter((a) => (a.ciclo_id ?? null) === ciclo)
+      .sort(porNombre)
   }
 
   /**
-   * Con los dados de baja. Se ordena igual, por número de lista: una baja no
-   * cambia de sitio en la lista, solo deja de contar.
+   * Con los dados de baja. Se ordena igual, por apellido: una baja no cambia de
+   * sitio en la lista, solo deja de contar.
    */
   async conBajas(): Promise<Alumno[]> {
     const ciclo = await cicloAbierto()
-    const todos = (await db.alumnos.orderBy('numero_lista').toArray()).map(normalizado)
-    return todos.filter((a) => (a.ciclo_id ?? null) === ciclo)
+    const todos = (await db.alumnos.toArray()).map(normalizado)
+    return todos.filter((a) => (a.ciclo_id ?? null) === ciclo).sort(porNombre)
   }
 
   observarConBajas(): Suscribible<Alumno[]> {
@@ -89,8 +104,8 @@ export class DexieAlumnosRepo implements AlumnosRepo {
   }
 
   async deCicloConBajas(cicloId: string): Promise<Alumno[]> {
-    const todos = (await db.alumnos.orderBy('numero_lista').toArray()).map(normalizado)
-    return todos.filter((a) => a.ciclo_id === cicloId)
+    const todos = (await db.alumnos.toArray()).map(normalizado)
+    return todos.filter((a) => a.ciclo_id === cicloId).sort(porNombre)
   }
 
   /**

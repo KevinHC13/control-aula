@@ -17,7 +17,12 @@ import type { Id, Suscribible } from '@/domain/values'
  */
 export interface AlumnosRepo {
   /**
-   * El grupo en el orden de la lista oficial, sin los borrados.
+   * El grupo **en orden alfabético**, sin los borrados.
+   *
+   * Por apellido y no por número de lista, que es como se busca a un alumno: el
+   * que se dio de alta en noviembre tiene el número 39 y su sitio está donde lo
+   * pone su apellido, no al final. El orden lo pone el adaptador para todas las
+   * pantallas a la vez.
    *
    * **Son los alumnos del ciclo abierto** (D-025). No recibe el ciclo por
    * parámetro a propósito: no existe un «ver el grupo de otro ciclo» en el

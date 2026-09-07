@@ -29,7 +29,7 @@ beforeEach(async () => {
 })
 
 describe('lista', () => {
-  it('devuelve el grupo en el orden de la lista oficial, no en el de inserción', async () => {
+  it('devuelve el grupo en orden alfabético, no en el de inserción', async () => {
     await db.alumnos.bulkPut([
       alumno(3, 'Cruz, Regina'),
       alumno(1, 'Aguilar, Bruno'),
@@ -37,6 +37,32 @@ describe('lista', () => {
     ])
 
     expect((await repo.lista()).map((a) => a.numero_lista)).toEqual([1, 2, 3])
+  })
+
+  it('el que se dio de alta después va donde le toca, no al final', async () => {
+    // El caso que el número de lista no sabe resolver: llegó en noviembre, tomó
+    // el 39, y se le busca por la A.
+    await db.alumnos.bulkPut([
+      alumno(1, 'Aguilar, Bruno'),
+      alumno(2, 'Cruz, Regina'),
+      alumno(39, 'Aguirre, Zoe'),
+    ])
+
+    expect((await repo.lista()).map((a) => a.numero_lista)).toEqual([1, 39, 2])
+  })
+
+  it('un apellido acentuado va donde suena, no después de la Z', async () => {
+    await db.alumnos.bulkPut([
+      alumno(1, 'Barrera, Diego'),
+      alumno(2, 'Ávila, Mariana'),
+      alumno(3, 'Aguilar, Bruno'),
+    ])
+
+    expect((await repo.lista()).map((a) => a.nombre)).toEqual([
+      'Aguilar, Bruno',
+      'Ávila, Mariana',
+      'Barrera, Diego',
+    ])
   })
 
   it('filtra los borrados', async () => {
@@ -446,14 +472,16 @@ describe('administrar alumnos', () => {
     expect((await db.alumnos.get(id))?.deleted_at).toBeNull()
   })
 
-  it('conBajas trae a los dos, ordenados por número', async () => {
-    await repo.agregar({ ...DATOS, numero_lista: 2, nombre: 'Sigue, Aquí' })
-    await repo.agregar({ ...DATOS, numero_lista: 1, nombre: 'Se, Fue' })
-    const seFue = (await repo.lista()).find((a) => a.numero_lista === 1)!
+  it('conBajas trae a los dos, en el mismo orden alfabético', async () => {
+    // Una baja no cambia de sitio en la lista, solo deja de contar: aunque el
+    // que se fue tenga el número más alto, su apellido lo pone primero.
+    await repo.agregar({ ...DATOS, numero_lista: 1, nombre: 'Sigue, Aquí' })
+    await repo.agregar({ ...DATOS, numero_lista: 2, nombre: 'Se, Fue' })
+    const seFue = (await repo.lista()).find((a) => a.numero_lista === 2)!
     await repo.darDeBaja(seFue.id)
 
     const todos = await repo.conBajas()
-    expect(todos.map((a) => a.numero_lista)).toEqual([1, 2])
+    expect(todos.map((a) => a.nombre)).toEqual(['Se, Fue', 'Sigue, Aquí'])
     expect(await repo.lista()).toHaveLength(1)
   })
 

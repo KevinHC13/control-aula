@@ -5,6 +5,7 @@ import {
   proximoCumpleanos,
 } from '@/domain/cumpleanos'
 import type { Alumno } from '@/domain/entities'
+import { porNombre } from '@/domain/orden'
 import type { Fecha } from '@/domain/values'
 
 /**
@@ -56,7 +57,9 @@ export function cumpleanosProximos(
       }
     })
     .filter((c) => dentroDeLaVentana(hoy, c.fecha, cuantos))
-    .sort((a, b) => a.faltan - b.faltan || a.alumno.numero_lista - b.alumno.numero_lista)
+    // Desempate por apellido, igual que el resto del grupo: dos cumpleaños el
+    // mismo día se dicen en el orden en que se lee la lista.
+    .sort((a, b) => a.faltan - b.faltan || porNombre(a.alumno, b.alumno))
 }
 
 /** Los de hoy, que son los que se dicen en voz alta al empezar la clase. */
