@@ -7,9 +7,12 @@ import {
   fechaMas,
   fechaValida,
   huecosIniciales,
+  lunesDe,
   mesDe,
   mesMas,
+  rangoDeLaSemana,
   rangoDelMes,
+  semanaMas,
   ultimosDias,
   ventanaDeDias,
 } from './fechas'
@@ -251,5 +254,60 @@ describe('huecosIniciales', () => {
   it('un mes que empieza en sábado lleva cinco', () => {
     // 2026-08-01 es sábado.
     expect(huecosIniciales('2026-08')).toBe(5)
+  })
+})
+
+describe('lunesDe', () => {
+  it('el lunes de un lunes es él mismo', () => {
+    // 2026-09-07 es lunes.
+    expect(lunesDe('2026-09-07')).toBe('2026-09-07')
+  })
+
+  it('un viernes vuelve a su lunes', () => {
+    expect(lunesDe('2026-09-11')).toBe('2026-09-07')
+  })
+
+  it('el domingo cierra su semana, no abre la siguiente', () => {
+    // El caso que se equivoca con `getDay()` a secas: el domingo es el 0 y
+    // caería en el lunes de la semana que viene.
+    expect(lunesDe('2026-09-13')).toBe('2026-09-07')
+  })
+
+  it('cruza el mes hacia atrás sin perderse', () => {
+    // 2026-03-01 es domingo: su lunes está en febrero.
+    expect(lunesDe('2026-03-01')).toBe('2026-02-23')
+  })
+
+  it('cruza el año hacia atrás sin perderse', () => {
+    // 2026-01-01 es jueves.
+    expect(lunesDe('2026-01-01')).toBe('2025-12-29')
+  })
+})
+
+describe('rangoDeLaSemana', () => {
+  it('va de lunes a domingo, siete días', () => {
+    expect(rangoDeLaSemana('2026-09-07')).toEqual({
+      desde: '2026-09-07',
+      hasta: '2026-09-13',
+    })
+  })
+
+  it('cruza el mes sin saltarse un día', () => {
+    expect(rangoDeLaSemana('2026-08-31')).toEqual({
+      desde: '2026-08-31',
+      hasta: '2026-09-06',
+    })
+  })
+})
+
+describe('semanaMas', () => {
+  it('avanza y retrocede semanas enteras', () => {
+    expect(semanaMas('2026-09-07', 1)).toBe('2026-09-14')
+    expect(semanaMas('2026-09-07', -1)).toBe('2026-08-31')
+    expect(semanaMas('2026-09-07', 0)).toBe('2026-09-07')
+  })
+
+  it('lo que devuelve sigue siendo un lunes al cruzar el año', () => {
+    expect(lunesDe(semanaMas('2025-12-29', 1))).toBe('2026-01-05')
   })
 })

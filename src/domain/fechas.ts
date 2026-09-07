@@ -108,3 +108,31 @@ export function diasDelMes(mes: Mes): Fecha[] {
 export function huecosIniciales(mes: Mes): number {
   return (comoDate(primerDia(mes)).getDay() + 6) % 7
 }
+
+/**
+ * El lunes de la semana que contiene a la fecha.
+ *
+ * La semana empieza en lunes, igual que la rejilla del calendario
+ * (`huecosIniciales`): es como se lee un calendario escolar y como se cuenta una
+ * semana de clases. De ahí el mismo corrimiento sobre `getDay()`, que cuenta
+ * desde el domingo.
+ */
+export function lunesDe(fecha: Fecha): Fecha {
+  return fechaMas(fecha, -((comoDate(fecha).getDay() + 6) % 7))
+}
+
+/**
+ * Los siete días de la semana, para pedirle el rango a la base.
+ *
+ * De lunes a **domingo** y no a viernes: si alguna vez se pasa lista en sábado
+ * —un festival, una reposición— el dato existe y un rango corto lo perdería sin
+ * decir nada. Quien presente la semana decide qué días enseña.
+ */
+export function rangoDeLaSemana(lunes: Fecha): { desde: Fecha; hasta: Fecha } {
+  return { desde: lunes, hasta: fechaMas(lunes, 6) }
+}
+
+/** Semanas de diferencia, para las flechas del selector de semana. */
+export function semanaMas(lunes: Fecha, semanas: number): Fecha {
+  return fechaMas(lunes, semanas * 7)
+}
