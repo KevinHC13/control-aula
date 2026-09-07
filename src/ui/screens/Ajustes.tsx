@@ -1,4 +1,5 @@
 import { Cabecera } from '@/ui/components/Cabecera'
+import { ListaDeOpciones, type Opcion } from '@/ui/components/ListaDeOpciones'
 import {
   IconoAlumno,
   IconoApariencia,
@@ -9,7 +10,6 @@ import {
   IconoImportar,
   IconoNube,
   IconoRubrica,
-  IconoSiguiente,
 } from '@/ui/components/iconos'
 
 /**
@@ -25,17 +25,9 @@ import {
  * encontrar uno; cuatro grupos de dos o tres se recorren de un vistazo, porque el
  * título del grupo ya descarta las tres cuartas partes que no son.
  *
- * El galón de la derecha no es adorno: dice que el renglón lleva a otra pantalla, y
- * era lo único que distinguía a estos botones de una lista de datos. El dibujo de la
- * izquierda tampoco: nueve renglones de texto son nueve cosas que hay que leer para
- * encontrar una, y el icono hace que la que se busca salte antes de leerla.
+ * Los renglones los pinta `ListaDeOpciones`, que es de donde salieron: el galón,
+ * el dibujo y el objetivo táctil están explicados ahí.
  */
-interface Opcion {
-  etiqueta: string
-  ayuda: string
-  Icono: (p: { className?: string }) => React.JSX.Element
-  alTocar: () => void
-}
 
 export function Ajustes({
   alVolver,
@@ -155,28 +147,7 @@ export function Ajustes({
           <h2 className="text-apoyo font-medium tracking-wide text-tinta-2 uppercase">
             {grupo.titulo}
           </h2>
-          <ul className="divide-y divide-linea overflow-hidden rounded-md border border-linea">
-            {grupo.opciones.map((opcion) => (
-              <li key={opcion.etiqueta}>
-                <button
-                  type="button"
-                  onClick={opcion.alTocar}
-                  className="foco-dentro flex min-h-14 w-full items-center gap-3 px-4 py-3 text-left active:bg-cuadro"
-                >
-                  <opcion.Icono className="size-6 shrink-0 text-tinta-2" />
-                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <span className="text-base font-medium text-tinta">
-                      {opcion.etiqueta}
-                    </span>
-                    <span className="text-apoyo text-tinta-2">{opcion.ayuda}</span>
-                  </span>
-                  {/* Dice que el renglón lleva a otro sitio. Sin él, estos botones se
-                      leían igual que una lista de datos. */}
-                  <IconoSiguiente className="size-5 shrink-0 text-tinta-2" />
-                </button>
-              </li>
-            ))}
-          </ul>
+          <ListaDeOpciones opciones={grupo.opciones} />
         </section>
       ))}
     </section>

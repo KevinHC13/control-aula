@@ -2,6 +2,7 @@ import type { FilaAsistencia } from '@/application/asistencia'
 import { contarFaltantesPorSexo, contarPresentes } from '@/application/asistencia'
 import type { EstadoAsistencia } from '@/domain/values'
 import { plural } from '@/ui/lib/plural'
+import { frasePorSexo } from '@/ui/lib/porSexo'
 
 const DESGLOSE: {
   estado: EstadoAsistencia
@@ -27,17 +28,9 @@ export function ContadorPresentes({ filas }: { filas: FilaAsistencia[] }) {
   // entrada es peor que un hueco.
   if (total === 0) return null
 
-  const { ninos, ninas, sinAsignar } = contarFaltantesPorSexo(filas)
-  // Las tres partes de la línea de abajo, ya en palabras. Se arma como lista y
-  // se une con « · » para no acabar con un separador suelto cuando falta una:
-  // «1 niño · » es peor que no enseñar la línea.
-  const porSexo = [
-    ninos > 0 && `${ninos} ${plural(ninos, 'niño', 'niños')}`,
-    ninas > 0 && `${ninas} ${plural(ninas, 'niña', 'niñas')}`,
-    // Un ausente sin sexo se dice, no se reparte: es lo que hace visible que
-    // falta un dato en vez de dar una cifra que suma bien y miente.
-    sinAsignar > 0 && `${sinAsignar} sin asignar`,
-  ].filter((parte): parte is string => parte !== false)
+  // La misma frase que dice el reporte de la semana, con las mismas reglas: las
+  // partes en cero no se dicen y el que no tiene sexo se dice aparte.
+  const porSexo = frasePorSexo(contarFaltantesPorSexo(filas))
 
   const desglose = DESGLOSE.map((d) => ({
     ...d,
@@ -68,9 +61,9 @@ export function ContadorPresentes({ filas }: { filas: FilaAsistencia[] }) {
           cada día. Solo cuando hay ausentes, igual que el desglose de arriba
           desaparece con «Todos presentes» —la pantalla de entrada es una cifra
           grande, no un tablero—. */}
-      {porSexo.length > 0 && (
+      {porSexo !== '' && (
         <p className="mt-0.5 text-apoyo text-tinta-2" aria-live="polite">
-          Faltaron {porSexo.join(' · ')}
+          Faltaron {porSexo}
         </p>
       )}
     </div>
