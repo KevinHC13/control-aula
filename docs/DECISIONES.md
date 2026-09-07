@@ -1216,3 +1216,83 @@ lista de Control Escolar y el sexo que cada uno codifica, y *Restaurar de la nub
 en el iPad. El orden y sus dos seguros están en `docs/ESTADO.md`; el que no se ve es
 que los dos pasos van pegados, porque el cliente viejo sí conoce `curp` y su copia
 local lo tiene vacío: si sincroniza en medio, sube `curp: null` y borra lo escrito.
+
+---
+
+## D-030 · El grupo se lee en orden alfabético, y los reportes tienen su sitio
+
+**Estado:** aceptada — 2026-09-07
+
+Dos cosas que trajo el uso real, pedidas juntas y sin relación entre sí.
+
+### El orden lo pone el apellido, no el número de alta
+
+Hasta ahora toda lectura del grupo salía por `numero_lista`, y el puerto lo decía
+así: «el grupo en el orden de la lista oficial». Coincidía con el alfabético
+mientras la lista fuera la de Control Escolar, que viene alfabetizada.
+
+Deja de coincidir en cuanto alguien se da de alta durante el año, que es
+exactamente lo que D-026 hizo posible: el que llega en noviembre toma el 39 y
+aparecía al final de la pantalla, no donde su apellido lo pone. Y a un alumno se le
+busca por el apellido —el número se canta al pasar lista, pero no se lee para
+encontrarlo—.
+
+**El `numero_lista` no cambia.** Sigue siendo la identidad con la que se fusiona la
+lista (`[ciclo_id+numero_lista]`, D-025), se sigue mostrando en cada fila y no se
+recicla ni se recorre. Lo único que cambia es en qué renglón sale cada quien, y hay
+una consecuencia visible que conviene esperar: los números dejan de ir 1, 2, 3… en
+cuanto haya un alta tardía.
+
+**El orden vive en el adaptador**, en sus métodos de lectura, y en ninguna pantalla.
+Es el mismo criterio que ya gobierna el acote por ciclo: ordenar una vez las ordena
+todas, y ninguna puede saltárselo por olvido. `application/` y `ui/` ya conservaban
+el orden que les llega —ni un solo `.sort(` sobre alumnos en todo `src/ui/`—, así
+que las once pantallas que listan alumnos no se tocaron.
+
+Se ordena **en memoria** con `localeCompare(…, 'es', { sensitivity: 'base' })` y no
+con un `orderBy` de Dexie. No hay índice por `nombre`, y uno de IndexedDB ordenaría
+por punto de código, que manda «Ávila» después de la Z. `sensitivity: 'base'` es lo
+que además evita que un acento perdido en el OCR mande a alguien a otro sitio. Con
+treinta o cuarenta alumnos el sort no se nota.
+
+Tres sitios ordenan por otra cosa, a sabiendas:
+
+- **La revisión de la lista importada** sigue por número. No es el grupo: es lo que
+  se acaba de leer de un archivo y se revisa contra la hoja impresa numerada 1…38, y
+  ordenar por número es lo que pone dos números repetidos uno junto al otro, que es
+  el error que esa pantalla existe para cazar.
+- **Equipos y Sorteo**, cuyo orden seudoaleatorio *es* la función.
+- **Cumpleaños**, por días que faltan. Solo cambió su desempate.
+
+### Los reportes tienen un sitio, no un botón
+
+El de faltas por semana es el primero y no será el único, así que entra en una
+pantalla *Reportes* en vez de colgar de un botón suelto en Grupo: con el botón,
+llegar al segundo obliga a mover el primero. Está en Grupo y no en Ajustes —Ajustes
+guarda lo que se hace una o dos veces al año; un reporte se consulta seguido— y no
+en Asistencia, porque un botón más en el camino diario hay que justificarlo contra
+los 15 segundos y este no pasa esa prueba.
+
+### Qué cuenta el reporte de faltas, y por qué así
+
+Cuatro decisiones, todas tomadas con el usuario:
+
+- **Cuenta faltas, no alumnos.** Quien faltó lunes y martes suma dos. Es lo que hace
+  que los días sumen exactamente el total de la semana, así que la cuenta se
+  verifica a la vista sin tener que explicar nada —la misma regla que obligó a
+  repartir la última décima en el reporte del trimestre—. La otra opción, contar
+  alumnos distintos, da un total que no cuadra con su desglose y necesita una nota
+  al pie para defenderse.
+- **Falta es solo `ausente`.** Retardo y justificada cuentan como asistencia, igual
+  que en el contador diario. Una segunda definición de «falta» en la misma app sería
+  un número que no cuadra con el otro y que nadie sabría cuál creer.
+- **Solo salen los días con registros.** Un festivo o un día que todavía no se
+  captura no aparece en cero: «nadie faltó» y «no se pasó lista» no son lo mismo, y
+  el cero diría lo primero cuando pasa lo segundo. Es el mismo criterio con el que
+  el mosaico del calendario distingue el hueco del azul.
+- **`sinAsignar` se dice, no se reparte**, que es D-029 aplicado a la semana.
+
+La cuenta de cada día la hacen `filasDelDia` y `contarFaltantesPorSexo`, las mismas
+dos funciones que pintan el contador diario, y los totales son la suma de los días.
+No hay un segundo camino hacia el mismo número: es así como aparece un total que
+discrepa de su desglose.

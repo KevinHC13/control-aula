@@ -1,6 +1,9 @@
 # Estado del proyecto
 
-Actualizado el **2026-09-02**, con **cincuenta y ocho commits escritos**: los treinta
+Actualizado el **2026-09-07**, con **sesenta y tres commits escritos**. Los cinco
+últimos son el orden alfabético del grupo y el primer reporte semanal (D-030), abajo.
+
+Lo anterior, del 2026-09-02, con cincuenta y ocho commits: los treinta
 y uno del plan, la Fase 7 —el alcance que trajo el uso real—, `C37`, la **Fase 9** —la
 lista de verdad: Excel, CURP y varias hojas—, la **Fase 10**, la pasada de interfaz que
 trajo la auditoría de UX, y la **Fase 11** —el sexo del alumno (D-029), que trajo el uso
@@ -80,6 +83,7 @@ deshacer (D-022).
 | 8 · Administrar el grupo | Alta, corrección y baja de alumnos | ✅ Terminada: C37 |
 | 9 · La lista real | Excel, CURP y varias hojas | ✅ Terminada: C38–C42 |
 | 10 · Auditoría de interfaz | Defectos, sistema de diseño, textos y personalización | ✅ Terminada: C43–C51 |
+| 12 · Orden y reportes | El grupo por apellido y el primer reporte semanal | ✅ Terminada: C50–C54 |
 
 ## Lo que existe y funciona
 
@@ -454,6 +458,34 @@ CURP, incluidos los tres alumnos que no nacieron en 2016.
 
 Falta el CURP de **uno solo, el 38** —Zermeño Cruz, Luis Santiago—, que queda sin asignar
 hasta que llegue; se le puede poner a mano en *Ajustes → Alumnos* mientras tanto.
+
+## Alcance nuevo: el orden alfabético y los reportes (2026-09-07)
+
+Lo pidió el usuario, dos cosas sin relación entre sí (docs/DECISIONES.md D-030).
+**Está hecho y verificado en el navegador.**
+
+- **El grupo se lee por apellido**, no por número de alta. El orden lo pone el
+  adaptador de alumnos en sus métodos de lectura, así que ordena las once pantallas
+  que listan alumnos sin tocar ninguna: `application/` y `ui/` ya conservaban el
+  orden que les llega. El `numero_lista` no cambia —sigue siendo la identidad y se
+  sigue mostrando—, pero **deja de ir 1, 2, 3… en cuanto haya un alta tardía**, que
+  es justamente lo que se pedía.
+- **Hay una pantalla *Reportes*** en Grupo, con un solo renglón hoy y hecha para
+  crecer: agregar el segundo es agregar un objeto a un arreglo.
+- **El primer reporte es *Faltas de la semana***: el total con su corte por sexo y el
+  día a día, que suma exactamente ese total. Cuenta faltas y no alumnos, falta es
+  solo `ausente`, y un día sin registrar no sale en cero.
+
+Verificado en el navegador con ocho alumnos sembrados a mano: el 39 y el 40 salen
+entre el 1 y el 2 en Asistencia y en *Ajustes → Alumnos*, «Ávila» cae entre
+«Aguirre» y «Barrera», el reporte da 4 faltas —2 niños · 1 niña · 1 sin asignar—
+con el retardo y la justificada fuera de la cuenta, el miércoles sin capturar no
+aparece y la semana anterior muestra el estado vacío. **En el iPad, nada de esto se
+ha visto** —como el resto de la Fase 4 en adelante—.
+
+Lo que trajo de paso: `ListaDeOpciones` y `frasePorSexo`, extraídos de `Ajustes` y
+del contador diario antes de tener una segunda copia; y `comoRango` dejó de repetir
+el mes —«del 7 al 11 de septiembre de 2026»—, que es la forma que toma una semana.
 
 ## Supuestos que siguen abiertos
 

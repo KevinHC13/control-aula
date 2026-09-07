@@ -32,7 +32,8 @@ Existen y funcionan:
   `participaciones` entró con el modo de participación (C25).
 - **`application/`**: `asistencia.ts`, `importacion.ts`, `historico.ts`, `alumnos.ts`,
   `evaluacion.ts`, `entregas.ts`, `calificacion.ts`, `examen.ts`,
-  `calificaciones.ts` —el reporte del trimestre y su cierre—, `bitacora.ts`,
+  `calificaciones.ts` —el reporte del trimestre y su cierre—, `faltas.ts` —las faltas
+  de la semana por sexo—, `bitacora.ts`,
   `participacion.ts` y `respaldo.ts` —el archivo JSON con todo, C14—. `armarReporte` es la
   única función que decide entre recalcular y leer el snapshot: no duplicar esa
   decisión.
@@ -47,6 +48,8 @@ Existen y funcionan:
   trimestre, sus tres capturas —entregas, rúbrica alumno por alumno y el examen por
   aciertos con teclado numérico propio— y el reporte por alumno y por campo
   formativo.
+  **`Reportes`** —la pantalla donde caben los reportes, con `FaltasDeLaSemana`, el
+  primero—,
   **`Bitácora`** —lo que era `Notas`— con el conteo de reportes por alumno y el
   historial del trimestre, y **`Grupo`** con el resumen del trimestre —asistencia y
   promedio, del grupo y por alumno (C13)— más los equipos. **Ya no hay placeholders.**
@@ -69,7 +72,9 @@ Las dos **herramientas de aula** (D-021) están hechas: `C30` —el sorteo de
 participación, en la pantalla de asistencia— y `C31` —formar equipos, en la pestaña
 Grupo, que no guarda nada—.
 
-**Están escritos cincuenta y ocho commits**: los treinta y uno del plan, la **Fase 7**
+**Están escritos sesenta y tres commits**: los cinco últimos son la **Fase 12** —el
+grupo en orden alfabético y el primer reporte semanal (D-030)—, y antes los treinta y
+uno del plan, la **Fase 7**
 —`C32` a `C36`, el alcance que trajo el uso real: fuera la semilla, y varios ciclos
 guardados con uno abierto (D-025)—, `C37` —administrar alumnos—, la **Fase 9**
 —`C38` a `C42`, la lista real: Excel, CURP y varias hojas (D-027)—, la **Fase 10** —la
@@ -265,6 +270,24 @@ y fórmulas en `docs/DATA-MODEL.md`; lo que no se negocia al escribir código:
   cerrados y **no borra nada**. `asistencia`, `bitacora` y `participaciones` no llevan
   ciclo: cuelgan de `alumno_id` y se atribuyen por fecha. `criterios` es catálogo global
   a propósito.
+- **El grupo se lee en orden alfabético, por apellido** (D-030). El orden lo pone el
+  **adaptador de alumnos** en sus métodos de lectura, no las pantallas: igual que el
+  acote por ciclo, ordenar una vez las ordena todas y ninguna puede saltárselo por
+  olvido —`application/` y `ui/` conservan el orden que les llega y no deben
+  reordenar—. Se ordena en memoria con `porNombre` (`domain/orden.ts`) y no con un
+  `orderBy`: no hay índice por `nombre` y uno de IndexedDB mandaría «Ávila» después
+  de la Z. El `numero_lista` **no cambia**: sigue siendo la identidad al fusionar y se
+  sigue mostrando, solo deja de decidir el renglón. Ordenan por otra cosa a sabiendas
+  la revisión de la lista importada —por número, que es lo que pone dos repetidos
+  juntos—, Equipos y Sorteo.
+- **Los reportes viven en *Grupo → Reportes*, y se cuentan faltas, no alumnos**
+  (D-030). La pantalla existe con un solo renglón para que el segundo reporte no
+  obligue a mover el primero. En el de faltas por semana: falta es **solo `ausente`**
+  —la misma definición que el contador diario, y no puede haber dos—, quien faltó dos
+  días cuenta dos veces —así los días suman el total a la vista—, un día sin registros
+  **no sale en cero** y `sinAsignar` se dice sin repartirse. La cuenta de cada día la
+  hacen `filasDelDia` y `contarFaltantesPorSexo`, las mismas del contador: no hay un
+  segundo camino al mismo número.
 - **El sexo del alumno sale de lo que ya está escrito, y en este orden** (D-029): la
   columna «SEXO» del documento, el carácter 11 del CURP y, solo si no hay ninguno de los
   dos, lo que la IA deduzca del nombre de pila. Los dos primeros son leer; el tercero es
@@ -327,8 +350,9 @@ y fórmulas en `docs/DATA-MODEL.md`; lo que no se negocia al escribir código:
 - **El modo oscuro duplica la paleta**: un color nuevo se da en los dos modos, con
   el contraste comprobado en los dos.
 - Hay componentes compartidos y hay que usarlos en vez de reescribirlos:
-  `Cabecera`, `SelectorTrimestre`, `Aviso`, `Confirmacion`, `Cargando` y
-  `EstadoVacio`, en `ui/components/`.
+  `Cabecera`, `SelectorTrimestre`, `SelectorSemana`, `ListaDeOpciones`, `Aviso`,
+  `Confirmacion`, `Cargando` y `EstadoVacio`, en `ui/components/`. Y en `ui/lib/`,
+  `plural`, `frasePorSexo` y los formateadores de `fechas.ts`.
 - Las preferencias de apariencia viven en `ui/store/apariencia.ts` y en
   `localStorage`, **nunca** en Dexie ni en `ui/store/interfaz.ts`, cuyas claves
   exactas están afirmadas por una prueba.
