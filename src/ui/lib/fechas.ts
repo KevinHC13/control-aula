@@ -43,13 +43,24 @@ export function comoDiaConNombre(fecha: Fecha): string {
 }
 
 /**
- * «del 26 de agosto al 20 de noviembre», con el año solo si los dos extremos no
- * caen en el mismo: repetirlo en los dos lados es ruido en el caso normal, y
- * omitirlo cuando el periodo cruza el año es esconder el dato que importa.
+ * «del 26 de agosto al 20 de noviembre de 2026»: un periodo, dicho como se dice.
+ *
+ * Tres formas según lo que los extremos comparten, y cada una omite lo que
+ * repetiría:
+ *
+ * - **Distinto año** — el año va en los dos lados: es el dato que importa.
+ * - **Mismo año** — va una vez, al final. Repetirlo es ruido.
+ * - **Mismo mes** — también va una vez: «del 7 al 11 de septiembre de 2026», y
+ *   no «del 7 de septiembre al 11 de septiembre», que es como sale una semana y
+ *   se lee como si fueran dos meses distintos hasta que uno lo comprueba.
  */
 export function comoRango(desde: Fecha, hasta: Fecha): string {
-  const mismoAnio = desde.slice(0, 4) === hasta.slice(0, 4)
-  return mismoAnio
-    ? `del ${comoDiaCorto(desde)} al ${comoDiaConAnio(hasta)}`
-    : `del ${comoDiaConAnio(desde)} al ${comoDiaConAnio(hasta)}`
+  if (desde.slice(0, 4) !== hasta.slice(0, 4)) {
+    return `del ${comoDiaConAnio(desde)} al ${comoDiaConAnio(hasta)}`
+  }
+
+  const mismoMes = desde.slice(0, 7) === hasta.slice(0, 7)
+  // Solo el número del día: el mes y el año los pone el otro extremo.
+  const inicio = mismoMes ? String(Number(desde.slice(-2))) : comoDiaCorto(desde)
+  return `del ${inicio} al ${comoDiaConAnio(hasta)}`
 }

@@ -226,3 +226,25 @@ export function IconoApariencia({ className }: { className?: string }) {
     </svg>
   )
 }
+
+/** Reportes: la carpeta con lo que se consulta. */
+export function IconoReporte({ className }: { className?: string }) {
+  return (
+    <svg aria-hidden viewBox="0 0 24 24" className={className} {...trazo}>
+      <path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z" />
+      <path d="M14 3v5h5" />
+      <path d="M9 17v-3M12 17v-5M15 17v-2" />
+    </svg>
+  )
+}
+
+/** Faltas: el asiento vacío del pase de lista. */
+export function IconoFaltas({ className }: { className?: string }) {
+  return (
+    <svg aria-hidden viewBox="0 0 24 24" className={className} {...trazo}>
+      <path d="M10 11a3.5 3.5 0 100-7 3.5 3.5 0 000 7z" />
+      <path d="M3 20c0-3.3 3.1-5.5 7-5.5 1 0 2 .15 2.9.43" />
+      <path d="M16 15l5 5M21 15l-5 5" />
+    </svg>
+  )
+}

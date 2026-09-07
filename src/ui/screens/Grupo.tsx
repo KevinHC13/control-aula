@@ -12,6 +12,8 @@ import { CargarLista } from '@/ui/screens/CargarLista'
 import { CicloEscolar } from '@/ui/screens/CicloEscolar'
 import { CriteriosYPesos } from '@/ui/screens/CriteriosYPesos'
 import { Equipos } from '@/ui/screens/Equipos'
+import { FaltasDeLaSemana } from '@/ui/screens/FaltasDeLaSemana'
+import { Reportes } from '@/ui/screens/Reportes'
 import { ResumenDelGrupo } from '@/ui/screens/ResumenDelGrupo'
 import { Respaldo } from '@/ui/screens/Respaldo'
 import { Rubricas } from '@/ui/screens/Rubricas'
@@ -41,6 +43,8 @@ type Vista =
   | 'anteriores'
   | 'respaldo'
   | 'equipos'
+  | 'reportes'
+  | 'faltas-semana'
   | 'nube'
   | 'apariencia'
 
@@ -115,6 +119,21 @@ export function Grupo() {
     return <Equipos alVolver={() => setVista('resumen')} />
   }
 
+  // Los reportes tampoco son configuración: se consultan seguido y vuelven al
+  // resumen. Cada reporte vuelve a su lista, no a la raíz.
+  if (vista === 'reportes') {
+    return (
+      <Reportes
+        alVolver={() => setVista('resumen')}
+        alVerFaltas={() => setVista('faltas-semana')}
+      />
+    )
+  }
+
+  if (vista === 'faltas-semana') {
+    return <FaltasDeLaSemana alVolver={() => setVista('reportes')} />
+  }
+
   return (
     <section aria-labelledby="titulo-grupo" className="flex flex-col gap-4">
       <Cabecera
@@ -137,10 +156,16 @@ export function Grupo() {
 
       {/* Los equipos entran aquí porque son una herramienta sobre la composición
           del salón, no sobre el día. Van arriba del resumen porque se usan en
-          clase; el resumen se lee cuando hay tiempo. */}
-      <Button variant="outline" className="self-start" onClick={() => setVista('equipos')}>
-        Formar equipos
-      </Button>
+          clase; el resumen se lee cuando hay tiempo. Los reportes van al lado por
+          la misma razón que no van en Ajustes: se consultan, no se configuran. */}
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" onClick={() => setVista('equipos')}>
+          Formar equipos
+        </Button>
+        <Button variant="outline" onClick={() => setVista('reportes')}>
+          Reportes
+        </Button>
+      </div>
 
       <ResumenDelGrupo />
     </section>

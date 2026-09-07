@@ -28,6 +28,16 @@ describe('fechas como se leen', () => {
     )
   })
 
+  it('en un rango del mismo mes, el mes también se dice una sola vez', () => {
+    // Es la forma de una semana, y «del 7 de septiembre al 11 de septiembre» se
+    // lee como si fueran dos meses distintos hasta que uno lo comprueba.
+    expect(comoRango('2026-09-07', '2026-09-11')).toBe('del 7 al 11 de septiembre de 2026')
+  })
+
+  it('un rango de un solo día no se rompe', () => {
+    expect(comoRango('2026-09-07', '2026-09-07')).toBe('del 7 al 7 de septiembre de 2026')
+  })
+
   it('en un rango que cruza el año, se dicen los dos', () => {
     expect(comoRango('2026-11-24', '2027-03-13')).toBe(
       'del 24 de noviembre de 2026 al 13 de marzo de 2027',
