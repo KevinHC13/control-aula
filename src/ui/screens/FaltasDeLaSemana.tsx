@@ -7,11 +7,13 @@ import { BotonGuardarPdf } from '@/ui/components/BotonGuardarPdf'
 import { Cabecera } from '@/ui/components/Cabecera'
 import { Cargando } from '@/ui/components/Cargando'
 import { EstadoVacio } from '@/ui/components/EstadoVacio'
+import { FilaAusente } from '@/ui/components/FilaAusente'
 import { SelectorSemana } from '@/ui/components/SelectorSemana'
 import { useFaltasDeLaSemana } from '@/ui/hooks/useFaltasDeLaSemana'
 import { comoDiaConNombre, comoRango } from '@/ui/lib/fechas'
 import { plural } from '@/ui/lib/plural'
 import { frasePorSexo } from '@/ui/lib/porSexo'
+import { cn } from '@/ui/lib/utils'
 import { useApariencia } from '@/ui/store/apariencia'
 
 /**
@@ -97,58 +99,61 @@ export function FaltasDeLaSemana({ alVolver }: { alVolver: () => void }) {
             <span className="w-12 shrink-0 text-right text-apoyo text-tinta-2">faltas</span>
           </div>
 
+          {/* Dos listas anidadas de verdad, y no párrafos dentro de párrafos: los
+              días son una lista y los alumnos de cada día son otra. Así se lee
+              también con un lector de pantalla, que antes oía un solo bloque. */}
           <ul className="flex flex-col">
             {reporte.dias.map((dia) => (
-              <li
-                key={dia.fecha}
-                className="flex items-start gap-3 border-b border-linea py-2 last:border-b-0"
-              >
-                <span className="min-w-0 flex-1">
-                  <span className="text-base text-tinta">{comoDiaConNombre(dia.fecha)}</span>
-                  {dia.faltas > 0 && (
+              <li key={dia.fecha} className="border-b border-linea py-3 last:border-b-0">
+                <div className="flex items-baseline gap-3">
+                  <span className="min-w-0 flex-1">
+                    {/* El día manda sobre sus alumnos: sin peso, el bloque entero
+                        se leía como una sola masa de texto. */}
+                    <span className="block text-base font-medium text-tinta">
+                      {comoDiaConNombre(dia.fecha)}
+                    </span>
                     <span className="block text-apoyo text-tinta-2">
-                      {frasePorSexo(dia)}
+                      {/* Un día bueno lo dice, en vez de dejar el renglón a medias:
+                          el cero de la derecha se entiende, pero se lee después. */}
+                      {dia.faltas > 0 ? frasePorSexo(dia) : 'Nadie faltó'}
                     </span>
-                  )}
-                  {/* Quiénes faltaron, con su número de lista: una cifra dice que
-                      faltaron tres y solo los nombres dejan comprobar cuáles tres.
-                      Sangrados, para que se lean como parte del día. */}
-                  {dia.ausentes.length > 0 && (
-                    <span className="mt-1 block border-l-2 border-linea pl-3">
-                      {dia.ausentes.map((alumno) => (
-                        <span key={alumno.id} className="flex gap-2 text-base text-tinta-2">
-                          {/* Ancho fijo y a la derecha, como en la fila de
-                              asistencia: si no, «1» y «39» empiezan el nombre en
-                              sitios distintos y la lista se lee en zigzag. */}
-                          <span className="cifra w-7 shrink-0 text-right">
-                            {alumno.numero_lista}
-                          </span>
-                          <span className="min-w-0 flex-1">{alumno.nombre}</span>
-                        </span>
-                      ))}
-                    </span>
-                  )}
-                </span>
-                {/* Un día sin faltas no se pinta en rojo: es un día bueno, y
-                    darle el color de la alerta enseña a ignorar el color. */}
-                <span
-                  className={`cifra w-12 shrink-0 text-right text-base ${
-                    dia.faltas > 0 ? 'text-rojo' : 'text-tinta-2'
-                  }`}
-                >
-                  {dia.faltas}
-                </span>
+                  </span>
+                  {/* Un día sin faltas no se pinta en rojo: es un día bueno, y
+                      darle el color de la alerta enseña a ignorar el color. */}
+                  <span
+                    className={cn(
+                      'cifra w-12 shrink-0 text-right text-base',
+                      dia.faltas > 0 ? 'text-rojo' : 'text-tinta-2',
+                    )}
+                  >
+                    {dia.faltas}
+                  </span>
+                </div>
+
+                {/* Quiénes faltaron: una cifra dice que faltaron tres y solo los
+                    nombres dejan comprobar cuáles tres. Sangrados, para que se lean
+                    como parte del día y no como días nuevos. */}
+                {dia.ausentes.length > 0 && (
+                  <ul className="mt-2 ml-3">
+                    {dia.ausentes.map((alumno) => (
+                      <FilaAusente key={alumno.id} alumno={alumno} />
+                    ))}
+                  </ul>
+                )}
               </li>
             ))}
           </ul>
 
           {/* Todo reporte se puede guardar en PDF (docs/DECISIONES.md D-031).
               Va al pie y no en la cabecera: primero se elige la semana y se mira
-              lo que dice, y solo entonces se guarda. */}
-          <BotonGuardarPdf
-            documento={documento}
-            nombre={nombreDeArchivo('pdf', 'faltas', nombreDelGrupo, lunes)}
-          />
+              lo que dice, y solo entonces se guarda. La línea de arriba lo separa
+              de la lista: es una acción sobre todo lo anterior, no un renglón más. */}
+          <div className="border-t border-linea pt-4">
+            <BotonGuardarPdf
+              documento={documento}
+              nombre={nombreDeArchivo('pdf', 'faltas', nombreDelGrupo, lunes)}
+            />
+          </div>
         </>
       )}
 
