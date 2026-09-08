@@ -483,6 +483,8 @@ con el retardo y la justificada fuera de la cuenta, el miércoles sin capturar n
 aparece y la semana anterior muestra el estado vacío. **En el iPad, nada de esto se
 ha visto** —como el resto de la Fase 4 en adelante—.
 
+- **El reporte de faltas dice quiénes**, no solo cuántos: bajo cada día van los
+  nombres con su número de lista, en la pantalla y en el PDF.
 - **Todo reporte se guarda en PDF** (D-031), y es una regla, no una función del
   primero: `tests/arquitectura.test.ts` la exige. El PDF lo escribe `services/pdf.ts`
   a mano —misma cuenta que `xlsx.ts`, y además `window.print()` no es de fiar en una

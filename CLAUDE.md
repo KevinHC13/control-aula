@@ -299,7 +299,9 @@ y fórmulas en `docs/DATA-MODEL.md`; lo que no se negocia al escribir código:
   días cuenta dos veces —así los días suman el total a la vista—, un día sin registros
   **no sale en cero** y `sinAsignar` se dice sin repartirse. La cuenta de cada día la
   hacen `filasDelDia` y `contarFaltantesPorSexo`, las mismas del contador: no hay un
-  segundo camino al mismo número.
+  segundo camino al mismo número. Y cada día **dice quiénes faltaron**, con el número
+  de lista por delante: salen de las mismas filas que la cuenta, así que la lista no
+  puede discrepar de su cifra.
 - **El sexo del alumno sale de lo que ya está escrito, y en este orden** (D-029): la
   columna «SEXO» del documento, el carácter 11 del CURP y, solo si no hay ninguno de los
   dos, lo que la IA deduzca del nombre de pila. Los dos primeros son leer; el tercero es

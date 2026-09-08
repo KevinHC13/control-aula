@@ -1353,6 +1353,26 @@ de papel sería el que nadie revisó. La pantalla pasa los textos ya escritos �
 fechas, la frase por sexo—, porque formatear es cosa de `ui/`; qué va en la hoja y en
 qué orden lo decide el reporte.
 
+### El reporte dice quiénes, no solo cuántos
+
+Lo pidió el usuario al ver el primero: «agrega específicamente qué niño faltó cada
+día para que no existan dudas». Una cifra dice que faltaron tres; solo los nombres
+dejan comprobar cuáles tres, y un reporte que se entrega a otro tiene que poder
+discutirse sin volver al iPad.
+
+Van con el **número de lista por delante**, que es por donde se cotejan estas faltas
+contra la lista de la escuela, y en el orden del grupo —alfabético desde D-030—.
+
+Salen de las **mismas filas** que la cuenta, con el mismo `estado === 'ausente'`: así
+`ausentes.length` es `faltas` por construcción y no por casualidad. Dos maneras de
+decidir quién faltó acabarían en una lista que no cuadra con su propia cifra, que es
+justo la duda que esto viene a quitar.
+
+En el PDF cuelgan sangrados del renglón del día y **se comprueban uno a uno** contra
+lo que queda de hoja, en vez de medir la lista entera por adelantado: un día en que
+faltó medio grupo no cabe en lo que queda, y perderlo sin avisar sería peor que
+partirlo.
+
 ### Lo que trajo de paso
 
 - **`entregarArchivo`**, en `ui/lib/archivo.ts`: la hoja de compartir primero y la
