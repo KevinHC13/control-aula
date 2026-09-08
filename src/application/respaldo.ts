@@ -1,3 +1,4 @@
+import { nombreDeArchivo as nombreDeArchivoGenerico } from '@/application/archivos'
 import { repos } from '@/data'
 import type { ConteoPorTabla, VolcadoDeTablas } from '@/data/ports/respaldo'
 import { fechaLocal } from '@/domain/fechas'
@@ -43,25 +44,16 @@ export async function armarRespaldo(): Promise<ArchivoDeRespaldo> {
 /**
  * El nombre del archivo lleva la fecha del dispositivo, no un consecutivo: en
  * Archivos, «palomita-2026-12-18.json» se ordena solo y se reconoce sin abrirlo.
+ *
+ * La forma la pone `archivos.ts`, que es de donde salen todos los nombres que
+ * genera la aplicación: el respaldo y los PDF de los reportes acaban en la misma
+ * carpeta del iPad y conviene que se parezcan.
  */
 export function nombreDeArchivo(
   hoy: Fecha = fechaLocal(new Date()),
   grupo = '',
 ): string {
-  // Con varios respaldos en la misma carpeta de Archivos, la fecha sola no dice
-  // de qué grupo es cada uno. Se limpia lo que no cabe en un nombre de archivo
-  // —acentos, barras, dos puntos— en vez de rechazarlo: quien escribe «3.º B» no
-  // tiene por qué saber qué caracteres admite iPadOS.
-  const etiqueta = grupo
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-zA-Z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .toLowerCase()
-
-  return etiqueta === ''
-    ? `palomita-${hoy}.json`
-    : `palomita-${etiqueta}-${hoy}.json`
+  return nombreDeArchivoGenerico('json', '', grupo, hoy)
 }
 
 /**

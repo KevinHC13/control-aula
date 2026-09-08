@@ -13,6 +13,7 @@ import {
 } from '@/application/respaldo'
 import type { ConteoPorTabla } from '@/data/ports/respaldo'
 import { Cabecera } from '@/ui/components/Cabecera'
+import { entregarArchivo, seCancelo } from '@/ui/lib/archivo'
 import { Button } from '@/ui/components/ui/button'
 import { comoDiaConAnio } from '@/ui/lib/fechas'
 import { plural } from '@/ui/lib/plural'
@@ -55,29 +56,17 @@ export function Respaldo({ alVolver }: { alVolver: () => void }) {
     try {
       const archivo = await armarRespaldo()
       const nombre = nombreDeArchivo(undefined, nombreDelGrupo)
-      const json = JSON.stringify(archivo)
 
-      // Dos caminos, y el primero es el del iPad: con el archivo en la hoja de
-      // compartir, «Guardar en Archivos» es una opción de esa hoja. La descarga
-      // por ancla es el camino del navegador de escritorio, donde no hay hoja.
-      const comoArchivo = new File([json], nombre, { type: 'application/json' })
-      if (navigator.canShare?.({ files: [comoArchivo] })) {
-        await navigator.share({ files: [comoArchivo], title: nombre })
-      } else {
-        const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }))
-        const ancla = document.createElement('a')
-        ancla.href = url
-        ancla.download = nombre
-        ancla.click()
-        URL.revokeObjectURL(url)
-      }
+      await entregarArchivo(
+        new Blob([JSON.stringify(archivo)], { type: 'application/json' }),
+        nombre,
+        'application/json',
+      )
 
       const cuantos = contarRegistros(archivo)
       setAviso(`${nombre} · ${cuantos} ${plural(cuantos, 'registro', 'registros')}`)
     } catch (e) {
-      // Cancelar la hoja de compartir lanza AbortError, y cancelar no es un
-      // error que valga la pena mostrarle.
-      if (!(e instanceof DOMException && e.name === 'AbortError')) {
+      if (!seCancelo(e)) {
         // Con el motivo: «no se pudo» a secas no deja nada que intentar.
         setError(
           e instanceof Error && e.message !== ''

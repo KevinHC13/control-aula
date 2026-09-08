@@ -126,3 +126,44 @@ describe('forma de los puertos', () => {
     }
   })
 })
+
+/**
+ * La regla de los reportes (docs/DECISIONES.md D-031).
+ *
+ * Un reporte que solo se puede leer en la pantalla obliga a copiarlo a mano, que
+ * es de lo que la aplicación viene a sacar a la maestra. Como la regla se cumple
+ * con una línea —`<BotonGuardarPdf …>`—, lo caro no es cumplirla: es acordarse.
+ * Esto se acuerda por ella.
+ */
+describe('todo reporte se puede guardar en PDF', () => {
+  /** Las pantallas que `Reportes.tsx` ofrece, sacadas de lo que importa. */
+  const pantallasDeReporte = (): string[] => {
+    const indice = leer(join('ui', 'screens', 'Reportes.tsx'))
+    return imports(indice)
+      .filter((e) => e.startsWith('@/ui/screens/'))
+      .map((e) => join('ui', 'screens', `${e.slice('@/ui/screens/'.length)}.tsx`))
+  }
+
+  it('la pantalla de Reportes ofrece al menos uno', () => {
+    expect(pantallasDeReporte().length).toBeGreaterThan(0)
+  })
+
+  it('cada reporte de la lista trae su botón de guardar', () => {
+    for (const ruta of pantallasDeReporte()) {
+      expect(leer(ruta), `${ruta} no ofrece guardar en PDF`).toMatch(/BotonGuardarPdf/)
+    }
+  })
+
+  it('el PDF se arma en application/, no en la pantalla', () => {
+    // Si la pantalla armara el documento por su cuenta, el reporte que se
+    // entrega en dirección y el que se ve en el iPad podrían decir cifras
+    // distintas, y el de papel sería el que nadie revisó.
+    for (const ruta of archivos('ui')) {
+      const contenido = leer(ruta)
+      if (ruta.endsWith(join('components', 'BotonGuardarPdf.tsx'))) continue
+      expect(contenido, `${ruta} construye el PDF por su cuenta`).not.toMatch(
+        /construirPdf/,
+      )
+    }
+  })
+})

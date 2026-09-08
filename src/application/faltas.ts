@@ -2,6 +2,7 @@ import { repos } from '@/data'
 import type { Alumno, RegistroAsistencia } from '@/domain/entities'
 import { rangoDeLaSemana } from '@/domain/fechas'
 import type { Fecha } from '@/domain/values'
+import type { DocumentoPdf } from '@/services/pdf'
 
 import { contarFaltantesPorSexo, filasDelDia } from './asistencia'
 
@@ -119,4 +120,61 @@ export async function faltasDeLaSemana(lunes: Fecha): Promise<ReporteDeFaltas> {
     repos.asistencia.porRango(desde, hasta),
   ])
   return armarFaltasDeLaSemana(alumnos, registros, lunes)
+}
+
+/**
+ * El reporte en papel.
+ *
+ * Vive aquí y no en la pantalla porque es el mismo reporte: si la pantalla armara
+ * el PDF por su cuenta, tarde o temprano dirían números distintos, y el que se
+ * entrega en dirección sería el que nadie revisó. Aquí se prueba con el resto.
+ *
+ * Es una función pura y recibe ya escrito lo que se lee —las fechas, la frase por
+ * sexo—: `application/` no formatea fechas, eso vive en `ui/lib/fechas.ts`
+ * (docs/ARCHITECTURE.md). Lo que pone aquí es **qué** va en la hoja y en qué
+ * orden, que es la decisión del reporte y no de la pantalla.
+ */
+export function faltasComoDocumento(
+  reporte: ReporteDeFaltas,
+  textos: {
+    /** El periodo, escrito como se dice: «del 7 al 11 de septiembre de 2026». */
+    periodo: string
+    /** El nombre que la usuaria le puso al grupo, si le puso alguno. */
+    grupo: string
+    /** «2 niños · 1 niña · 1 sin asignar», de toda la semana. */
+    porSexo: string
+    /** Cada día, con su fecha escrita y su frase por sexo. */
+    dias: { fecha: string; porSexo: string }[]
+    nota: string
+  },
+): DocumentoPdf {
+  return {
+    titulo: 'Faltas de la semana',
+    // El grupo primero, porque una hoja impresa se separa de su iPad: fuera de la
+    // pantalla, «del 7 al 11» no dice de quién es.
+    subtitulo:
+      textos.grupo.trim() === '' ? textos.periodo : `${textos.grupo} · ${textos.periodo}`,
+    bloques: [
+      {
+        tipo: 'cifra',
+        valor: String(reporte.faltas),
+        leyenda: reporte.faltas === 1 ? 'falta esta semana' : 'faltas esta semana',
+        // Vacío no se pinta: un renglón en blanco en una hoja impresa parece que
+        // se perdió algo.
+        ...(textos.porSexo === '' ? {} : { detalle: textos.porSexo }),
+      },
+      {
+        tipo: 'tabla',
+        encabezados: { izquierda: 'día', derecha: 'faltas' },
+        filas: reporte.dias.map((dia, i) => ({
+          etiqueta: textos.dias[i]?.fecha ?? dia.fecha,
+          valor: String(dia.faltas),
+          ...(textos.dias[i]?.porSexo === undefined || textos.dias[i]?.porSexo === ''
+            ? {}
+            : { detalle: textos.dias[i]!.porSexo }),
+        })),
+      },
+      { tipo: 'nota', texto: textos.nota },
+    ],
+  }
 }

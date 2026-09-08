@@ -12,7 +12,6 @@ import { CargarLista } from '@/ui/screens/CargarLista'
 import { CicloEscolar } from '@/ui/screens/CicloEscolar'
 import { CriteriosYPesos } from '@/ui/screens/CriteriosYPesos'
 import { Equipos } from '@/ui/screens/Equipos'
-import { FaltasDeLaSemana } from '@/ui/screens/FaltasDeLaSemana'
 import { Reportes } from '@/ui/screens/Reportes'
 import { ResumenDelGrupo } from '@/ui/screens/ResumenDelGrupo'
 import { Respaldo } from '@/ui/screens/Respaldo'
@@ -44,7 +43,6 @@ type Vista =
   | 'respaldo'
   | 'equipos'
   | 'reportes'
-  | 'faltas-semana'
   | 'nube'
   | 'apariencia'
 
@@ -120,18 +118,10 @@ export function Grupo() {
   }
 
   // Los reportes tampoco son configuración: se consultan seguido y vuelven al
-  // resumen. Cada reporte vuelve a su lista, no a la raíz.
+  // resumen. Cuáles hay y cómo se llega a cada uno lo sabe `Reportes`, no esta
+  // pantalla: es lo que permite comprobar que todos se pueden guardar en PDF.
   if (vista === 'reportes') {
-    return (
-      <Reportes
-        alVolver={() => setVista('resumen')}
-        alVerFaltas={() => setVista('faltas-semana')}
-      />
-    )
-  }
-
-  if (vista === 'faltas-semana') {
-    return <FaltasDeLaSemana alVolver={() => setVista('reportes')} />
+    return <Reportes alVolver={() => setVista('resumen')} />
   }
 
   return (

@@ -1,14 +1,18 @@
 import { useMemo, useState } from 'react'
 
-import { fechaLocal, lunesDe } from '@/domain/fechas'
+import { nombreDeArchivo } from '@/application/archivos'
+import { faltasComoDocumento } from '@/application/faltas'
+import { fechaLocal, fechaMas, lunesDe } from '@/domain/fechas'
+import { BotonGuardarPdf } from '@/ui/components/BotonGuardarPdf'
 import { Cabecera } from '@/ui/components/Cabecera'
 import { Cargando } from '@/ui/components/Cargando'
 import { EstadoVacio } from '@/ui/components/EstadoVacio'
 import { SelectorSemana } from '@/ui/components/SelectorSemana'
 import { useFaltasDeLaSemana } from '@/ui/hooks/useFaltasDeLaSemana'
-import { comoDiaConNombre } from '@/ui/lib/fechas'
+import { comoDiaConNombre, comoRango } from '@/ui/lib/fechas'
 import { plural } from '@/ui/lib/plural'
 import { frasePorSexo } from '@/ui/lib/porSexo'
+import { useApariencia } from '@/ui/store/apariencia'
 
 /**
  * Cuántas faltas hubo esta semana, y de quiénes.
@@ -22,12 +26,32 @@ import { frasePorSexo } from '@/ui/lib/porSexo'
  * umbrales: un número cuya definición no se ve es un número en el que no se puede
  * confiar.
  */
+const NOTA =
+  'Solo cuenta quien no vino: los retardos y las faltas justificadas cuentan como ' +
+  'asistencia. Quien faltó dos días cuenta dos veces, así que los días suman el total ' +
+  'de arriba. Un día que todavía no se registra no aparece.'
+
 export function FaltasDeLaSemana({ alVolver }: { alVolver: () => void }) {
   const hoy = useMemo(() => fechaLocal(new Date()), [])
   const [lunes, setLunes] = useState(() => lunesDe(hoy))
+  const nombreDelGrupo = useApariencia((s) => s.nombreDelGrupo)
 
   const { reporte, cargando } = useFaltasDeLaSemana(lunes)
   const porSexo = reporte === null ? '' : frasePorSexo(reporte)
+
+  // El documento se arma al tocar el botón, no en cada render: la pantalla se
+  // mira mucho más de lo que se guarda.
+  const documento = () =>
+    faltasComoDocumento(reporte!, {
+      periodo: comoRango(reporte!.desde, fechaMas(reporte!.desde, 4)),
+      grupo: nombreDelGrupo,
+      porSexo,
+      dias: reporte!.dias.map((dia) => ({
+        fecha: comoDiaConNombre(dia.fecha),
+        porSexo: dia.faltas > 0 ? frasePorSexo(dia) : '',
+      })),
+      nota: NOTA,
+    })
 
   return (
     <section aria-labelledby="titulo-faltas" className="flex flex-col gap-4">
@@ -98,14 +122,18 @@ export function FaltasDeLaSemana({ alVolver }: { alVolver: () => void }) {
               </li>
             ))}
           </ul>
+
+          {/* Todo reporte se puede guardar en PDF (docs/DECISIONES.md D-031).
+              Va al pie y no en la cabecera: primero se elige la semana y se mira
+              lo que dice, y solo entonces se guarda. */}
+          <BotonGuardarPdf
+            documento={documento}
+            nombre={nombreDeArchivo('pdf', 'faltas', nombreDelGrupo, lunes)}
+          />
         </>
       )}
 
-      <p className="border-t border-linea pt-3 text-apoyo text-tinta-2">
-        Solo cuenta quien no vino: los retardos y las faltas justificadas cuentan como
-        asistencia. Quien faltó dos días cuenta dos veces, así que los días suman el
-        total de arriba. Un día que todavía no se registra no aparece.
-      </p>
+      <p className="border-t border-linea pt-3 text-apoyo text-tinta-2">{NOTA}</p>
     </section>
   )
 }

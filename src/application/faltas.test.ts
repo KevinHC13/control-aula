@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { Alumno, RegistroAsistencia } from '@/domain/entities'
 import type { EstadoAsistencia, Sexo } from '@/domain/values'
 
-import { armarFaltasDeLaSemana } from './faltas'
+import { armarFaltasDeLaSemana, faltasComoDocumento } from './faltas'
 
 const base = { updated_at: '2026-09-01T00:00:00.000Z', deleted_at: null }
 
@@ -194,5 +194,82 @@ describe('armarFaltasDeLaSemana', () => {
     )
 
     expect(reporte.faltas).toBe(1)
+  })
+})
+
+describe('faltasComoDocumento', () => {
+  const TEXTOS = {
+    periodo: 'del 7 al 11 de septiembre de 2026',
+    grupo: '3.º B',
+    porSexo: '2 niños · 1 niña',
+    dias: [
+      { fecha: 'lunes, 7 de septiembre', porSexo: '1 niño · 1 niña' },
+      { fecha: 'martes, 8 de septiembre', porSexo: '1 niño' },
+    ],
+    nota: 'Solo cuenta quien no vino.',
+  }
+
+  const reporte = () =>
+    armarFaltasDeLaSemana(
+      GRUPO,
+      [...pasarLista('2026-09-07', [1, 4]), ...pasarLista('2026-09-08', [2])],
+      LUNES,
+    )
+
+  it('lleva el grupo y el periodo en el subtítulo', () => {
+    // Una hoja impresa se separa de su iPad: sin el grupo, «del 7 al 11» no dice
+    // de quién es.
+    expect(faltasComoDocumento(reporte(), TEXTOS).subtitulo).toBe(
+      '3.º B · del 7 al 11 de septiembre de 2026',
+    )
+  })
+
+  it('sin nombre de grupo no deja un separador suelto', () => {
+    expect(faltasComoDocumento(reporte(), { ...TEXTOS, grupo: '  ' }).subtitulo).toBe(
+      'del 7 al 11 de septiembre de 2026',
+    )
+  })
+
+  it('la cifra grande es el total de la semana, con su leyenda concordada', () => {
+    const doc = faltasComoDocumento(reporte(), TEXTOS)
+    const cifra = doc.bloques.find((b) => b.tipo === 'cifra')
+
+    expect(cifra).toMatchObject({ valor: '3', leyenda: 'faltas esta semana' })
+  })
+
+  it('una sola falta se dice en singular', () => {
+    const uno = armarFaltasDeLaSemana(GRUPO, pasarLista('2026-09-07', [1]), LUNES)
+    const cifra = faltasComoDocumento(uno, TEXTOS).bloques.find((b) => b.tipo === 'cifra')
+
+    expect(cifra).toMatchObject({ valor: '1', leyenda: 'falta esta semana' })
+  })
+
+  it('la tabla trae un renglón por día, con la fecha ya escrita', () => {
+    const doc = faltasComoDocumento(reporte(), TEXTOS)
+    const tabla = doc.bloques.find((b) => b.tipo === 'tabla')
+
+    expect(tabla?.filas).toEqual([
+      { etiqueta: 'lunes, 7 de septiembre', valor: '2', detalle: '1 niño · 1 niña' },
+      { etiqueta: 'martes, 8 de septiembre', valor: '1', detalle: '1 niño' },
+    ])
+  })
+
+  it('un día sin faltas no arrastra un detalle vacío', () => {
+    const doc = faltasComoDocumento(
+      armarFaltasDeLaSemana(GRUPO, pasarLista('2026-09-07', []), LUNES),
+      { ...TEXTOS, porSexo: '', dias: [{ fecha: 'lunes, 7 de septiembre', porSexo: '' }] },
+    )
+    const tabla = doc.bloques.find((b) => b.tipo === 'tabla')
+
+    expect(tabla?.filas).toEqual([{ etiqueta: 'lunes, 7 de septiembre', valor: '0' }])
+    expect(doc.bloques.find((b) => b.tipo === 'cifra')).not.toHaveProperty('detalle')
+  })
+
+  it('el criterio va en la hoja: un número sin su definición no se puede defender', () => {
+    const doc = faltasComoDocumento(reporte(), TEXTOS)
+
+    expect(doc.bloques.find((b) => b.tipo === 'nota')).toMatchObject({
+      texto: 'Solo cuenta quien no vino.',
+    })
   })
 })
