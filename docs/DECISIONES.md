@@ -1296,3 +1296,78 @@ La cuenta de cada día la hacen `filasDelDia` y `contarFaltantesPorSexo`, las mi
 dos funciones que pintan el contador diario, y los totales son la suma de los días.
 No hay un segundo camino hacia el mismo número: es así como aparece un total que
 discrepa de su desglose.
+
+---
+
+## D-031 · Todo reporte se puede guardar en PDF
+
+**Estado:** aceptada — 2026-09-07
+
+Lo pidió el usuario en cuanto vio el primer reporte, y **como regla, no como
+función de ese reporte**: «esta regla debe aplicar para todos los reportes».
+
+Tiene razón de fondo. Un reporte que solo se puede leer en la pantalla obliga a
+copiarlo a mano para entregarlo en dirección, mandarlo por correo o archivarlo, y
+copiar a mano es justo aquello de lo que la aplicación viene a sacar a la maestra.
+El reporte que no se puede sacar del iPad es medio reporte.
+
+### El PDF se escribe a mano, sin dependencias
+
+Es la misma cuenta de `services/xlsx.ts`, y sale igual. Un PDF de texto **es** un
+archivo de texto: unos cuantos objetos, una tabla de posiciones y un flujo de
+comandos de dibujo. Y las catorce fuentes estándar —Helvetica entre ellas— no se
+incrustan, las pone el lector, así que no hay que cargar ni un byte de tipografía.
+Enfrente había trescientos kilobytes de dependencia en una PWA que se instala en un
+iPad para escribir una tabla de cinco renglones.
+
+Y hay una razón que no es el tamaño, y que en este proyecto pesa más: el otro
+camino al PDF es `window.print()`, y **en una PWA instalada en iPadOS no es de
+fiar**. Generar el archivo y entregarlo a la hoja de compartir es el camino que el
+respaldo ya tiene probado, y es el mismo gesto que la maestra ya conoce.
+
+Lo que se escribió es lo que hace falta: texto en Helvetica, unos tamaños, negritas
+y líneas. El día que un reporte pida una gráfica, esto no sirve, y entonces habrá
+que decirlo en vez de estirarlo.
+
+**Todo va en Latin-1** (`WinAnsiEncoding`), que cubre el español entero. Lo que no
+quepa se sustituye antes de escribir, nunca se cuela un byte suelto: la tabla `xref`
+guarda posiciones absolutas, y un byte de más las corre todas. Un PDF con las
+posiciones corridas no se abre a medias: no se abre. Por eso las pruebas comprueban
+cada posición contra dónde está el objeto de verdad, y que nada se dibuje fuera del
+papel —que es el defecto que no se ve hasta abrir el archivo—.
+
+### La regla es estructural, no un recordatorio
+
+Cumplirla cuesta una línea —`<BotonGuardarPdf …>`—, así que lo caro no es cumplirla:
+es acordarse. De eso se acuerda `tests/arquitectura.test.ts`.
+
+Para que se pueda comprobar hizo falta que **la lista de reportes exista en un solo
+sitio**. `Reportes.tsx` enruta a sus propios reportes en vez de dejárselo a `Grupo`,
+como hacen las demás pantallas: así la prueba lee de ahí qué pantallas son reportes
+y exige que cada una ofrezca guardarse.
+
+Y una segunda regla, del mismo sitio: **el documento se arma en `application/`, no
+en la pantalla**. Si la pantalla lo armara por su cuenta, el reporte que se entrega
+en dirección y el que se ve en el iPad podrían acabar diciendo cifras distintas, y el
+de papel sería el que nadie revisó. La pantalla pasa los textos ya escritos —las
+fechas, la frase por sexo—, porque formatear es cosa de `ui/`; qué va en la hoja y en
+qué orden lo decide el reporte.
+
+### Lo que trajo de paso
+
+- **`entregarArchivo`**, en `ui/lib/archivo.ts`: la hoja de compartir primero y la
+  descarga después. Estaba dentro de la pantalla de respaldo, y el orden de los dos
+  caminos es una decisión sobre el dispositivo de destino —no un `<a download>` con
+  adornos—, así que copiarla era la manera de que en tres meses uno de los dos
+  guardara donde no debe.
+- **`nombreDeArchivo`**, en `application/archivos.ts`: todos los archivos que salen
+  de la app acaban en la misma carpeta del iPad, así que se llaman igual
+  —`palomita-<qué>-<grupo>-<fecha>.<ext>`— y con la fecha al final, que es como se
+  ordena solo y como se busca «el de la semana pasada».
+
+### Lo que falta, y necesita el dispositivo
+
+Que la hoja de compartir del iPad ofrezca *Guardar en Archivos* para un PDF. Es la
+misma verificación pendiente del respaldo (`C14`) y sigue sin poder hacerse en el
+escritorio, donde la exportación cae a una descarga normal —que es lo que sí se
+probó, leyendo el archivo generado por la aplicación y abriéndolo con un lector—.

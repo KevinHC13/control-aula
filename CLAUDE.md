@@ -38,7 +38,7 @@ Existen y funcionan:
   única función que decide entre recalcular y leer el snapshot: no duplicar esa
   decisión.
 - **`services/`**: `extraccion.ts`, `xlsx.ts` —abrir un Excel en el dispositivo, sin
-  dependencias—, `supabase.ts` y `sincronia.ts` —la única salida a red del cliente—. El motor de sincronía tiene además su propio puerto
+  dependencias—, `pdf.ts` —escribir un PDF, también sin dependencias—, `supabase.ts` y `sincronia.ts` —la única salida a red del cliente—. El motor de sincronía tiene además su propio puerto
   (`data/ports/sincronia.ts`): habla de filas y de la `outbox`, no de alumnos, y no
   vuelve a pasar por los casos de uso.
 - **`ui/`**: las cuatro pestañas, la de asistencia terminada (tira de días,
@@ -280,6 +280,18 @@ y fórmulas en `docs/DATA-MODEL.md`; lo que no se negocia al escribir código:
   sigue mostrando, solo deja de decidir el renglón. Ordenan por otra cosa a sabiendas
   la revisión de la lista importada —por número, que es lo que pone dos repetidos
   juntos—, Equipos y Sorteo.
+- **Todo reporte se puede guardar en PDF** (D-031). No es una función de un
+  reporte, es la regla: uno que solo se lee en la pantalla obliga a copiarlo a mano
+  para entregarlo, que es de lo que la app viene a sacar a la maestra. Cuesta una
+  línea —`<BotonGuardarPdf documento={…} nombre={…} />`— y
+  `tests/arquitectura.test.ts` **la exige**: lee de `Reportes.tsx` qué pantallas son
+  reportes y comprueba que todas la traigan. Por eso `Reportes.tsx` enruta a sus
+  propios reportes en vez de dejárselo a `Grupo`. El **documento se arma en
+  `application/`**, nunca en la pantalla —si no, el papel y la pantalla podrían
+  decir cifras distintas y el revisado sería el que nadie entrega—; la pantalla
+  pasa los textos ya escritos, porque formatear es cosa de `ui/`. El PDF lo escribe
+  `services/pdf.ts` **a mano y en Latin-1**, por lo mismo que `xlsx.ts` —y porque
+  `window.print()` no es de fiar en una PWA de iPadOS—.
 - **Los reportes viven en *Grupo → Reportes*, y se cuentan faltas, no alumnos**
   (D-030). La pantalla existe con un solo renglón para que el segundo reporte no
   obligue a mover el primero. En el de faltas por semana: falta es **solo `ausente`**
@@ -351,8 +363,9 @@ y fórmulas en `docs/DATA-MODEL.md`; lo que no se negocia al escribir código:
   el contraste comprobado en los dos.
 - Hay componentes compartidos y hay que usarlos en vez de reescribirlos:
   `Cabecera`, `SelectorTrimestre`, `SelectorSemana`, `ListaDeOpciones`, `Aviso`,
-  `Confirmacion`, `Cargando` y `EstadoVacio`, en `ui/components/`. Y en `ui/lib/`,
-  `plural`, `frasePorSexo` y los formateadores de `fechas.ts`.
+  `Confirmacion`, `Cargando`, `EstadoVacio` y `BotonGuardarPdf`, en `ui/components/`.
+  Y en `ui/lib/`, `plural`, `frasePorSexo`, `entregarArchivo` y los formateadores de
+  `fechas.ts`.
 - Las preferencias de apariencia viven en `ui/store/apariencia.ts` y en
   `localStorage`, **nunca** en Dexie ni en `ui/store/interfaz.ts`, cuyas claves
   exactas están afirmadas por una prueba.

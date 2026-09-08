@@ -483,9 +483,21 @@ con el retardo y la justificada fuera de la cuenta, el miércoles sin capturar n
 aparece y la semana anterior muestra el estado vacío. **En el iPad, nada de esto se
 ha visto** —como el resto de la Fase 4 en adelante—.
 
+- **Todo reporte se guarda en PDF** (D-031), y es una regla, no una función del
+  primero: `tests/arquitectura.test.ts` la exige. El PDF lo escribe `services/pdf.ts`
+  a mano —misma cuenta que `xlsx.ts`, y además `window.print()` no es de fiar en una
+  PWA de iPadOS—.
+
 Lo que trajo de paso: `ListaDeOpciones` y `frasePorSexo`, extraídos de `Ajustes` y
-del contador diario antes de tener una segunda copia; y `comoRango` dejó de repetir
+del contador diario antes de tener una segunda copia; `entregarArchivo` y
+`nombreDeArchivo`, sacados del respaldo por lo mismo; y `comoRango` dejó de repetir
 el mes —«del 7 al 11 de septiembre de 2026»—, que es la forma que toma una semana.
+
+Del PDF se comprobó el archivo que **genera la aplicación**, no uno de laboratorio:
+se interceptó la descarga en el navegador, se abrió con un lector de PDF y dice
+`3.º B · del 7 al 11 de septiembre de 2026`, con los acentos íntegros y las mismas
+cifras que la pantalla. **Falta el iPad**: que su hoja de compartir ofrezca *Guardar
+en Archivos* para un PDF, que es la misma verificación pendiente del respaldo.
 
 ## Supuestos que siguen abiertos
 
