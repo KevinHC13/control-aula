@@ -34,6 +34,23 @@ describe('fechas como se leen', () => {
     expect(comoRango('2026-09-07', '2026-09-11')).toBe('del 7 al 11 de septiembre de 2026')
   })
 
+  it('con anio: false calla el año, que es lo que pide el selector de semana', () => {
+    expect(comoRango('2026-09-07', '2026-09-11', { anio: false })).toBe(
+      'del 7 al 11 de septiembre',
+    )
+    expect(comoRango('2026-08-31', '2026-09-04', { anio: false })).toBe(
+      'del 31 de agosto al 4 de septiembre',
+    )
+  })
+
+  it('un rango que cruza el año lo dice aunque se le pida callarlo', () => {
+    // Es el dato que distingue un periodo de otro: sin él queda un rango
+    // imposible, de noviembre a marzo hacia atrás.
+    expect(comoRango('2026-12-28', '2027-01-01', { anio: false })).toBe(
+      'del 28 de diciembre de 2026 al 1 de enero de 2027',
+    )
+  })
+
   it('un rango de un solo día no se rompe', () => {
     expect(comoRango('2026-09-07', '2026-09-07')).toBe('del 7 al 7 de septiembre de 2026')
   })

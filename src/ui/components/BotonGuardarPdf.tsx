@@ -56,8 +56,10 @@ export function BotonGuardarPdf({
 
   return (
     <div className="flex flex-col gap-1">
+      {/* Relleno y no de contorno: es la única acción de la pantalla y el mismo
+          gesto que «Guardar el respaldo», que ya se pinta así. De contorno se
+          confundía con las flechas del selector, que sí son secundarias. */}
       <Button
-        variant="outline"
         className="self-start"
         onClick={() => void guardar()}
         disabled={deshabilitado || guardando}
