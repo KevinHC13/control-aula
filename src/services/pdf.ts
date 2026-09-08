@@ -39,7 +39,18 @@ export type BloquePdf =
   | {
       tipo: 'tabla'
       encabezados: { izquierda: string; derecha: string }
-      filas: { etiqueta: string; detalle?: string; valor: string }[]
+      filas: {
+        etiqueta: string
+        detalle?: string
+        valor: string
+        /**
+         * Lo que cuelga del renglón: los nombres detrás de la cifra. Van
+         * sangrados y **se parten entre páginas** si hace falta, porque una lista
+         * de treinta no cabe en lo que queda de hoja y perderla sin avisar es
+         * peor que partirla.
+         */
+        lineas?: string[]
+      }[]
     }
   /** Un párrafo pequeño: el criterio con el que se calculó lo de arriba. */
   | { tipo: 'nota'; texto: string }
@@ -303,9 +314,10 @@ function paginar(documento: DocumentoPdf): string[] {
     encabezar()
 
     bloque.filas.forEach((fila, i) => {
-      // Lo que mide de verdad el renglón que viene, contando su regla: si se
-      // queda corto, la última fila de la página se dibuja fuera del papel.
-      const alto = fila.detalle === undefined ? 32 : 44
+      // Lo que mide la cabeza del renglón, contando su regla: si se queda corta,
+      // la última fila de la página se dibuja fuera del papel. Los nombres no
+      // entran en la cuenta porque se comprueban uno a uno más abajo.
+      const alto = (fila.detalle === undefined ? 32 : 44) + (fila.lineas?.length ? 14 : 0)
       if (y - alto < MARGEN) {
         cerrarPagina()
         encabezar()
@@ -318,6 +330,20 @@ function paginar(documento: DocumentoPdf): string[] {
         flujo += texto(fila.detalle, MARGEN, y, 9)
         y -= 12
       }
+
+      // Sangrados, para que se lean como parte del día y no como días nuevos.
+      for (const linea of fila.lineas ?? []) {
+        // Uno a uno, y no la lista entera: así una lista larga se parte por donde
+        // toque en vez de salirse del papel.
+        if (y - 14 < MARGEN) {
+          cerrarPagina()
+          encabezar()
+        }
+        y -= 2
+        flujo += texto(linea, MARGEN + 16, y, 10)
+        y -= 12
+      }
+
       y -= 6
       // La regla separa un renglón del siguiente, así que el último no la lleva:
       // con ella, la línea que abre la nota de abajo quedaba a un pelo de otra

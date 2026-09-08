@@ -135,6 +135,55 @@ describe('construirPdf', () => {
     expect(Number(cifra?.[1]) - Number(leyenda?.[1])).toBeGreaterThanOrEqual(14)
   })
 
+  it('una lista de nombres larga se parte entre páginas', async () => {
+    // Un día en que faltó medio grupo no cabe en lo que queda de hoja. Perderlo
+    // sin avisar sería peor que partirlo, y ese es justo el fallo que no se ve
+    // hasta abrir el archivo.
+    const contenido = await texto(
+      construirPdf(
+        documento([
+          {
+            tipo: 'tabla',
+            encabezados: { izquierda: 'día', derecha: 'faltas' },
+            filas: [
+              {
+                etiqueta: 'lunes, 7 de septiembre',
+                valor: '80',
+                lineas: Array.from({ length: 80 }, (_, i) => `${i + 1} · Apellido, Nombre`),
+              },
+            ],
+          },
+        ]),
+        FECHA,
+      ),
+    )
+
+    expect(Number(/\/Count (\d+)/.exec(contenido)?.[1])).toBeGreaterThan(1)
+    for (const [, , alto] of contenido.matchAll(/1 0 0 1 ([\d.]+) ([\d.]+) Tm/g)) {
+      expect(Number(alto)).toBeGreaterThanOrEqual(0)
+    }
+  })
+
+  it('los nombres van sangrados, no alineados con el día', async () => {
+    const contenido = await texto(
+      construirPdf(
+        documento([
+          {
+            tipo: 'tabla',
+            encabezados: { izquierda: 'día', derecha: 'faltas' },
+            filas: [{ etiqueta: 'lunes', valor: '1', lineas: ['1 · Aguilar, Bruno'] }],
+          },
+        ]),
+        FECHA,
+      ),
+    )
+
+    const dia = /1 0 0 1 ([\d.]+) [\d.]+ Tm \(lunes\)/.exec(contenido)
+    const nombre = /1 0 0 1 ([\d.]+) [\d.]+ Tm \(1 .* Aguilar, Bruno\)/.exec(contenido)
+
+    expect(Number(nombre?.[1])).toBeGreaterThan(Number(dia?.[1]))
+  })
+
   it('un documento corto cabe en una sola página', async () => {
     const contenido = await texto(construirPdf(documento(TABLA(3)), FECHA))
 

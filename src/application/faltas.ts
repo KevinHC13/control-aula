@@ -31,6 +31,15 @@ export interface FaltasDelDia {
   ninas: number
   /** Los que faltaron y todavía no tienen sexo asignado. */
   sinAsignar: number
+  /**
+   * **Quiénes** faltaron ese día, en el orden del grupo —alfabético, D-030—.
+   *
+   * Es lo que convierte el reporte en algo que se puede discutir: una cifra dice
+   * que faltaron tres, y solo los nombres dejan comprobar cuáles tres. Sale de
+   * las mismas filas que la cuenta, así que `ausentes.length` es `faltas` por
+   * construcción y no por casualidad.
+   */
+  ausentes: Alumno[]
 }
 
 /** La semana entera: el total arriba y el detalle debajo. */
@@ -88,10 +97,19 @@ export function armarFaltasDeLaSemana(
     // izquierda es lexicográficamente igual que cronológicamente.
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([fecha, delDia]) => {
-      const { ninos, ninas, sinAsignar } = contarFaltantesPorSexo(
-        filasDelDia([...alumnos], delDia),
-      )
-      return { fecha, faltas: ninos + ninas + sinAsignar, ninos, ninas, sinAsignar }
+      const filas = filasDelDia([...alumnos], delDia)
+      const { ninos, ninas, sinAsignar } = contarFaltantesPorSexo(filas)
+      return {
+        fecha,
+        faltas: ninos + ninas + sinAsignar,
+        ninos,
+        ninas,
+        sinAsignar,
+        // De las mismas filas que la cuenta, y con el mismo criterio que
+        // `contarFaltantesPorSexo`: solo `ausente`. Dos maneras de decidir quién
+        // faltó acabarían en una lista que no cuadra con su cifra.
+        ausentes: filas.filter((f) => f.estado === 'ausente').map((f) => f.alumno),
+      }
     })
 
   return {
@@ -120,6 +138,20 @@ export async function faltasDeLaSemana(lunes: Fecha): Promise<ReporteDeFaltas> {
     repos.asistencia.porRango(desde, hasta),
   ])
   return armarFaltasDeLaSemana(alumnos, registros, lunes)
+}
+
+/**
+ * Un alumno en la lista de ausentes: el número primero, como en la hoja oficial.
+ *
+ * El número no sobra por llevar el nombre al lado: es por donde se cotejan estas
+ * faltas contra la lista de la escuela, que va numerada.
+ */
+function comoRenglon(alumno: Alumno): string {
+  // El número, ajustado a dos cifras: sin esto, «1» y «39» empiezan el nombre en
+  // sitios distintos y la lista se lee en zigzag. Un espacio de Helvetica no mide
+  // lo mismo que un dígito, así que no cuadra al pelo —quedan tres milésimas de
+  // diferencia, que a diez puntos no se ven—.
+  return `${String(alumno.numero_lista).padStart(2, ' ')} · ${alumno.nombre}`
 }
 
 /**
@@ -172,6 +204,10 @@ export function faltasComoDocumento(
           ...(textos.dias[i]?.porSexo === undefined || textos.dias[i]?.porSexo === ''
             ? {}
             : { detalle: textos.dias[i]!.porSexo }),
+          // Los nombres se arman aquí y no los pasa la pantalla: un número y un
+          // nombre no son un formato, son el dato. Lo que sí pasa la pantalla es
+          // lo que hay que escribir en español —las fechas, la frase por sexo—.
+          ...(dia.ausentes.length === 0 ? {} : { lineas: dia.ausentes.map(comoRenglon) }),
         })),
       },
       { tipo: 'nota', texto: textos.nota },

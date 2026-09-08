@@ -28,8 +28,9 @@ import { useApariencia } from '@/ui/store/apariencia'
  */
 const NOTA =
   'Solo cuenta quien no vino: los retardos y las faltas justificadas cuentan como ' +
-  'asistencia. Quien faltó dos días cuenta dos veces, así que los días suman el total ' +
-  'de arriba. Un día que todavía no se registra no aparece.'
+  'asistencia. Debajo de cada día van los nombres de quienes faltaron, con su ' +
+  'número de lista. Quien faltó dos días cuenta dos veces, así que los días suman ' +
+  'el total de arriba. Un día que todavía no se registra no aparece.'
 
 export function FaltasDeLaSemana({ alVolver }: { alVolver: () => void }) {
   const hoy = useMemo(() => fechaLocal(new Date()), [])
@@ -100,13 +101,31 @@ export function FaltasDeLaSemana({ alVolver }: { alVolver: () => void }) {
             {reporte.dias.map((dia) => (
               <li
                 key={dia.fecha}
-                className="flex items-baseline gap-3 border-b border-linea py-2 last:border-b-0"
+                className="flex items-start gap-3 border-b border-linea py-2 last:border-b-0"
               >
                 <span className="min-w-0 flex-1">
                   <span className="text-base text-tinta">{comoDiaConNombre(dia.fecha)}</span>
                   {dia.faltas > 0 && (
                     <span className="block text-apoyo text-tinta-2">
                       {frasePorSexo(dia)}
+                    </span>
+                  )}
+                  {/* Quiénes faltaron, con su número de lista: una cifra dice que
+                      faltaron tres y solo los nombres dejan comprobar cuáles tres.
+                      Sangrados, para que se lean como parte del día. */}
+                  {dia.ausentes.length > 0 && (
+                    <span className="mt-1 block border-l-2 border-linea pl-3">
+                      {dia.ausentes.map((alumno) => (
+                        <span key={alumno.id} className="flex gap-2 text-base text-tinta-2">
+                          {/* Ancho fijo y a la derecha, como en la fila de
+                              asistencia: si no, «1» y «39» empiezan el nombre en
+                              sitios distintos y la lista se lee en zigzag. */}
+                          <span className="cifra w-7 shrink-0 text-right">
+                            {alumno.numero_lista}
+                          </span>
+                          <span className="min-w-0 flex-1">{alumno.nombre}</span>
+                        </span>
+                      ))}
                     </span>
                   )}
                 </span>

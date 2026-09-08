@@ -152,6 +152,56 @@ describe('armarFaltasDeLaSemana', () => {
     expect(reporte.ninos).toBe(1)
   })
 
+  it('dice quiénes faltaron cada día, no solo cuántos', () => {
+    const reporte = armarFaltasDeLaSemana(GRUPO, pasarLista('2026-09-07', [4, 1]), LUNES)
+
+    expect(reporte.dias[0]?.ausentes.map((a) => a.numero_lista)).toEqual([1, 4])
+  })
+
+  it('los nombres salen en el orden del grupo, que es el alfabético', () => {
+    // El grupo llega ordenado por el adaptador (D-030) y `filasDelDia` lo
+    // conserva, así que la lista de ausentes sale igual sin ordenar aquí.
+    const reporte = armarFaltasDeLaSemana(GRUPO, pasarLista('2026-09-07', [5, 2, 6]), LUNES)
+
+    expect(reporte.dias[0]?.ausentes.map((a) => a.nombre)).toEqual([
+      'Apellido2, Nombre',
+      'Apellido5, Nombre',
+      'Apellido6, Nombre',
+    ])
+  })
+
+  it('la lista de nombres y la cifra no pueden discrepar', () => {
+    const reporte = armarFaltasDeLaSemana(
+      GRUPO,
+      [
+        ...pasarLista('2026-09-07', [1, 4, 5]),
+        dia(2, '2026-09-08', 'retardo'),
+        dia(3, '2026-09-08', 'ausente'),
+      ],
+      LUNES,
+    )
+
+    for (const d of reporte.dias) {
+      expect(d.ausentes).toHaveLength(d.faltas)
+    }
+  })
+
+  it('un retardo no aparece entre los nombres', () => {
+    const reporte = armarFaltasDeLaSemana(
+      GRUPO,
+      [dia(1, '2026-09-07', 'retardo'), dia(2, '2026-09-07', 'ausente')],
+      LUNES,
+    )
+
+    expect(reporte.dias[0]?.ausentes.map((a) => a.numero_lista)).toEqual([2])
+  })
+
+  it('un día sin faltas no trae nombres', () => {
+    const reporte = armarFaltasDeLaSemana(GRUPO, pasarLista('2026-09-07', []), LUNES)
+
+    expect(reporte.dias[0]?.ausentes).toEqual([])
+  })
+
   it('el que no tiene sexo se dice aparte, no se reparte', () => {
     const reporte = armarFaltasDeLaSemana(GRUPO, pasarLista('2026-09-07', [6]), LUNES)
 
@@ -249,9 +299,29 @@ describe('faltasComoDocumento', () => {
     const tabla = doc.bloques.find((b) => b.tipo === 'tabla')
 
     expect(tabla?.filas).toEqual([
-      { etiqueta: 'lunes, 7 de septiembre', valor: '2', detalle: '1 niño · 1 niña' },
-      { etiqueta: 'martes, 8 de septiembre', valor: '1', detalle: '1 niño' },
+      {
+        etiqueta: 'lunes, 7 de septiembre',
+        valor: '2',
+        detalle: '1 niño · 1 niña',
+        lineas: [' 1 · Apellido1, Nombre', ' 4 · Apellido4, Nombre'],
+      },
+      {
+        etiqueta: 'martes, 8 de septiembre',
+        valor: '1',
+        detalle: '1 niño',
+        lineas: [' 2 · Apellido2, Nombre'],
+      },
     ])
+  })
+
+  it('cada día lleva los nombres, con el número de lista por delante', () => {
+    const doc = faltasComoDocumento(reporte(), TEXTOS)
+    const tabla = doc.bloques.find((b) => b.tipo === 'tabla')
+
+    // El número va primero porque es por donde se cotejan estas faltas contra la
+    // lista de la escuela, que va numerada.
+    expect(tabla?.filas[0]?.lineas).toEqual([' 1 · Apellido1, Nombre', ' 4 · Apellido4, Nombre'])
+    expect(tabla?.filas[1]?.lineas).toEqual([' 2 · Apellido2, Nombre'])
   })
 
   it('un día sin faltas no arrastra un detalle vacío', () => {
@@ -262,6 +332,7 @@ describe('faltasComoDocumento', () => {
     const tabla = doc.bloques.find((b) => b.tipo === 'tabla')
 
     expect(tabla?.filas).toEqual([{ etiqueta: 'lunes, 7 de septiembre', valor: '0' }])
+    // Ni un `lineas: []`, que en el PDF sería un hueco sin explicación.
     expect(doc.bloques.find((b) => b.tipo === 'cifra')).not.toHaveProperty('detalle')
   })
 
