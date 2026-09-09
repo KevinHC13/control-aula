@@ -1,15 +1,15 @@
 import { useState } from 'react'
 
 import { Cabecera } from '@/ui/components/Cabecera'
-import { IconoFaltas } from '@/ui/components/iconos'
+import { IconoAsistencias } from '@/ui/components/iconos'
 import { ListaDeOpciones, type Opcion } from '@/ui/components/ListaDeOpciones'
-import { FaltasDeLaSemana } from '@/ui/screens/FaltasDeLaSemana'
+import { AsistenciasDeLaSemana } from '@/ui/screens/AsistenciasDeLaSemana'
 
 /**
  * Los reportes que se consultan, en un sitio pensado para crecer.
  *
- * Es una pantalla con un solo renglón hoy, y a propósito: el reporte de faltas no
- * será el único, y colgar el primero de un botón suelto en Grupo obliga a mover
+ * Es una pantalla con un solo renglón hoy, y a propósito: el reporte de la semana
+ * no será el único, y colgar el primero de un botón suelto en Grupo obliga a mover
  * todo el día que llegue el segundo.
  *
  * Vive en Grupo y no en Ajustes: Ajustes guarda lo que se hace una o dos veces al
@@ -27,22 +27,22 @@ import { FaltasDeLaSemana } from '@/ui/screens/FaltasDeLaSemana'
  * Agregar un reporte son cuatro cosas: su pantalla, su `DocumentoPdf` en
  * `application/`, un renglón en `REPORTES` y su caso en el enrutado de abajo.
  */
-type Cual = 'faltas-semana'
+type Cual = 'asistencias-semana'
 
 const REPORTES: { id: Cual; etiqueta: string; ayuda: string; Icono: Opcion['Icono'] }[] = [
   {
-    id: 'faltas-semana',
-    etiqueta: 'Faltas de la semana',
-    ayuda: 'Cuántos niños y cuántas niñas faltaron cada día, y en toda la semana',
-    Icono: IconoFaltas,
+    id: 'asistencias-semana',
+    etiqueta: 'Asistencias de la semana',
+    ayuda: 'Cuántos niños y cuántas niñas asistieron cada día, y en toda la semana',
+    Icono: IconoAsistencias,
   },
 ]
 
 export function Reportes({ alVolver }: { alVolver: () => void }) {
   const [cual, setCual] = useState<Cual | null>(null)
 
-  if (cual === 'faltas-semana') {
-    return <FaltasDeLaSemana alVolver={() => setCual(null)} />
+  if (cual === 'asistencias-semana') {
+    return <AsistenciasDeLaSemana alVolver={() => setCual(null)} />
   }
 
   return (

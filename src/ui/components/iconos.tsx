@@ -238,13 +238,13 @@ export function IconoReporte({ className }: { className?: string }) {
   )
 }
 
-/** Faltas: el asiento vacío del pase de lista. */
-export function IconoFaltas({ className }: { className?: string }) {
+/** Asistencias: el alumno del pase de lista, con su palomita. */
+export function IconoAsistencias({ className }: { className?: string }) {
   return (
     <svg aria-hidden viewBox="0 0 24 24" className={className} {...trazo}>
       <path d="M10 11a3.5 3.5 0 100-7 3.5 3.5 0 000 7z" />
       <path d="M3 20c0-3.3 3.1-5.5 7-5.5 1 0 2 .15 2.9.43" />
-      <path d="M16 15l5 5M21 15l-5 5" />
+      <path d="M15.5 17.5l2 2 4-4" />
     </svg>
   )
 }

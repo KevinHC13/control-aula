@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 
-import { armarFaltasDeLaSemana, type ReporteDeFaltas } from '@/application/faltas'
+import {
+  armarAsistenciasDeLaSemana,
+  type ReporteDeAsistencias,
+} from '@/application/asistencias'
 import { repos } from '@/data'
 import type { Alumno, RegistroAsistencia } from '@/domain/entities'
 import { rangoDeLaSemana } from '@/domain/fechas'
@@ -13,8 +16,8 @@ interface Emision {
 }
 
 /**
- * Las faltas de una semana, reactivas: pasar lista corrige el reporte sin
- * recargar, y corregir un ausente a retardo lo saca de la cuenta a la vista.
+ * Las asistencias de una semana, reactivas: pasar lista corrige el reporte sin
+ * recargar, y corregir un ausente a retardo lo mete en la cuenta a la vista.
  *
  * El `lunes` de la emisión no es de adorno. Al cambiar de semana las dos
  * suscripciones se rehacen y la primera en llegar sería del rango nuevo con los
@@ -22,8 +25,8 @@ interface Emision {
  * equivocadas. Mientras la emisión no sea de la semana que se está mirando, se
  * dice que está cargando.
  */
-export function useFaltasDeLaSemana(lunes: Fecha): {
-  reporte: ReporteDeFaltas | null
+export function useAsistenciasDeLaSemana(lunes: Fecha): {
+  reporte: ReporteDeAsistencias | null
   cargando: boolean
 } {
   const [emision, setEmision] = useState<Emision | null>(null)
@@ -59,7 +62,7 @@ export function useFaltasDeLaSemana(lunes: Fecha): {
   if (emision === null || emision.lunes !== lunes) return { reporte: null, cargando: true }
 
   return {
-    reporte: armarFaltasDeLaSemana(emision.alumnos, emision.registros, lunes),
+    reporte: armarAsistenciasDeLaSemana(emision.alumnos, emision.registros, lunes),
     cargando: false,
   }
 }

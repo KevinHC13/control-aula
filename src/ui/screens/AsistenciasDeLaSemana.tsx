@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 
 import { nombreDeArchivo } from '@/application/archivos'
-import { faltasComoDocumento } from '@/application/faltas'
+import { asistenciasComoDocumento } from '@/application/asistencias'
 import { fechaLocal, fechaMas, lunesDe } from '@/domain/fechas'
 import { BotonGuardarPdf } from '@/ui/components/BotonGuardarPdf'
 import { Cabecera } from '@/ui/components/Cabecera'
@@ -9,58 +9,67 @@ import { Cargando } from '@/ui/components/Cargando'
 import { EstadoVacio } from '@/ui/components/EstadoVacio'
 import { FilaAusente } from '@/ui/components/FilaAusente'
 import { SelectorSemana } from '@/ui/components/SelectorSemana'
-import { useFaltasDeLaSemana } from '@/ui/hooks/useFaltasDeLaSemana'
+import { useAsistenciasDeLaSemana } from '@/ui/hooks/useAsistenciasDeLaSemana'
 import { comoDiaConNombre, comoRango } from '@/ui/lib/fechas'
 import { plural } from '@/ui/lib/plural'
 import { frasePorSexo } from '@/ui/lib/porSexo'
-import { cn } from '@/ui/lib/utils'
 import { useApariencia } from '@/ui/store/apariencia'
 
 /**
- * Cuántas faltas hubo esta semana, y de quiénes.
+ * Cuántos niños y cuántas niñas asistieron esta semana, y quién faltó.
  *
  * Es la cuenta que la hoja oficial pide al pie de cada día, sumada de toda la
  * semana. Una cifra grande arriba con su corte por sexo, y debajo el día a día
  * —que **suma exactamente** el total, así que la cuenta se verifica sin hacerla
  * (docs/UX.md)—.
  *
+ * Cuenta asistencias y no faltas (docs/DECISIONES.md D-032), pero **sigue diciendo
+ * quién faltó**: dos o tres nombres son el dato accionable de la semana.
+ *
  * La nota del pie escribe el criterio, como el resumen del grupo escribe sus
  * umbrales: un número cuya definición no se ve es un número en el que no se puede
  * confiar.
  */
 const NOTA =
-  'Solo cuenta quien no vino: los retardos y las faltas justificadas cuentan como ' +
+  'Cuenta a todo el que vino: los retardos y las faltas justificadas cuentan como ' +
   'asistencia. Debajo de cada día van los nombres de quienes faltaron, con su ' +
-  'número de lista. Quien faltó dos días cuenta dos veces, así que los días suman ' +
+  'número de lista. Quien vino dos días cuenta dos veces, así que los días suman ' +
   'el total de arriba. Un día que todavía no se registra no aparece.'
 
-export function FaltasDeLaSemana({ alVolver }: { alVolver: () => void }) {
+/** «3 faltas», o nada cuando no hubo ninguna: un «0 faltas» se lee y no dice nada. */
+function fraseDeFaltas(faltas: number): string {
+  return faltas === 0 ? '' : `${faltas} ${plural(faltas, 'falta', 'faltas')}`
+}
+
+export function AsistenciasDeLaSemana({ alVolver }: { alVolver: () => void }) {
   const hoy = useMemo(() => fechaLocal(new Date()), [])
   const [lunes, setLunes] = useState(() => lunesDe(hoy))
   const nombreDelGrupo = useApariencia((s) => s.nombreDelGrupo)
 
-  const { reporte, cargando } = useFaltasDeLaSemana(lunes)
+  const { reporte, cargando } = useAsistenciasDeLaSemana(lunes)
   const porSexo = reporte === null ? '' : frasePorSexo(reporte)
 
   // El documento se arma al tocar el botón, no en cada render: la pantalla se
   // mira mucho más de lo que se guarda.
   const documento = () =>
-    faltasComoDocumento(reporte!, {
+    asistenciasComoDocumento(reporte!, {
       periodo: comoRango(reporte!.desde, fechaMas(reporte!.desde, 4)),
       grupo: nombreDelGrupo,
       porSexo,
+      faltas: fraseDeFaltas(reporte!.faltas),
       dias: reporte!.dias.map((dia) => ({
         fecha: comoDiaConNombre(dia.fecha),
-        porSexo: dia.faltas > 0 ? frasePorSexo(dia) : '',
+        porSexo: frasePorSexo(dia),
+        faltas: fraseDeFaltas(dia.faltas),
       })),
       nota: NOTA,
     })
 
   return (
-    <section aria-labelledby="titulo-faltas" className="flex flex-col gap-4">
+    <section aria-labelledby="titulo-asistencias" className="flex flex-col gap-4">
       <Cabecera
-        titulo="Faltas de la semana"
-        id="titulo-faltas"
+        titulo="Asistencias de la semana"
+        id="titulo-asistencias"
         alVolver={alVolver}
         etiquetaVolver="Volver a Reportes"
       />
@@ -69,26 +78,35 @@ export function FaltasDeLaSemana({ alVolver }: { alVolver: () => void }) {
 
       {cargando && <Cargando />}
 
-      {/* Sin un solo día capturado no se dice «0 faltas»: nadie faltó y no se
-          pasó lista no son lo mismo, y el cero diría lo primero. */}
+      {/* Sin un solo día capturado no se dice «0 asistencias»: no vino nadie y no
+          se pasó lista no son lo mismo, y el cero diría lo primero. */}
       {reporte !== null && reporte.dias.length === 0 && (
         <EstadoVacio titulo="Esta semana todavía no se pasa lista.">
-          Las faltas se cuentan solas conforme se registra cada día en Asistencia.
+          Las asistencias se cuentan solas conforme se registra cada día en Asistencia.
         </EstadoVacio>
       )}
 
       {reporte !== null && reporte.dias.length > 0 && (
         <>
           <div>
+            {/* Con denominador, como la cifra grande de Asistencia: «138» sola no
+                se puede juzgar y «138 / 150» sí. */}
             <p className="cifra text-4xl font-semibold text-tinta" aria-live="polite">
-              {reporte.faltas}
+              {reporte.asistencias} <span className="text-tinta-2">/ {reporte.posibles}</span>
             </p>
             <p className="mt-1 text-apoyo text-tinta-2">
-              {plural(reporte.faltas, 'falta', 'faltas')} esta semana
+              {plural(reporte.asistencias, 'asistencia', 'asistencias')} esta semana
             </p>
             {porSexo !== '' && (
               <p className="mt-0.5 text-base text-tinta" aria-live="polite">
                 {porSexo}
+              </p>
+            )}
+            {/* La falta no desaparece por dejar de ser la cifra principal: se dice
+                debajo, en su color, y sin corte por sexo —el desglose es uno—. */}
+            {reporte.faltas > 0 && (
+              <p className="mt-0.5 text-apoyo text-rojo" aria-live="polite">
+                {fraseDeFaltas(reporte.faltas)}
               </p>
             )}
           </div>
@@ -96,7 +114,7 @@ export function FaltasDeLaSemana({ alVolver }: { alVolver: () => void }) {
           {/* Los encabezados, para que las cifras de la derecha no se adivinen. */}
           <div className="flex items-end gap-3 border-b border-linea pb-1">
             <span className="min-w-0 flex-1 text-apoyo text-tinta-2">día</span>
-            <span className="w-12 shrink-0 text-right text-apoyo text-tinta-2">faltas</span>
+            <span className="w-12 shrink-0 text-right text-apoyo text-tinta-2">asisten</span>
           </div>
 
           {/* Dos listas anidadas de verdad, y no párrafos dentro de párrafos: los
@@ -113,25 +131,25 @@ export function FaltasDeLaSemana({ alVolver }: { alVolver: () => void }) {
                       {comoDiaConNombre(dia.fecha)}
                     </span>
                     <span className="block text-apoyo text-tinta-2">
-                      {/* Un día bueno lo dice, en vez de dejar el renglón a medias:
-                          el cero de la derecha se entiende, pero se lee después. */}
-                      {dia.faltas > 0 ? frasePorSexo(dia) : 'Nadie faltó'}
+                      {frasePorSexo(dia)}
+                      {dia.faltas > 0 && (
+                        <>
+                          {' · '}
+                          <span className="text-rojo">{fraseDeFaltas(dia.faltas)}</span>
+                        </>
+                      )}
                     </span>
                   </span>
-                  {/* Un día sin faltas no se pinta en rojo: es un día bueno, y
-                      darle el color de la alerta enseña a ignorar el color. */}
-                  <span
-                    className={cn(
-                      'cifra w-12 shrink-0 text-right text-base',
-                      dia.faltas > 0 ? 'text-rojo' : 'text-tinta-2',
-                    )}
-                  >
-                    {dia.faltas}
+                  {/* La cifra del día ya no es una alerta: cuenta a los que
+                      vinieron. El rojo se reserva para la falta de la línea de
+                      abajo, que es lo que sí lo pide. */}
+                  <span className="cifra w-12 shrink-0 text-right text-base text-tinta">
+                    {dia.asistencias}
                   </span>
                 </div>
 
-                {/* Quiénes faltaron: una cifra dice que faltaron tres y solo los
-                    nombres dejan comprobar cuáles tres. Sangrados, para que se lean
+                {/* Quiénes faltaron: la cifra dice que vinieron veintiocho y solo
+                    los nombres dicen cuáles dos no. Sangrados, para que se lean
                     como parte del día y no como días nuevos. */}
                 {dia.ausentes.length > 0 && (
                   <ul className="mt-2 ml-3">
@@ -151,7 +169,7 @@ export function FaltasDeLaSemana({ alVolver }: { alVolver: () => void }) {
           <div className="border-t border-linea pt-4">
             <BotonGuardarPdf
               documento={documento}
-              nombre={nombreDeArchivo('pdf', 'faltas', nombreDelGrupo, lunes)}
+              nombre={nombreDeArchivo('pdf', 'asistencias', nombreDelGrupo, lunes)}
             />
           </div>
         </>
