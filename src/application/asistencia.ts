@@ -50,22 +50,24 @@ export function contarPresentes(filas: FilaAsistencia[]): {
   }
 }
 
-/** Los que faltaron, partidos por sexo. */
-export interface FaltantesPorSexo {
+/** Un corte del grupo por sexo. Sirve para los que asistieron y para cualquier otro. */
+export interface ConteoPorSexo {
   ninos: number
   ninas: number
-  /** Los que faltaron y todavía no tienen sexo asignado. */
+  /** Los contados que todavía no tienen sexo asignado. */
   sinAsignar: number
 }
 
 /**
- * Cuántos niños y cuántas niñas faltaron hoy.
+ * Cuántos niños y cuántas niñas asistieron hoy.
  *
  * Es la cifra que la hoja oficial pide al pie de cada día —«H: __  M: __  T:
  * __»— y que hasta ahora se contaba a mano sobre la pantalla.
  *
- * **Solo `ausente`.** Retardo y justificada cuentan como asistencia
- * (`cuentaComoAsistencia`), y lo que se copia a la hoja es quién no vino.
+ * **Asistir es no estar ausente** (`cuentaComoAsistencia`): el retardo y la
+ * justificada cuentan, exactamente igual que en la cifra grande de arriba. Por
+ * eso este corte suma siempre `contarPresentes().presentes` y las dos cifras de
+ * la pantalla no pueden discrepar.
  *
  * `sinAsignar` sale aparte y no se reparte entre los otros dos: un alumno sin
  * sexo no es medio niño. Vale más un hueco que se ve que dos cifras que suman
@@ -73,8 +75,27 @@ export interface FaltantesPorSexo {
  *
  * Función pura: no lee la base.
  */
-export function contarFaltantesPorSexo(filas: FilaAsistencia[]): FaltantesPorSexo {
-  const faltaron = filas.filter((f) => f.estado === 'ausente')
+export function contarAsistentesPorSexo(filas: FilaAsistencia[]): ConteoPorSexo {
+  const asistieron = filas.filter((f) => cuentaComoAsistencia(f.estado))
+
+  return {
+    ninos: asistieron.filter((f) => f.alumno.sexo === 'H').length,
+    ninas: asistieron.filter((f) => f.alumno.sexo === 'M').length,
+    sinAsignar: asistieron.filter((f) => f.alumno.sexo === null).length,
+  }
+}
+
+/**
+ * Cuántos niños y cuántas niñas faltaron hoy: el mismo corte, del otro lado.
+ *
+ * Lo sigue usando el reporte de la semana, que todavía cuenta faltas. Cuando ese
+ * reporte pase a contar asistencias esta función se va: dos cortes por sexo en la
+ * app son dos números que hay que explicar.
+ *
+ * Función pura: no lee la base.
+ */
+export function contarFaltantesPorSexo(filas: FilaAsistencia[]): ConteoPorSexo {
+  const faltaron = filas.filter((f) => !cuentaComoAsistencia(f.estado))
 
   return {
     ninos: faltaron.filter((f) => f.alumno.sexo === 'H').length,

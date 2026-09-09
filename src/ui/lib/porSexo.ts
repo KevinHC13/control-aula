@@ -1,14 +1,15 @@
-import type { FaltantesPorSexo } from '@/application/asistencia'
+import type { ConteoPorSexo } from '@/application/asistencia'
 
 import { plural } from './plural'
 
 /**
- * «1 niño · 2 niñas · 1 sin asignar»: quiénes faltaron, dicho en palabras.
+ * «1 niño · 2 niñas · 1 sin asignar»: un corte por sexo, dicho en palabras.
  *
  * Vive aquí y no dentro del contador porque la dicen dos pantallas —el contador
  * del día y el reporte de la semana— y son las **mismas reglas**: si una de las
  * dos las escribiera por su cuenta, tarde o temprano dirían cosas distintas del
- * mismo dato.
+ * mismo dato. No sabe si cuenta asistencias o faltas, y por eso sirve para las
+ * dos: lo que se cuenta lo dice quien la usa.
  *
  * Y son reglas, no un `join`:
  *
@@ -22,7 +23,7 @@ import { plural } from './plural'
  * Devuelve la cadena vacía cuando no hay nada que decir, para que quien la use
  * decida si esconde la línea entera.
  */
-export function frasePorSexo({ ninos, ninas, sinAsignar }: FaltantesPorSexo): string {
+export function frasePorSexo({ ninos, ninas, sinAsignar }: ConteoPorSexo): string {
   return [
     ninos > 0 && `${ninos} ${plural(ninos, 'niño', 'niños')}`,
     ninas > 0 && `${ninas} ${plural(ninas, 'niña', 'niñas')}`,
