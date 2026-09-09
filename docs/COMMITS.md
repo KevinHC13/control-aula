@@ -1511,3 +1511,39 @@ prueba de unidad iba a encontrarlo. Es el defecto para el que se escribió `plur
 - [x] Se despliega aparte: `supabase functions deploy extraer-lista`
 
 ### ✅ C49 · `docs: asentar el sexo del alumno`
+
+---
+
+## Fase 13 — La asistencia como dato
+
+Lo pidió el usuario mirando la pantalla ya terminada: lo que se cuenta por sexo es
+quién asistió, no quién faltó, tanto en el camino diario como en el reporte semanal
+(docs/DECISIONES.md D-032).
+
+La Fase 12 —C50 a C54, el orden alfabético y el primer reporte— se dio por terminada
+en `docs/ESTADO.md` sin escribirse aquí; esta retoma la numeración donde quedó.
+
+### ✅ C55 · `feat(asistencia): contar por sexo a los que asistieron, no a los que faltaron`
+
+- [x] «Asistieron 2 niños · 4 niñas · 1 sin asignar», debajo del desglose
+- [x] Cuenta con `cuentaComoAsistencia`: el retardo y la justificada **son** asistencia
+- [x] Una prueba afirma que el corte suma exactamente los presentes de la cifra grande
+- [x] **Solo si el día tiene registros**: sin tocar nada todos salen presentes por defecto
+- [x] `FaltantesPorSexo` pasa a `ConteoPorSexo`: ahora es la forma de dos cortes distintos
+- [x] `frasePorSexo` no se toca —nunca nombró faltas— y sigue sirviendo a las dos pantallas
+
+### ✅ C56 · `feat(grupo): el reporte semanal cuenta asistencias, no faltas`
+
+- [x] `application/faltas.ts` → `asistencias.ts`, con su hook y su pantalla: un módulo y su
+      único consumidor no se separan sin dejar el árbol roto
+- [x] La cifra grande con denominador —«20 / 24»—, como la de Asistencia
+- [x] La falta debajo, en rojo y **sin corte por sexo**: el desglose es uno
+- [x] Cada día sigue diciendo **quiénes faltaron**, con su número de lista
+- [x] Sin cambio: los días suman el total, un día sin registros no sale, `sinAsignar` no se reparte
+- [x] `palomita-asistencias-<grupo>-<fecha>.pdf`, y el documento se sigue armando en `application/`
+- [x] Verificado en el navegador y en el PDF que genera la aplicación
+
+### ✅ C57 · `docs: asentar que se cuenta la asistencia, no la falta`
+
+- [x] **D-032**, que revisa el apartado «qué cuenta el reporte» de D-030 sin tirarlo
+- [x] `CLAUDE.md`, `docs/ESTADO.md` y este archivo, con la verificación escrita

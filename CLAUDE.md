@@ -32,8 +32,8 @@ Existen y funcionan:
   `participaciones` entró con el modo de participación (C25).
 - **`application/`**: `asistencia.ts`, `importacion.ts`, `historico.ts`, `alumnos.ts`,
   `evaluacion.ts`, `entregas.ts`, `calificacion.ts`, `examen.ts`,
-  `calificaciones.ts` —el reporte del trimestre y su cierre—, `faltas.ts` —las faltas
-  de la semana por sexo—, `bitacora.ts`,
+  `calificaciones.ts` —el reporte del trimestre y su cierre—, `asistencias.ts` —las
+  asistencias de la semana por sexo—, `bitacora.ts`,
   `participacion.ts` y `respaldo.ts` —el archivo JSON con todo, C14—. `armarReporte` es la
   única función que decide entre recalcular y leer el snapshot: no duplicar esa
   decisión.
@@ -48,8 +48,8 @@ Existen y funcionan:
   trimestre, sus tres capturas —entregas, rúbrica alumno por alumno y el examen por
   aciertos con teclado numérico propio— y el reporte por alumno y por campo
   formativo.
-  **`Reportes`** —la pantalla donde caben los reportes, con `FaltasDeLaSemana`, el
-  primero—,
+  **`Reportes`** —la pantalla donde caben los reportes, con `AsistenciasDeLaSemana`,
+  el primero—,
   **`Bitácora`** —lo que era `Notas`— con el conteo de reportes por alumno y el
   historial del trimestre, y **`Grupo`** con el resumen del trimestre —asistencia y
   promedio, del grupo y por alumno (C13)— más los equipos. **Ya no hay placeholders.**
@@ -292,16 +292,25 @@ y fórmulas en `docs/DATA-MODEL.md`; lo que no se negocia al escribir código:
   pasa los textos ya escritos, porque formatear es cosa de `ui/`. El PDF lo escribe
   `services/pdf.ts` **a mano y en Latin-1**, por lo mismo que `xlsx.ts` —y porque
   `window.print()` no es de fiar en una PWA de iPadOS—.
-- **Los reportes viven en *Grupo → Reportes*, y se cuentan faltas, no alumnos**
+- **Los reportes viven en *Grupo → Reportes*, y se cuentan eventos, no alumnos**
   (D-030). La pantalla existe con un solo renglón para que el segundo reporte no
-  obligue a mover el primero. En el de faltas por semana: falta es **solo `ausente`**
-  —la misma definición que el contador diario, y no puede haber dos—, quien faltó dos
-  días cuenta dos veces —así los días suman el total a la vista—, un día sin registros
-  **no sale en cero** y `sinAsignar` se dice sin repartirse. La cuenta de cada día la
-  hacen `filasDelDia` y `contarFaltantesPorSexo`, las mismas del contador: no hay un
+  obligue a mover el primero. En el de la semana: quien vino dos días cuenta dos
+  veces —así los días suman el total a la vista—, un día sin registros **no sale en
+  cero** y `sinAsignar` se dice sin repartirse. La cuenta de cada día la hacen
+  `filasDelDia` y `contarAsistentesPorSexo`, las mismas del contador: no hay un
   segundo camino al mismo número. Y cada día **dice quiénes faltaron**, con el número
   de lista por delante: salen de las mismas filas que la cuenta, así que la lista no
   puede discrepar de su cifra.
+- **Lo que se cuenta es la asistencia, no la falta** (D-032). En la pantalla de
+  asistencia y en *Asistencias de la semana* el corte por sexo es de los que
+  vinieron; la falta es cifra secundaria y **sin corte por sexo** —el desglose es
+  uno—. **Asistir es no estar ausente**: el retardo y la justificada cuentan, con
+  `cuentaComoAsistencia` y no comparando contra `'ausente'`, así que el corte suma
+  exactamente los presentes de la cifra grande. La frase del día solo se pinta si el
+  día **tiene registros**: sin tocar nada todos salen presentes por defecto, y
+  decirlo en palabras sería afirmar lo que no se capturó. La cifra de la semana va
+  con denominador —«20 / 24»—, porque una suma de varios días no se puede juzgar
+  sola.
 - **El sexo del alumno sale de lo que ya está escrito, y en este orden** (D-029): la
   columna «SEXO» del documento, el carácter 11 del CURP y, solo si no hay ninguno de los
   dos, lo que la IA deduzca del nombre de pila. Los dos primeros son leer; el tercero es

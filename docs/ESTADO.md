@@ -84,6 +84,7 @@ deshacer (D-022).
 | 9 · La lista real | Excel, CURP y varias hojas | ✅ Terminada: C38–C42 |
 | 10 · Auditoría de interfaz | Defectos, sistema de diseño, textos y personalización | ✅ Terminada: C43–C51 |
 | 12 · Orden y reportes | El grupo por apellido y el primer reporte semanal | ✅ Terminada: C50–C54 |
+| 13 · La asistencia como dato | Contar a los que vinieron, no a los que faltaron | ✅ Terminada: C55–C57 |
 
 ## Lo que existe y funciona
 
@@ -472,9 +473,10 @@ Lo pidió el usuario, dos cosas sin relación entre sí (docs/DECISIONES.md D-03
   es justamente lo que se pedía.
 - **Hay una pantalla *Reportes*** en Grupo, con un solo renglón hoy y hecha para
   crecer: agregar el segundo es agregar un objeto a un arreglo.
-- **El primer reporte es *Faltas de la semana***: el total con su corte por sexo y el
-  día a día, que suma exactamente ese total. Cuenta faltas y no alumnos, falta es
-  solo `ausente`, y un día sin registrar no sale en cero.
+- **El primer reporte es el de la semana**: el total con su corte por sexo y el
+  día a día, que suma exactamente ese total. Cuenta eventos y no alumnos, y un día
+  sin registrar no sale en cero. Nació contando faltas y **hoy cuenta asistencias**
+  —se llama *Asistencias de la semana*—; lo cambió D-032, más abajo.
 
 Verificado en el navegador con ocho alumnos sembrados a mano: el 39 y el 40 salen
 entre el 1 y el 2 en Asistencia y en *Ajustes → Alumnos*, «Ávila» cae entre
@@ -483,8 +485,9 @@ con el retardo y la justificada fuera de la cuenta, el miércoles sin capturar n
 aparece y la semana anterior muestra el estado vacío. **En el iPad, nada de esto se
 ha visto** —como el resto de la Fase 4 en adelante—.
 
-- **El reporte de faltas dice quiénes**, no solo cuántos: bajo cada día van los
-  nombres con su número de lista, en la pantalla y en el PDF.
+- **El reporte dice quiénes faltaron**, no solo cuántos: bajo cada día van los
+  nombres con su número de lista, en la pantalla y en el PDF. Sigue siendo así
+  después de D-032, aunque la cifra sea de asistencias.
 - **Todo reporte se guarda en PDF** (D-031), y es una regla, no una función del
   primero: `tests/arquitectura.test.ts` la exige. El PDF lo escribe `services/pdf.ts`
   a mano —misma cuenta que `xlsx.ts`, y además `window.print()` no es de fiar en una
@@ -500,6 +503,33 @@ se interceptó la descarga en el navegador, se abrió con un lector de PDF y dic
 `3.º B · del 7 al 11 de septiembre de 2026`, con los acentos íntegros y las mismas
 cifras que la pantalla. **Falta el iPad**: que su hoja de compartir ofrezca *Guardar
 en Archivos* para un PDF, que es la misma verificación pendiente del respaldo.
+
+## Alcance nuevo: se cuenta la asistencia, no la falta (2026-09-09)
+
+Lo pidió el usuario mirando la pantalla terminada (docs/DECISIONES.md D-032).
+**Está hecho y verificado en el navegador.**
+
+- **En Asistencia**, donde decía «Faltaron 2 niños · 1 niña» ahora dice «Asistieron
+  2 niños · 4 niñas · 1 sin asignar». Cuenta con `cuentaComoAsistencia` —el retardo
+  y la justificada son asistencia—, así que suma exactamente los presentes de la
+  cifra grande, y hay una prueba que lo afirma. **Solo se pinta si el día tiene
+  registros**: un día sin tocar sale con todo el grupo presente por defecto, y ahí
+  la frase afirmaría un dato que nadie capturó.
+- **El reporte se llama *Asistencias de la semana*** y su módulo es
+  `application/asistencias.ts`. La cifra grande lleva denominador —«20 / 24»—, la
+  falta va debajo en rojo y sin corte por sexo, y cada día sigue diciendo **quiénes
+  faltaron**, con su número de lista, en la pantalla y en el PDF.
+- Lo que **no** cambió: los días suman exactamente el total, un día sin registros no
+  aparece, `sinAsignar` se dice y no se reparte, el documento se arma en
+  `application/` y el archivo se llama `palomita-asistencias-<grupo>-<fecha>.pdf`.
+
+Verificado en el navegador con ocho alumnos y tres días sembrados a mano: el día
+con un ausente y un retardo da «7 / 8» y «Asistieron 2 niños · 4 niñas · 1 sin
+asignar»; el día sin capturar da «8 / 8» y **no** enseña la frase; la semana da
+«20 / 24» con «7 niños · 11 niñas · 2 sin asignar» y «4 faltas»; el martes sin
+capturar no sale; el retardo cuenta y no aparece entre los nombres; y el PDF que
+genera la aplicación trae la misma cifra que la pantalla. **En el iPad, nada de
+esto se ha visto** —como el resto de la Fase 4 en adelante—.
 
 ## Supuestos que siguen abiertos
 

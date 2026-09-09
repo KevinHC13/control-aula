@@ -1275,6 +1275,10 @@ los 15 segundos y este no pasa esa prueba.
 
 ### Qué cuenta el reporte de faltas, y por qué así
 
+> **Revisado por [D-032](#d-032--lo-que-se-cuenta-es-la-asistencia-no-la-falta)**:
+> el reporte pasó a contar asistencias y se llama *Asistencias de la semana*. Todo
+> lo de abajo sigue vigente salvo qué cifra va de principal.
+
 Cuatro decisiones, todas tomadas con el usuario:
 
 - **Cuenta faltas, no alumnos.** Quien faltó lunes y martes suma dos. Es lo que hace
@@ -1391,3 +1395,63 @@ Que la hoja de compartir del iPad ofrezca *Guardar en Archivos* para un PDF. Es 
 misma verificación pendiente del respaldo (`C14`) y sigue sin poder hacerse en el
 escritorio, donde la exportación cae a una descarga normal —que es lo que sí se
 probó, leyendo el archivo generado por la aplicación y abriéndolo con un lector—.
+
+---
+
+## D-032 · Lo que se cuenta es la asistencia, no la falta
+
+**Estado:** aceptada — 2026-09-09
+
+Lo pidió el usuario mirando la pantalla de asistencia ya terminada: donde decía
+«Faltaron 4 niños · 2 niñas» debe decir cuántos de los que tienen asistencia son
+niños y cuántas niñas, y lo mismo en el reporte semanal, que pasa a llamarse
+*Asistencias de la semana*.
+
+No es un cambio de palabras. La hoja oficial pregunta al pie de cada día «H: __
+M: __ T: __» sobre quién vino, y lo que se copiaba era su complemento: correcto de
+aritmética, pero obligaba a restar de cabeza justo cuando la pantalla existe para
+no hacer cuentas. Y hay una diferencia de fondo entre las dos cifras: la asistencia
+es un dato del día —lo mismo si faltaron cero que si faltaron seis—, mientras que
+la falta es un dato que unos días no existe. Poner de principal la que a veces vale
+cero deja la pantalla diciendo nada en el día bueno, que es la mayoría de los días.
+
+### Qué cuenta, y por qué así
+
+- **Asistir es no estar ausente.** El retardo y la falta justificada cuentan, que
+  es lo que ya decía `cuentaComoAsistencia` y lo que dice la cifra grande «27 / 30»
+  desde el primer commit. No hay una segunda definición: `contarAsistentesPorSexo`
+  usa la misma función de dominio, y una prueba afirma que su corte por sexo suma
+  **exactamente** los presentes de esa cifra. Dos maneras de contar lo mismo en la
+  misma pantalla es como aparece un número que nadie sabe cuál creer.
+- **La falta sigue estando, como cifra secundaria y sin corte por sexo.** Se dice
+  debajo y en rojo. Sin corte porque el desglose tiene que ser uno solo: dos cortes
+  por sexo en la misma hoja son dos números que hay que explicar, y ninguno de los
+  dos se lee de un vistazo.
+- **El reporte sigue diciendo quiénes faltaron.** La cifra cambió de lado pero los
+  nombres no: dos o tres son el dato accionable de la semana, y nombrar en cambio a
+  los veintiocho que vinieron llenaría tres hojas para repetir lo que la cifra ya
+  dijo. Salen de las mismas filas que la cuenta, así que `ausentes.length` sigue
+  siendo `faltas` por construcción.
+- **La cifra de la semana lleva denominador**: «20 / 24», y no «20». Una suma de
+  asistencias de varios días no se puede juzgar sola —¿veinte es bueno?—, y el
+  denominador es la suma de los alumnos de cada día con registros, así que
+  `asistencias + faltas = posibles` sin un tercer recuento. Es además la forma en la
+  que la maestra ya lee la cifra grande de Asistencia todos los días.
+- **En el día se pinta solo si el día tiene registros.** Un día que nadie ha tocado
+  sale con todo el grupo presente por defecto (`filasDelDia`), y ahí «Asistieron 18
+  niños · 20 niñas» afirmaría un dato que no se ha capturado. La cifra grande se
+  permite salir porque se lee como el punto de partida de la captura; una frase en
+  palabras, no. Es el mismo criterio con el que el reporte no enseña un día en cero.
+
+`frasePorSexo` no cambió ni una línea: nunca nombró faltas, y por eso sirve igual
+para el corte nuevo. Lo que se cuenta lo dice quien la usa.
+
+### Lo que revisa de D-030
+
+El apartado «Qué cuenta el reporte de faltas» de
+[D-030](#d-030--el-grupo-se-lee-en-orden-alfabético-y-los-reportes-tienen-su-sitio)
+sigue vigente entero salvo en qué se pone de principal: se siguen contando eventos
+y no alumnos —quien vino dos días suma dos, y por eso los días suman exactamente el
+total—, un día sin registros sigue sin salir, y `sinAsignar` se sigue diciendo sin
+repartirse (D-029). «Falta es solo `ausente`» tampoco cambia: es la misma frontera,
+leída del otro lado.
