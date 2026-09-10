@@ -1537,7 +1537,7 @@ en `docs/ESTADO.md` sin escribirse aquí; esta retoma la numeración donde qued�
 - [x] `application/faltas.ts` → `asistencias.ts`, con su hook y su pantalla: un módulo y su
       único consumidor no se separan sin dejar el árbol roto
 - [x] La cifra grande con denominador —«20 / 24»—, como la de Asistencia
-- [x] La falta debajo, en rojo y **sin corte por sexo**: el desglose es uno
+- [x] La falta debajo, en rojo y sin corte por sexo —**revertido en C58**: se dice entera
 - [x] Cada día sigue diciendo **quiénes faltaron**, con su número de lista
 - [x] Sin cambio: los días suman el total, un día sin registros no sale, `sinAsignar` no se reparte
 - [x] `palomita-asistencias-<grupo>-<fecha>.pdf`, y el documento se sigue armando en `application/`
@@ -1547,3 +1547,18 @@ en `docs/ESTADO.md` sin escribirse aquí; esta retoma la numeración donde qued�
 
 - [x] **D-032**, que revisa el apartado «qué cuenta el reporte» de D-030 sin tirarlo
 - [x] `CLAUDE.md`, `docs/ESTADO.md` y este archivo, con la verificación escrita
+
+### ✅ C58 · `fix(ui): decir el sexo también de los que faltaron`
+
+Lo devolvió el usuario al verlo: «4 faltas» junto a «2 sin asignar» parece decir que
+la falta no tiene sexo, y deja restando de cabeza para saber cuántas eran niñas.
+
+- [x] Las dos cuentas **enteras y con su verbo**: «Asistieron 2 niños · 4 niñas · 1
+      sin asignar», «Faltaron 1 niño» — en Asistencia, en el reporte y en el PDF
+- [x] `AsistenciasDelDia` y `ReporteDeAsistencias` llevan `asistieron` y `faltaron`
+      como dos `ConteoPorSexo`, en vez de un corte suelto y una cifra pelada
+- [x] Una prueba afirma que los dos cortes se reparten el grupo entero sin solaparse
+- [x] Las dos del **mismo color**: el rojo diría que faltar es peor que venir, y esta
+      es la cuenta que se copia a la hoja, no una alerta
+- [x] La nota del pie lo dice, y `sinAsignar` se sigue contando aparte en las dos
+- [x] Verificado en el navegador y en el PDF: 20 / 24, y los dos cortes suman 24

@@ -302,9 +302,12 @@ y fórmulas en `docs/DATA-MODEL.md`; lo que no se negocia al escribir código:
   de lista por delante: salen de las mismas filas que la cuenta, así que la lista no
   puede discrepar de su cifra.
 - **Lo que se cuenta es la asistencia, no la falta** (D-032). En la pantalla de
-  asistencia y en *Asistencias de la semana* el corte por sexo es de los que
-  vinieron; la falta es cifra secundaria y **sin corte por sexo** —el desglose es
-  uno—. **Asistir es no estar ausente**: el retardo y la justificada cuentan, con
+  asistencia y en *Asistencias de la semana* la cifra principal es la de los que
+  vinieron; la falta va debajo, **partida por sexo igual que la asistencia** y del
+  mismo color. Las dos frases se dicen **enteras y con su verbo por delante**
+  —«Asistieron 2 niños · 4 niñas · 1 sin asignar», «Faltaron 1 niño»—: una
+  desglosada junto a otra en bruto se lee como si a la segunda le faltara el dato, y
+  sin el verbo son dos series de números seguidas. **Asistir es no estar ausente**: el retardo y la justificada cuentan, con
   `cuentaComoAsistencia` y no comparando contra `'ausente'`, así que el corte suma
   exactamente los presentes de la cifra grande. La frase del día solo se pinta si el
   día **tiene registros**: sin tocar nada todos salen presentes por defecto, y

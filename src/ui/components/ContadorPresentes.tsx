@@ -1,5 +1,9 @@
 import type { FilaAsistencia } from '@/application/asistencia'
-import { contarAsistentesPorSexo, contarPresentes } from '@/application/asistencia'
+import {
+  contarAsistentesPorSexo,
+  contarFaltantesPorSexo,
+  contarPresentes,
+} from '@/application/asistencia'
 import type { EstadoAsistencia } from '@/domain/values'
 import { plural } from '@/ui/lib/plural'
 import { frasePorSexo } from '@/ui/lib/porSexo'
@@ -28,9 +32,12 @@ export function ContadorPresentes({ filas }: { filas: FilaAsistencia[] }) {
   // entrada es peor que un hueco.
   if (total === 0) return null
 
-  // La misma frase que dice el reporte de la semana, con las mismas reglas: las
-  // partes en cero no se dicen y el que no tiene sexo se dice aparte.
-  const porSexo = frasePorSexo(contarAsistentesPorSexo(filas))
+  // Las mismas dos frases que dice el reporte de la semana, con las mismas reglas:
+  // las partes en cero no se dicen y el que no tiene sexo se dice aparte. Se dicen
+  // **las dos enteras**: partir una por sexo y dejar la otra en bruto se lee como si
+  // a la segunda le faltara el dato (docs/DECISIONES.md D-032).
+  const vinieron = frasePorSexo(contarAsistentesPorSexo(filas))
+  const faltaron = frasePorSexo(contarFaltantesPorSexo(filas))
 
   // Un día que nadie ha tocado sale con todo el grupo presente por defecto
   // (`filasDelDia`), así que la línea diría «Asistieron 18 niños · 20 niñas» de un
@@ -68,9 +75,16 @@ export function ContadorPresentes({ filas }: { filas: FilaAsistencia[] }) {
           cada día. Se cuenta la asistencia y no la falta porque es lo que la hoja
           pregunta, y porque el dato que se copia no debería depender de a quién le
           tocó faltar (docs/DECISIONES.md D-032). */}
-      {registrado && porSexo !== '' && (
+      {registrado && vinieron !== '' && (
         <p className="mt-0.5 text-apoyo text-tinta-2" aria-live="polite">
-          Asistieron {porSexo}
+          Asistieron {vinieron}
+        </p>
+      )}
+      {/* La falta, dicha igual de completa. Solo cuando la hay: un «Faltaron 0
+          niños» obliga a leer un renglón para enterarse de que no pasó nada. */}
+      {registrado && faltaron !== '' && (
+        <p className="text-apoyo text-tinta-2" aria-live="polite">
+          Faltaron {faltaron}
         </p>
       )}
     </div>

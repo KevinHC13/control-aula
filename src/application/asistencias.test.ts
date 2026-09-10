@@ -57,16 +57,40 @@ describe('armarAsistenciasDeLaSemana', () => {
 
     // Doce posibles: seis alumnos por dos días. Faltaron cinco.
     expect(reporte.asistencias).toBe(7)
-    expect(reporte.ninos).toBe(4)
-    expect(reporte.ninas).toBe(2)
-    expect(reporte.sinAsignar).toBe(1)
+    expect(reporte.asistieron).toEqual({ ninos: 4, ninas: 2, sinAsignar: 1 })
   })
 
-  it('la falta sigue estando, como cifra secundaria', () => {
-    const reporte = armarAsistenciasDeLaSemana(GRUPO, pasarLista('2026-09-07', [1, 4]), LUNES)
+  it('la falta se parte por sexo igual que la asistencia', () => {
+    // Desglosar una y dejar la otra en bruto se lee como si a la segunda le
+    // faltara el dato (D-032).
+    const reporte = armarAsistenciasDeLaSemana(
+      GRUPO,
+      [...pasarLista('2026-09-07', [1, 4]), ...pasarLista('2026-09-08', [2, 5, 6])],
+      LUNES,
+    )
 
-    expect(reporte.faltas).toBe(2)
-    expect(reporte.dias[0]?.faltas).toBe(2)
+    expect(reporte.faltas).toBe(5)
+    expect(reporte.faltaron).toEqual({ ninos: 2, ninas: 2, sinAsignar: 1 })
+    expect(reporte.dias[0]?.faltaron).toEqual({ ninos: 1, ninas: 1, sinAsignar: 0 })
+  })
+
+  it('los dos cortes se reparten lo posible, sin solaparse', () => {
+    // Es lo que permite enseñarlos juntos sin que nadie compruebe que cuadran.
+    const reporte = armarAsistenciasDeLaSemana(
+      GRUPO,
+      [...pasarLista('2026-09-07', [1, 4]), ...pasarLista('2026-09-08', [2])],
+      LUNES,
+    )
+
+    for (const cual of ['ninos', 'ninas', 'sinAsignar'] as const) {
+      expect(reporte.asistieron[cual] + reporte.faltaron[cual]).toBe(
+        reporte.dias.reduce(
+          (total, d) => total + d.asistieron[cual] + d.faltaron[cual],
+          0,
+        ),
+      )
+    }
+    expect(reporte.asistencias + reporte.faltas).toBe(reporte.posibles)
   })
 
   it('la asistencia y la falta suman lo posible, cada día y en la semana', () => {
@@ -93,7 +117,7 @@ describe('armarAsistenciasDeLaSemana', () => {
 
     // Solo el 6 vino, los dos días.
     expect(reporte.asistencias).toBe(2)
-    expect(reporte.sinAsignar).toBe(2)
+    expect(reporte.asistieron.sinAsignar).toBe(2)
   })
 
   it('los días suman exactamente el total de la semana', () => {
@@ -107,14 +131,19 @@ describe('armarAsistenciasDeLaSemana', () => {
       LUNES,
     )
 
-    const sumado = (campo: 'asistencias' | 'ninos' | 'ninas' | 'sinAsignar' | 'faltas') =>
+    const sumado = (campo: 'asistencias' | 'faltas' | 'posibles') =>
       reporte.dias.reduce((total, d) => total + d[campo], 0)
+    const sumadoDelCorte = (cual: 'asistieron' | 'faltaron', que: 'ninos' | 'ninas' | 'sinAsignar') =>
+      reporte.dias.reduce((total, d) => total + d[cual][que], 0)
 
     expect(sumado('asistencias')).toBe(reporte.asistencias)
-    expect(sumado('ninos')).toBe(reporte.ninos)
-    expect(sumado('ninas')).toBe(reporte.ninas)
-    expect(sumado('sinAsignar')).toBe(reporte.sinAsignar)
     expect(sumado('faltas')).toBe(reporte.faltas)
+    expect(sumado('posibles')).toBe(reporte.posibles)
+    for (const cual of ['asistieron', 'faltaron'] as const) {
+      for (const que of ['ninos', 'ninas', 'sinAsignar'] as const) {
+        expect(sumadoDelCorte(cual, que)).toBe(reporte[cual][que])
+      }
+    }
   })
 
   it('devuelve los días en orden, del lunes en adelante', () => {
@@ -172,8 +201,9 @@ describe('armarAsistenciasDeLaSemana', () => {
 
     // El 4, el 5 y el 6 no tienen registro y salen presentes: cinco asistencias.
     expect(reporte.asistencias).toBe(5)
-    expect(reporte.ninos).toBe(2)
+    expect(reporte.asistieron.ninos).toBe(2)
     expect(reporte.faltas).toBe(1)
+    expect(reporte.faltaron).toEqual({ ninos: 1, ninas: 0, sinAsignar: 0 })
   })
 
   it('dice quiénes faltaron cada día, aunque la cifra sea de asistencias', () => {
@@ -233,9 +263,8 @@ describe('armarAsistenciasDeLaSemana', () => {
       LUNES,
     )
 
-    expect(reporte.sinAsignar).toBe(1)
-    expect(reporte.ninos).toBe(0)
-    expect(reporte.ninas).toBe(0)
+    expect(reporte.asistieron).toEqual({ ninos: 0, ninas: 0, sinAsignar: 1 })
+    expect(reporte.faltaron).toEqual({ ninos: 3, ninas: 2, sinAsignar: 0 })
     expect(reporte.asistencias).toBe(1)
   })
 
@@ -281,11 +310,19 @@ describe('asistenciasComoDocumento', () => {
   const TEXTOS = {
     periodo: 'del 7 al 11 de septiembre de 2026',
     grupo: '3.º B',
-    porSexo: '4 niños · 3 niñas · 2 sin asignar',
-    faltas: '3 faltas',
+    asistieron: 'Asistieron 4 niños · 3 niñas · 2 sin asignar',
+    faltaron: 'Faltaron 2 niños · 1 niña',
     dias: [
-      { fecha: 'lunes, 7 de septiembre', porSexo: '2 niños · 1 niña · 1 sin asignar', faltas: '2 faltas' },
-      { fecha: 'martes, 8 de septiembre', porSexo: '2 niños · 2 niñas · 1 sin asignar', faltas: '1 falta' },
+      {
+        fecha: 'lunes, 7 de septiembre',
+        asistieron: 'Asistieron 2 niños · 1 niña · 1 sin asignar',
+        faltaron: 'Faltaron 1 niño · 1 niña',
+      },
+      {
+        fecha: 'martes, 8 de septiembre',
+        asistieron: 'Asistieron 2 niños · 2 niñas · 1 sin asignar',
+        faltaron: 'Faltaron 1 niño',
+      },
     ],
     nota: 'El retardo y la justificada cuentan como asistencia.',
   }
@@ -318,11 +355,15 @@ describe('asistenciasComoDocumento', () => {
     expect(cifra).toMatchObject({ valor: '9 / 12', leyenda: 'asistencias esta semana' })
   })
 
-  it('la falta va debajo de la cifra, junto al corte por sexo', () => {
+  it('las dos cuentas van debajo de la cifra, enteras y con su verbo', () => {
+    // Desglosar una y dejar la otra en bruto se lee como si a la segunda le
+    // faltara el dato (D-032).
     const doc = asistenciasComoDocumento(reporte(), TEXTOS)
     const cifra = doc.bloques.find((b) => b.tipo === 'cifra')
 
-    expect(cifra).toMatchObject({ detalle: '4 niños · 3 niñas · 2 sin asignar · 3 faltas' })
+    expect(cifra).toMatchObject({
+      detalle: 'Asistieron 4 niños · 3 niñas · 2 sin asignar — Faltaron 2 niños · 1 niña',
+    })
   })
 
   it('una sola asistencia se dice en singular', () => {
@@ -346,13 +387,13 @@ describe('asistenciasComoDocumento', () => {
       {
         etiqueta: 'lunes, 7 de septiembre',
         valor: '4',
-        detalle: '2 niños · 1 niña · 1 sin asignar · 2 faltas',
+        detalle: 'Asistieron 2 niños · 1 niña · 1 sin asignar — Faltaron 1 niño · 1 niña',
         lineas: [' 1 · Apellido1, Nombre', ' 4 · Apellido4, Nombre'],
       },
       {
         etiqueta: 'martes, 8 de septiembre',
         valor: '5',
-        detalle: '2 niños · 2 niñas · 1 sin asignar · 1 falta',
+        detalle: 'Asistieron 2 niños · 2 niñas · 1 sin asignar — Faltaron 1 niño',
         lineas: [' 2 · Apellido2, Nombre'],
       },
     ])
@@ -373,9 +414,9 @@ describe('asistenciasComoDocumento', () => {
       armarAsistenciasDeLaSemana(GRUPO, pasarLista('2026-09-07', []), LUNES),
       {
         ...TEXTOS,
-        porSexo: '',
-        faltas: '',
-        dias: [{ fecha: 'lunes, 7 de septiembre', porSexo: '', faltas: '' }],
+        asistieron: '',
+        faltaron: '',
+        dias: [{ fecha: 'lunes, 7 de septiembre', asistieron: '', faltaron: '' }],
       },
     )
     const tabla = doc.bloques.find((b) => b.tipo === 'tabla')
@@ -385,17 +426,21 @@ describe('asistenciasComoDocumento', () => {
     expect(doc.bloques.find((b) => b.tipo === 'cifra')).not.toHaveProperty('detalle')
   })
 
-  it('una semana sin faltas no deja el separador de las faltas colgando', () => {
+  it('una semana sin faltas no deja el separador de las dos frases colgando', () => {
     const doc = asistenciasComoDocumento(
       armarAsistenciasDeLaSemana(GRUPO, pasarLista('2026-09-07', []), LUNES),
-      { ...TEXTOS, faltas: '', dias: [{ fecha: 'lunes', porSexo: '3 niños', faltas: '' }] },
+      {
+        ...TEXTOS,
+        faltaron: '',
+        dias: [{ fecha: 'lunes', asistieron: 'Asistieron 3 niños', faltaron: '' }],
+      },
     )
 
     expect(doc.bloques.find((b) => b.tipo === 'cifra')).toMatchObject({
-      detalle: '4 niños · 3 niñas · 2 sin asignar',
+      detalle: 'Asistieron 4 niños · 3 niñas · 2 sin asignar',
     })
     expect(doc.bloques.find((b) => b.tipo === 'tabla')?.filas[0]).toMatchObject({
-      detalle: '3 niños',
+      detalle: 'Asistieron 3 niños',
     })
   })
 

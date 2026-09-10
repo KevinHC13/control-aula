@@ -84,7 +84,7 @@ deshacer (D-022).
 | 9 · La lista real | Excel, CURP y varias hojas | ✅ Terminada: C38–C42 |
 | 10 · Auditoría de interfaz | Defectos, sistema de diseño, textos y personalización | ✅ Terminada: C43–C51 |
 | 12 · Orden y reportes | El grupo por apellido y el primer reporte semanal | ✅ Terminada: C50–C54 |
-| 13 · La asistencia como dato | Contar a los que vinieron, no a los que faltaron | ✅ Terminada: C55–C57 |
+| 13 · La asistencia como dato | Contar a los que vinieron, no a los que faltaron | ✅ Terminada: C55–C58 |
 
 ## Lo que existe y funciona
 
@@ -509,15 +509,15 @@ en Archivos* para un PDF, que es la misma verificación pendiente del respaldo.
 Lo pidió el usuario mirando la pantalla terminada (docs/DECISIONES.md D-032).
 **Está hecho y verificado en el navegador.**
 
-- **En Asistencia**, donde decía «Faltaron 2 niños · 1 niña» ahora dice «Asistieron
-  2 niños · 4 niñas · 1 sin asignar». Cuenta con `cuentaComoAsistencia` —el retardo
+- **En Asistencia** se dicen las dos cuentas, enteras y con su verbo: «Asistieron 2
+  niños · 4 niñas · 1 sin asignar» y «Faltaron 1 niño». Cuenta con `cuentaComoAsistencia` —el retardo
   y la justificada son asistencia—, así que suma exactamente los presentes de la
   cifra grande, y hay una prueba que lo afirma. **Solo se pinta si el día tiene
   registros**: un día sin tocar sale con todo el grupo presente por defecto, y ahí
   la frase afirmaría un dato que nadie capturó.
 - **El reporte se llama *Asistencias de la semana*** y su módulo es
-  `application/asistencias.ts`. La cifra grande lleva denominador —«20 / 24»—, la
-  falta va debajo en rojo y sin corte por sexo, y cada día sigue diciendo **quiénes
+  `application/asistencias.ts`. La cifra grande lleva denominador —«20 / 24»—, debajo
+  van las dos frases completas y del mismo color, y cada día sigue diciendo **quiénes
   faltaron**, con su número de lista, en la pantalla y en el PDF.
 - Lo que **no** cambió: los días suman exactamente el total, un día sin registros no
   aparece, `sinAsignar` se dice y no se reparte, el documento se arma en
@@ -526,8 +526,8 @@ Lo pidió el usuario mirando la pantalla terminada (docs/DECISIONES.md D-032).
 Verificado en el navegador con ocho alumnos y tres días sembrados a mano: el día
 con un ausente y un retardo da «7 / 8» y «Asistieron 2 niños · 4 niñas · 1 sin
 asignar»; el día sin capturar da «8 / 8» y **no** enseña la frase; la semana da
-«20 / 24» con «7 niños · 11 niñas · 2 sin asignar» y «4 faltas»; el martes sin
-capturar no sale; el retardo cuenta y no aparece entre los nombres; y el PDF que
+«20 / 24» con «Asistieron 7 niños · 11 niñas · 2 sin asignar» y «Faltaron 2 niños ·
+1 niña · 1 sin asignar» —que suman los 24—; el martes sin capturar no sale; el retardo cuenta y no aparece entre los nombres; y el PDF que
 genera la aplicación trae la misma cifra que la pantalla. **En el iPad, nada de
 esto se ha visto** —como el resto de la Fase 4 en adelante—.
 

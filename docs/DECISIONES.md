@@ -1423,10 +1423,22 @@ cero deja la pantalla diciendo nada en el día bueno, que es la mayoría de los 
   usa la misma función de dominio, y una prueba afirma que su corte por sexo suma
   **exactamente** los presentes de esa cifra. Dos maneras de contar lo mismo en la
   misma pantalla es como aparece un número que nadie sabe cuál creer.
-- **La falta sigue estando, como cifra secundaria y sin corte por sexo.** Se dice
-  debajo y en rojo. Sin corte porque el desglose tiene que ser uno solo: dos cortes
-  por sexo en la misma hoja son dos números que hay que explicar, y ninguno de los
-  dos se lee de un vistazo.
+- **La falta sigue estando, debajo y partida por sexo igual que la asistencia.**
+  Se probó primero con la falta en bruto —«4 faltas»— con el argumento de que un
+  solo desglose se lee más rápido, y el usuario lo devolvió a la vuelta: junto a
+  «2 sin asignar», un «4 faltas» pelado parece decir que la falta no tiene sexo, y
+  deja a quien lo lee restando de cabeza para saber cuántas de esas cuatro fueron
+  niñas. **Las dos cuentas se dicen enteras y con su verbo por delante**
+  —«Asistieron…», «Faltaron…»—, que es lo que las vuelve inequívocas: sin el verbo,
+  dos series de tres números seguidas son un acertijo. Son complementarias por
+  construcción —`contarAsistentesPorSexo` y `contarFaltantesPorSexo` parten las
+  mismas filas por `cuentaComoAsistencia`— y hay una prueba que afirma que suman el
+  grupo entero, así que se pueden enseñar juntas sin que nadie tenga que comprobar
+  que cuadran.
+- **Las dos van del mismo color.** Pintar la falta en rojo y la asistencia no diría
+  que faltar es peor que venir: cierto, y no es lo que este reporte viene a decir
+  —es la cuenta que se copia a la hoja oficial, no una alerta—. El rojo sigue siendo
+  del desglose de estados del día, donde sí señala algo que hacer.
 - **El reporte sigue diciendo quiénes faltaron.** La cifra cambió de lado pero los
   nombres no: dos o tres son el dato accionable de la semana, y nombrar en cambio a
   los veintiocho que vinieron llenaría tres hojas para repetir lo que la cifra ya

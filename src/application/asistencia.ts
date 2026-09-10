@@ -86,6 +86,30 @@ export function contarAsistentesPorSexo(filas: FilaAsistencia[]): ConteoPorSexo 
 }
 
 /**
+ * Cuántos niños y cuántas niñas faltaron hoy: el mismo corte, del otro lado.
+ *
+ * Las dos cuentas se dicen enteras y etiquetadas —«Asistieron…», «Faltaron…»—
+ * porque una sola partida por sexo y la otra en bruto se lee mal: junto a «2 sin
+ * asignar», un «4 faltas» pelado parece decir que la falta no tiene sexo
+ * (docs/DECISIONES.md D-032). Suman `total` entre las dos.
+ *
+ * **Falta es solo `ausente`**, que es el complemento exacto de
+ * `cuentaComoAsistencia`: el retardo y la justificada están del lado de la
+ * asistencia y no pueden estar en los dos.
+ *
+ * Función pura: no lee la base.
+ */
+export function contarFaltantesPorSexo(filas: FilaAsistencia[]): ConteoPorSexo {
+  const faltaron = filas.filter((f) => !cuentaComoAsistencia(f.estado))
+
+  return {
+    ninos: faltaron.filter((f) => f.alumno.sexo === 'H').length,
+    ninas: faltaron.filter((f) => f.alumno.sexo === 'M').length,
+    sinAsignar: faltaron.filter((f) => f.alumno.sexo === null).length,
+  }
+}
+
+/**
  * Un día visto desde el calendario. `registrado` distingue un día que todavía no
  * se capturó de uno capturado sin faltas: el primero es un hueco, el segundo es
  * un día bueno, y pintarlos igual sería mentir.

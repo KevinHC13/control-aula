@@ -4,7 +4,12 @@ import { rangoDeLaSemana } from '@/domain/fechas'
 import type { Fecha } from '@/domain/values'
 import type { DocumentoPdf } from '@/services/pdf'
 
-import { contarAsistentesPorSexo, filasDelDia } from './asistencia'
+import {
+  type ConteoPorSexo,
+  contarAsistentesPorSexo,
+  contarFaltantesPorSexo,
+  filasDelDia,
+} from './asistencia'
 
 /**
  * Las asistencias de la semana, partidas por sexo.
@@ -13,11 +18,11 @@ import { contarAsistentesPorSexo, filasDelDia } from './asistencia'
  * sumada de lunes a viernes, que hasta ahora se hacía a mano sobre la pantalla de
  * asistencia día por día.
  *
- * **Cuenta asistencias, no faltas** (docs/DECISIONES.md D-032): lo que la hoja
- * pregunta es cuántos niños y cuántas niñas vinieron, y ese dato no debería
- * depender de a quién le tocó faltar. La falta sigue estando, como cifra
- * secundaria y **sin corte por sexo**: un solo desglose, o vuelven a ser dos
- * números que hay que explicar.
+ * **La cifra principal es la asistencia** (docs/DECISIONES.md D-032): lo que la
+ * hoja pregunta es cuántos niños y cuántas niñas vinieron, y ese dato no debería
+ * depender de a quién le tocó faltar. La falta va debajo, y **partida por sexo
+ * igual que la asistencia**: una cuenta desglosada junto a otra en bruto se lee
+ * como si a la segunda le faltara el dato.
  *
  * **Asistir es no estar ausente.** El retardo y la justificada cuentan, igual que
  * en el contador diario (`cuentaComoAsistencia`). Una segunda definición de
@@ -33,14 +38,13 @@ import { contarAsistentesPorSexo, filasDelDia } from './asistencia'
 export interface AsistenciasDelDia {
   fecha: Fecha
   asistencias: number
-  ninos: number
-  ninas: number
-  /** Los que asistieron y todavía no tienen sexo asignado. */
-  sinAsignar: number
+  faltas: number
   /** Cuántos alumnos había ese día: `asistencias + faltas`, por construcción. */
   posibles: number
-  /** Los que no vinieron. Sin corte por sexo, a propósito: el desglose es uno. */
-  faltas: number
+  /** Los que vinieron, partidos por sexo. */
+  asistieron: ConteoPorSexo
+  /** Los que no vinieron, partidos igual: las dos cuentas se dicen enteras. */
+  faltaron: ConteoPorSexo
   /**
    * **Quiénes** faltaron ese día, en el orden del grupo —alfabético, D-030—.
    *
@@ -57,12 +61,11 @@ export interface ReporteDeAsistencias {
   hasta: Fecha
   /** Asistencias de toda la semana. Es la suma exacta de `dias`. */
   asistencias: number
-  ninos: number
-  ninas: number
-  sinAsignar: number
+  faltas: number
   /** El total posible de la semana, que es el denominador de la cifra grande. */
   posibles: number
-  faltas: number
+  asistieron: ConteoPorSexo
+  faltaron: ConteoPorSexo
   /**
    * Un renglón por día **con registros**. Un festivo o un día que todavía no se
    * captura no sale en cero: «vinieron todos» y «no se pasó lista» no son lo
@@ -71,12 +74,19 @@ export interface ReporteDeAsistencias {
   dias: AsistenciasDelDia[]
 }
 
+/** Cuántos hay en un corte. La cifra y su desglose salen del mismo sitio. */
+function cuantos({ ninos, ninas, sinAsignar }: ConteoPorSexo): number {
+  return ninos + ninas + sinAsignar
+}
+
 /**
  * Cruza el grupo con los registros de la semana.
  *
- * Cada día se arma con las mismas dos funciones que pintan la pantalla de
- * asistencia —`filasDelDia` y `contarAsistentesPorSexo`—, así que el reporte y el
- * contador diario no pueden discrepar: es literalmente la misma cuenta.
+ * Cada día se arma con las mismas funciones que pintan la pantalla de asistencia
+ * —`filasDelDia`, `contarAsistentesPorSexo` y `contarFaltantesPorSexo`—, así que el
+ * reporte y el contador diario no pueden discrepar: es literalmente la misma
+ * cuenta. Los dos cortes son complementarios por construcción, y por eso se pueden
+ * enseñar juntos sin que nadie tenga que comprobar que cuadran.
  *
  * Los totales son la **suma de los días** y no un recuento aparte. Dos caminos
  * hacia el mismo número es como aparece un total que no cuadra con su desglose.
@@ -110,35 +120,40 @@ export function armarAsistenciasDeLaSemana(
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([fecha, delDia]) => {
       const filas = filasDelDia([...alumnos], delDia)
-      const { ninos, ninas, sinAsignar } = contarAsistentesPorSexo(filas)
+      const asistieron = contarAsistentesPorSexo(filas)
+      const faltaron = contarFaltantesPorSexo(filas)
       // De las mismas filas que la cuenta, y con el mismo criterio que
-      // `contarAsistentesPorSexo`: falta es solo `ausente`. Dos maneras de
+      // `contarFaltantesPorSexo`: falta es solo `ausente`. Dos maneras de
       // decidir quién vino acabarían en una lista que no cuadra con su cifra.
       const ausentes = filas.filter((f) => f.estado === 'ausente').map((f) => f.alumno)
       return {
         fecha,
-        asistencias: ninos + ninas + sinAsignar,
-        ninos,
-        ninas,
-        sinAsignar,
+        asistencias: cuantos(asistieron),
+        faltas: cuantos(faltaron),
         posibles: filas.length,
-        faltas: ausentes.length,
+        asistieron,
+        faltaron,
         ausentes,
       }
     })
 
-  const sumar = (campo: keyof Omit<AsistenciasDelDia, 'fecha' | 'ausentes'>) =>
+  const sumar = (campo: 'asistencias' | 'faltas' | 'posibles') =>
     dias.reduce((total, d) => total + d[campo], 0)
+
+  const sumarCorte = (cual: 'asistieron' | 'faltaron'): ConteoPorSexo => ({
+    ninos: dias.reduce((total, d) => total + d[cual].ninos, 0),
+    ninas: dias.reduce((total, d) => total + d[cual].ninas, 0),
+    sinAsignar: dias.reduce((total, d) => total + d[cual].sinAsignar, 0),
+  })
 
   return {
     desde,
     hasta,
     asistencias: sumar('asistencias'),
-    ninos: sumar('ninos'),
-    ninas: sumar('ninas'),
-    sinAsignar: sumar('sinAsignar'),
-    posibles: sumar('posibles'),
     faltas: sumar('faltas'),
+    posibles: sumar('posibles'),
+    asistieron: sumarCorte('asistieron'),
+    faltaron: sumarCorte('faltaron'),
     dias,
   }
 }
@@ -175,14 +190,15 @@ function comoRenglon(alumno: Alumno): string {
 }
 
 /**
- * «2 niños · 1 niña · 3 faltas»: junta las partes que traen algo.
+ * «Asistieron 2 niños · 1 niña — Faltaron 1 niño»: las dos cuentas del renglón.
  *
- * Filtrar antes de unir es la misma regla de `frasePorSexo`, y por lo mismo: una
- * parte vacía sin filtrar deja un separador suelto, y «2 niños · » en una hoja
- * impresa parece que se perdió algo.
+ * Van juntas y **las dos enteras**, con su verbo por delante: desglosar una y
+ * dejar la otra en bruto se lee como si a la segunda le faltara el dato
+ * (docs/DECISIONES.md D-032). La que no tiene nada que decir se cae, para no
+ * dejar un separador suelto —la misma regla de `frasePorSexo`—.
  */
 function unaLinea(partes: (string | undefined)[]): string {
-  return partes.filter((p) => p !== undefined && p.trim() !== '').join(' · ')
+  return partes.filter((p) => p !== undefined && p.trim() !== '').join(' — ')
 }
 
 /**
@@ -204,16 +220,16 @@ export function asistenciasComoDocumento(
     periodo: string
     /** El nombre que la usuaria le puso al grupo, si le puso alguno. */
     grupo: string
-    /** «2 niños · 1 niña · 1 sin asignar», de toda la semana. */
-    porSexo: string
-    /** «3 faltas», de toda la semana. Vacío si no hubo ninguna. */
-    faltas: string
-    /** Cada día, con su fecha escrita, su frase por sexo y sus faltas. */
-    dias: { fecha: string; porSexo: string; faltas: string }[]
+    /** «Asistieron 7 niños · 11 niñas · 2 sin asignar», de toda la semana. */
+    asistieron: string
+    /** «Faltaron 3 niños · 1 niña», de toda la semana. Vacío si no faltó nadie. */
+    faltaron: string
+    /** Cada día, con su fecha escrita y sus dos frases. */
+    dias: { fecha: string; asistieron: string; faltaron: string }[]
     nota: string
   },
 ): DocumentoPdf {
-  const detalleDeLaSemana = unaLinea([textos.porSexo, textos.faltas])
+  const detalleDeLaSemana = unaLinea([textos.asistieron, textos.faltaron])
 
   return {
     titulo: 'Asistencias de la semana',
@@ -237,7 +253,7 @@ export function asistenciasComoDocumento(
         tipo: 'tabla',
         encabezados: { izquierda: 'día', derecha: 'asisten' },
         filas: reporte.dias.map((dia, i) => {
-          const detalle = unaLinea([textos.dias[i]?.porSexo, textos.dias[i]?.faltas])
+          const detalle = unaLinea([textos.dias[i]?.asistieron, textos.dias[i]?.faltaron])
           return {
             etiqueta: textos.dias[i]?.fecha ?? dia.fecha,
             valor: String(dia.asistencias),

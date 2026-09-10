@@ -12,6 +12,7 @@ import type { EstadoAsistencia } from '@/domain/values'
 import {
   asistenciaDelDia,
   contarAsistentesPorSexo,
+  contarFaltantesPorSexo,
   contarPresentes,
   filasDelDia,
   marcarEstado,
@@ -313,5 +314,54 @@ describe('contarAsistentesPorSexo', () => {
     const { ninos, ninas, sinAsignar } = contarAsistentesPorSexo(filasDelDiaMixto)
 
     expect(ninos + ninas + sinAsignar).toBe(contarPresentes(filasDelDiaMixto).presentes)
+  })
+})
+
+describe('contarFaltantesPorSexo', () => {
+  // El otro lado de la misma cuenta: las dos se dicen enteras, o «4 faltas» junto a
+  // «2 sin asignar» parece decir que la falta no tiene sexo (D-032).
+  const conSexo = (numero_lista: number, sexo: Alumno['sexo']): Alumno => ({
+    ...alumno(numero_lista, `Apellido${numero_lista}, Nombre`),
+    sexo,
+  })
+
+  const GRUPO_MIXTO = [conSexo(1, 'H'), conSexo(2, 'M'), conSexo(3, 'H'), conSexo(4, null)]
+
+  const filas = (estados: EstadoAsistencia[]) =>
+    filasDelDia(
+      GRUPO_MIXTO,
+      estados.map((estado, i) => ({
+        id: `r-${i}`,
+        alumno_id: `alumno-${i + 1}`,
+        fecha: HOY,
+        estado,
+        updated_at: '2026-08-18T08:00:00.000Z',
+        deleted_at: null,
+      })),
+    )
+
+  it('parte por sexo a los que faltaron', () => {
+    expect(contarFaltantesPorSexo(filas(['ausente', 'ausente', 'presente', 'ausente']))).toEqual({
+      ninos: 1,
+      ninas: 1,
+      sinAsignar: 1,
+    })
+  })
+
+  it('el retardo y la justificada no son faltas', () => {
+    expect(contarFaltantesPorSexo(filas(['retardo', 'justificada', 'ausente', 'presente']))).toEqual(
+      { ninos: 1, ninas: 0, sinAsignar: 0 },
+    )
+  })
+
+  it('las dos cuentas se reparten el grupo entero, sin solaparse', () => {
+    // Nadie puede estar en las dos ni quedarse fuera: son complementarias por
+    // construcción, y es lo que permite enseñarlas juntas sin explicarlas.
+    const delDia = filas(['ausente', 'retardo', 'justificada', 'ausente'])
+    const vinieron = contarAsistentesPorSexo(delDia)
+    const faltaron = contarFaltantesPorSexo(delDia)
+
+    const suma = (c: typeof vinieron) => c.ninos + c.ninas + c.sinAsignar
+    expect(suma(vinieron) + suma(faltaron)).toBe(delDia.length)
   })
 })
