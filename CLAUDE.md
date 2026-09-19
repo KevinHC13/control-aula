@@ -72,9 +72,10 @@ Las dos **herramientas de aula** (D-021) están hechas: `C30` —el sorteo de
 participación, en la pantalla de asistencia— y `C31` —formar equipos, en la pestaña
 Grupo, que no guarda nada—.
 
-**Están escritos sesenta y tres commits**: los cinco últimos son la **Fase 12** —el
-grupo en orden alfabético y el primer reporte semanal (D-030)—, y antes los treinta y
-uno del plan, la **Fase 7**
+**Están escritos sesenta y siete commits**: los cuatro últimos son la **Fase 14** —el
+número de lista deja de ser identidad y se calcula por orden alfabético (D-033)—,
+y antes la **Fase 12** —el grupo en orden alfabético y el primer reporte semanal
+(D-030)—, y antes los treinta y uno del plan, la **Fase 7**
 —`C32` a `C36`, el alcance que trajo el uso real: fuera la semilla, y varios ciclos
 guardados con uno abierto (D-025)—, `C37` —administrar alumnos—, la **Fase 9**
 —`C38` a `C42`, la lista real: Excel, CURP y varias hojas (D-027)—, la **Fase 10** —la
@@ -260,9 +261,11 @@ y fórmulas en `docs/DATA-MODEL.md`; lo que no se negocia al escribir código:
   o más valen 10.0, una vale 2.0—. Ninguno de los tres aporta a un campo formativo,
   así que solo cuentan para el general.
 - **Un ciclo abierto a la vez, y los anteriores se guardan enteros** (D-025). El grupo
-  cuelga del ciclo: `Alumno.ciclo_id`, con `[ciclo_id+numero_lista]` como identidad al
-  fusionar la lista —sin eso, cargar la lista del año nuevo reasigna el `id` del alumno
-  1 del anterior y con él su asistencia y sus calificaciones—. El acote vive en el
+  cuelga del ciclo: `Alumno.ciclo_id`, y toda búsqueda al fusionar la lista se acota a
+  él —sin eso, cargar la lista del año nuevo podría reasignar el `id` del alumno 1 del
+  anterior y con él su asistencia y sus calificaciones—. Desde D-033 la identidad
+  dentro del ciclo ya no es `numero_lista`: es el CURP y, si no lo hay, el nombre
+  exacto. El acote vive en el
   **adaptador de alumnos**, no en las pantallas: todas leen por `lista()`, así que
   acotar una vez las acota todas. `ciclo_id: null` significa «capturado antes de que
   hubiera ciclo» y abrir un ciclo **adopta** a esos alumnos, igual que abrir un
@@ -276,10 +279,14 @@ y fórmulas en `docs/DATA-MODEL.md`; lo que no se negocia al escribir código:
   olvido —`application/` y `ui/` conservan el orden que les llega y no deben
   reordenar—. Se ordena en memoria con `porNombre` (`domain/orden.ts`) y no con un
   `orderBy`: no hay índice por `nombre` y uno de IndexedDB mandaría «Ávila» después
-  de la Z. El `numero_lista` **no cambia**: sigue siendo la identidad al fusionar y se
-  sigue mostrando, solo deja de decidir el renglón. Ordenan por otra cosa a sabiendas
-  la revisión de la lista importada —por número, que es lo que pone dos repetidos
-  juntos—, Equipos y Sorteo.
+  de la Z. **Desde D-033, `numero_lista` deja de ser un dato fijo**: los métodos de
+  lectura del adaptador lo sustituyen por la posición 1-based en este mismo orden,
+  recalculada en cada lectura, así que el número que se canta al pasar lista se
+  mueve solo al lugar que le toca. Ya no identifica a nadie ni ahí ni al fusionar la
+  lista importada. Ordenan por otra cosa a sabiendas la revisión de la lista
+  importada —por el número impreso en el documento, que es lo que pone dos
+  repetidos juntos—, Equipos y Sorteo, y desde D-033 ese orden coincide con el
+  alfabético.
 - **Todo reporte se puede guardar en PDF** (D-031). No es una función de un
   reporte, es la regla: uno que solo se lee en la pantalla obliga a copiarlo a mano
   para entregarlo, que es de lo que la app viene a sacar a la maestra. Cuesta una
@@ -333,14 +340,18 @@ y fórmulas en `docs/DATA-MODEL.md`; lo que no se negocia al escribir código:
   CURP» de D-014): la lista oficial no la imprime. Decodificarlo vive en `domain/curp.ts`
   y **nunca** se le pide a la IA. Lo impreso gana, el CURP rellena. Sus cuatro primeras
   letras dicen además dónde acaban los apellidos en un nombre sin coma. **No es la
-  identidad del alumno**: fusionar sigue siendo por `[ciclo_id+numero_lista]`.
+  identidad del alumno** por sí solo, pero desde D-033 sí es la primera pieza de la
+  identidad al fusionar la lista: CURP igual, y si no lo hay, nombre exacto igual,
+  siempre dentro del ciclo abierto.
 - **Los alumnos se administran uno por uno** desde *Ajustes → Alumnos* (D-026), sin que
   eso quite a la carga con IA su papel de meter la lista completa. La baja es **suave y
   reversible**, no borra nada suyo, y un dado de baja **sigue apareciendo en los
   trimestres ya cerrados**: quién entra al reporte lo decide `armarReporte` —cerrado,
   todos; abierto, solo los vigentes—, en el mismo sitio donde ya se decide entre el
-  snapshot y el cálculo. El `numero_lista` es único **dentro del ciclo y contando a los
-  dados de baja**, no se recicla y no se recorre a nadie.
+  snapshot y el cálculo. El `numero_lista` es interno **dentro del ciclo y contando a
+  los dados de baja**, no se recicla, y desde D-033 tampoco lo elige ni lo ve la
+  maestra: el adaptador lo asigna solo al dar de alta, y lo que se muestra en cada
+  renglón es la posición alfabética, no este número.
 - La atribución al trimestre es **por fecha y nunca manual**: no existe ni debe
   existir un selector de trimestre en el camino diario. Una fecha fuera de todo
   rango devuelve `null`, que es un resultado normal —vacaciones, puentes— y no un

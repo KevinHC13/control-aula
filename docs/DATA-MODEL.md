@@ -89,18 +89,29 @@ Esta parte está construida y en uso.
 export interface Alumno extends Sincronizable {
   ciclo_id: Id | null     // su generación (D-025); null = de antes del ciclo
   nombre: string          // "Apellidos, Nombres" — orden de la lista oficial
-  numero_lista: number    // orden en la lista, 1-based dentro de su ciclo
+  numero_lista: number    // interno, 1-based dentro de su ciclo (ver D-033)
   fecha_nacimiento: Fecha | null
   curp: string | null     // 18 caracteres (D-027); de aquí salen la fecha y el sexo
   sexo: Sexo | null       // 'H' | 'M' (D-029); null es «sin asignar», no un hueco
 }
 
 /**
- * El CURP no es la identidad del alumno: fusionar la lista sigue siendo por
- * `[ciclo_id+numero_lista]`. Se guarda porque la lista oficial **no imprime la
- * fecha de nacimiento** y la trae dentro: posiciones 5–10 en `AAMMDD`, con el
- * siglo en la homoclave —dígito, 1900; letra, 2000—. Leerlo es decodificar, no
- * adivinar, y por eso vive en `domain/curp.ts` y no en el prompt de la IA.
+ * `numero_lista` (docs/DECISIONES.md D-033): lo que devuelven `lista()`,
+ * `conBajas()`, `deCiclo()` y `deCicloConBajas()` **no es este valor guardado**,
+ * es la posición 1-based en el orden alfabético que ya calculan (D-030),
+ * recalculada en cada lectura. Fuera de `data/dexie/alumnos.adapter.ts` nadie lo
+ * lee ni lo necesita: no identifica a nadie, ni en pantalla ni al fusionar la
+ * lista. El valor guardado lo asigna el adaptador al dar de alta y no se vuelve
+ * a tocar; la maestra ni lo ve ni lo elige.
+ *
+ * El CURP no es la identidad del alumno: fusionar la lista busca primero por
+ * CURP igual y, si no lo hay, por nombre exacto igual (D-033, que revierte el
+ * `[ciclo_id+numero_lista]` de D-025 sin tirar la razón de fondo: seguir
+ * acotando la búsqueda al ciclo abierto). Se guarda porque la lista oficial **no
+ * imprime la fecha de nacimiento** y la trae dentro: posiciones 5–10 en
+ * `AAMMDD`, con el siglo en la homoclave —dígito, 1900; letra, 2000—. Leerlo es
+ * decodificar, no adivinar, y por eso vive en `domain/curp.ts` y no en el prompt
+ * de la IA.
  *
  * Sus cuatro primeras letras —inicial del paterno, su primera vocal interna,
  * inicial del materno, inicial del primer nombre— dicen además dónde acaban los
@@ -854,11 +865,15 @@ db.version(4).stores({
 ```
 
 `version(4)` es la que permite guardar varias generaciones (D-025). El índice
-compuesto no es de rendimiento: es la **identidad** de un alumno al fusionar la
-lista. Con `numero_lista` a secas, cargar la lista del ciclo nuevo reescribiría
-al alumno 1 del anterior conservando su `id` —y con el `id`, su asistencia y sus
-calificaciones—. Su `upgrade` asigna los alumnos existentes al único ciclo que
-haya; sin ciclos quedan en `null`, y los adopta el primero que se abra.
+`[ciclo_id+numero_lista]` sigue en el esquema pero **ya no es la identidad** de un
+alumno al fusionar la lista (D-033: eso pasó a ser el CURP y, si no lo hay, el
+nombre exacto, siempre acotado al ciclo abierto que este índice sigue sirviendo a
+consultar rápido). Lo que evitaba de fondo —que cargar la lista del ciclo nuevo
+reescribiera al alumno 1 del anterior conservando su `id`, y con el `id`, su
+asistencia y sus calificaciones— lo sigue evitando la búsqueda de `sembrar()`, que
+nunca busca fuera del ciclo abierto. Su `upgrade` asigna los alumnos existentes al
+único ciclo que haya; sin ciclos quedan en `null`, y los adopta el primero que se
+abra.
 
 `version(2)` **elimina** `calificaciones` y redefine `actividades`: la
 `Actividad` del prototipo no tenía `criterio_trimestre_id`, así que ninguna fila
@@ -1057,8 +1072,9 @@ entra por uno de dos caminos:
    oficial y una IA la extrae (D-014). Revisa el resultado antes de guardar.
 2. **Restaurar un respaldo**, que es el camino del iPad nuevo.
 
-El primero termina en `sembrar()`, que fusiona por `numero_lista` conservando el
-`id` —y con él la asistencia y las calificaciones de ese alumno—.
+El primero termina en `sembrar()`, que fusiona por CURP y, si no lo hay, por
+nombre exacto (D-033) conservando el `id` —y con él la asistencia y las
+calificaciones de ese alumno—.
 
 Hubo una tercera vía, `src/data/seed/grupo.ts`, que sembraba un grupo al
 arrancar. Se retiró al empezar el uso real (D-024): con la carga por IA ya
@@ -1077,8 +1093,9 @@ Tres reglas que no se negocian ahí:
 - **Un dado de baja sigue apareciendo en los trimestres ya cerrados.** Quién entra
   al reporte lo decide `armarReporte`, en el mismo sitio donde ya se decide entre
   el snapshot y el cálculo: cerrado, entran todos; abierto, solo los vigentes.
-- **El número de lista es único dentro del ciclo, contando a los dados de baja**, y
-  no se recicla ni se recorre a nadie. `sembrar()` fusiona por ese número sobre
-  todos los del ciclo, borrados incluidos —así revive a quien vuelve—, así que dos
-  alumnos con el mismo número harían que recargar la lista escribiera sobre
-  cualquiera de los dos.
+- **El número de lista es interno, y no se recicla** (contando a los dados de
+  baja, para no reasignarlo a otro alumno del ciclo). Hasta D-033 era además la
+  identidad con la que `sembrar()` fusionaba la lista importada; ahora fusiona por
+  CURP y, si no lo hay, por nombre exacto, sobre todos los del ciclo, borrados
+  incluidos —así sigue reviviendo a quien vuelve—. Lo que la maestra ve en cada
+  renglón ya no es este número: es su posición alfabética, calculada al leer.

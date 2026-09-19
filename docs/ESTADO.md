@@ -1,7 +1,11 @@
 # Estado del proyecto
 
-Actualizado el **2026-09-07**, con **sesenta y tres commits escritos**. Los cinco
-últimos son el orden alfabético del grupo y el primer reporte semanal (D-030), abajo.
+Actualizado el **2026-09-19**, con **sesenta y siete commits escritos**. Los
+cuatro últimos son que el número de lista deja de ser identidad y se calcula por
+orden alfabético (D-033), abajo.
+
+Lo anterior, del 2026-09-07, con sesenta y tres commits: los cinco últimos son el
+orden alfabético del grupo y el primer reporte semanal (D-030).
 
 Lo anterior, del 2026-09-02, con cincuenta y ocho commits: los treinta
 y uno del plan, la Fase 7 —el alcance que trajo el uso real—, `C37`, la **Fase 9** —la
@@ -46,7 +50,7 @@ este proyecto tiene mucho de lo primero.
 
 | Cómo | Qué cubre |
 |---|---|
-| **958 pruebas** (`npm test`) | El dominio y los casos de uso completos, los adaptadores sobre `fake-indexeddb`, y las reglas de dependencia de la arquitectura |
+| **1123 pruebas** (`npm test`) | El dominio y los casos de uso completos, los adaptadores sobre `fake-indexeddb`, y las reglas de dependencia de la arquitectura |
 | **Navegador de escritorio** | Todas las pantallas, incluidas las de esta sesión: el cálculo de los tres criterios automáticos con los números comprobados a mano, el sorteo, el modo participación con su pulsación larga, los equipos, el resumen, los cumpleaños, el respaldo y la pantalla de la nube |
 | **Supabase real** | Que las dieciséis tablas existen con RLS, que con la clave publicable no se lee ni se escribe nada, que los registros están cerrados y que el login funciona |
 | **Nada** | La **subida y la restauración contra Supabase** —falta hacerlas una vez—, y **todo el comportamiento en el iPad**: instalación, gestos con el dedo, teclado, tiempos |
@@ -85,6 +89,7 @@ deshacer (D-022).
 | 10 · Auditoría de interfaz | Defectos, sistema de diseño, textos y personalización | ✅ Terminada: C43–C51 |
 | 12 · Orden y reportes | El grupo por apellido y el primer reporte semanal | ✅ Terminada: C50–C54 |
 | 13 · La asistencia como dato | Contar a los que vinieron, no a los que faltaron | ✅ Terminada: C55–C58 |
+| 14 · El número deja de ser identidad | numero_lista se calcula por orden alfabético (D-033) | ✅ Terminada: C59–C62 |
 
 ## Lo que existe y funciona
 
@@ -530,6 +535,35 @@ asignar»; el día sin capturar da «8 / 8» y **no** enseña la frase; la seman
 1 niña · 1 sin asignar» —que suman los 24—; el martes sin capturar no sale; el retardo cuenta y no aparece entre los nombres; y el PDF que
 genera la aplicación trae la misma cifra que la pantalla. **En el iPad, nada de
 esto se ha visto** —como el resto de la Fase 4 en adelante—.
+
+## Alcance nuevo: el número de lista deja de ser identidad (2026-09-19)
+
+Lo pidió el usuario mirando el grupo real: los cuatro alumnos dados de alta a mano
+después de la carga inicial (D-026) se quedaron con los números 38 a 41, al final,
+en vez de en su lugar por apellido (docs/DECISIONES.md D-033). **Está hecho,
+verificado con `npm test` (1123 pruebas) y sin migración de Dexie ni de
+Supabase.**
+
+- **`numero_lista` se calcula al leer.** `lista()`, `conBajas()`, `deCiclo()` y
+  `deCicloConBajas()` devuelven cada alumno con su `numero_lista` sustituido por
+  su posición 1-based en el orden alfabético que ya calculaban (D-030). El valor
+  guardado de verdad —el que asigna el adaptador al dar de alta— no sale nunca de
+  `data/dexie/alumnos.adapter.ts`.
+- **`sembrar()` fusiona por CURP y, si no lo hay, por nombre exacto**, en vez de
+  por número. Se probó contra la base real: 41 alumnos, 37 con CURP.
+- **El campo "Número" salió del formulario de alta y corrección** en *Ajustes →
+  Alumnos*: la maestra ya no lo ve ni lo escribe.
+
+Se verificó contra Supabase (solo lectura, sin escribir nada): ninguna tabla usa
+`numero_lista` como llave foránea —todas cuelgan de `alumno_id`, un UUID— y no hay
+restricción de unicidad sobre él en la nube, así que el cambio no necesitó tocar
+ni el esquema local ni el remoto. Los 41 alumnos ya guardados, en el iPad y en la
+nube, no perdieron ni cambiaron un solo dato.
+
+**El costo aceptado**: reimportar una lista sin CURP con un nombre corregido ya no
+se reconoce como la misma persona por su posición en el archivo, y entra como
+alumno nuevo. Se acepta porque D-026 ya deja esa corrección a mano en *Ajustes →
+Alumnos* como camino principal.
 
 ## Supuestos que siguen abiertos
 

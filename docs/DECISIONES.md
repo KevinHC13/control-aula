@@ -1467,3 +1467,73 @@ y no alumnos —quien vino dos días suma dos, y por eso los días suman exactam
 total—, un día sin registros sigue sin salir, y `sinAsignar` se sigue diciendo sin
 repartirse (D-029). «Falta es solo `ausente`» tampoco cambia: es la misma frontera,
 leída del otro lado.
+
+---
+
+## D-033 · El número de lista deja de ser identidad: se calcula por orden alfabético
+
+**Estado:** aceptada — 2026-09-19
+
+Lo pidió el usuario mirando el grupo real ya con altas de por medio: los cuatro
+alumnos dados de alta a mano después de la carga inicial (D-026) se quedaron con
+los números 38 a 41, al final de la lista, en vez de en el lugar que les toca por
+apellido. `numero_lista` cargaba tres papeles a la vez —lo que se muestra, lo que
+la maestra elige al dar de alta, y la identidad con la que `sembrar()` fusiona la
+lista importada (D-025)— y el primero ya no puede ser un valor fijo sin que los
+otros dos se muevan con él.
+
+### Qué cambia
+
+- **`numero_lista` deja de guardar un dato fijo que se muestra**: los métodos de
+  lectura del adaptador (`lista()`, `conBajas()`, `deCiclo()`, `deCicloConBajas()`)
+  devuelven cada `Alumno` con su `numero_lista` **sustituido por su posición
+  1-based en el orden alfabético que ya calculaban** (D-030). Se recalcula en cada
+  lectura, así que el número que la maestra canta al pasar lista se mueve solo al
+  lugar que le toca en cuanto hay un alta, una baja o una corrección de nombre de
+  por medio.
+- **Ya no es un dato que la maestra elija o escriba.** El campo "Número" sale del
+  formulario de alta y corrección en *Ajustes → Alumnos* (D-026): el número interno
+  se asigna solo —el siguiente al más alto del ciclo, contando a los dados de baja
+  para no reciclarlo, igual que hacía `siguienteNumero()`— y vive únicamente dentro
+  del adaptador.
+- **Deja de ser la identidad con la que `sembrar()` fusiona la lista importada**
+  (revisa D-025 sin tirarlo: sigue siendo cierto que la identidad de un alumno es
+  algo distinto de su `id`, y que fusionar bien es lo que evita que cargar la lista
+  del año nuevo le cuelgue a alguien la historia de otro). La identidad nueva,
+  sobre los alumnos del ciclo abierto y probada contra la base real —41 alumnos,
+  37 con CURP—:
+  1. **CURP igual**, cuando la fila del archivo y un alumno existente lo tienen
+     los dos. Es el dato que no cambia entre cargas.
+  2. **Nombre exacto igual**, cuando no hay CURP de un lado o del otro. La mayoría
+     de las listas no trae CURP, y a esta altura el nombre ya llega limpio por
+     `normalizarExtraccion`.
+  3. Sin ninguna de las dos, es un alumno nuevo. Cada alumno existente se consume a
+     lo más una vez, para que dos filas del archivo no puedan pisar a la misma
+     persona.
+
+### Por qué no hizo falta migrar nada
+
+El campo guardado `numero_lista` no se tocó: ni `db.version()` en Dexie ni una
+migración en Supabase. Ninguna otra tabla lo usa como llave —`asistencia`,
+`bitacora`, `participaciones` y las de evaluación cuelgan de `alumno_id`, un
+UUID— y ninguna tiene restricción de unicidad sobre él en la nube. El cambio es
+enteramente de lectura y de la lógica de `sembrar()`/`agregar()`/`editar()`; los
+41 alumnos ya guardados, en el iPad y en Supabase, no perdieron ni cambiaron un
+solo dato con este commit.
+
+### El costo aceptado
+
+Reimportar una lista sin CURP con un nombre corregido (un apellido que el OCR leyó
+mal, por ejemplo) ya no se sabe reconocer como la misma persona por su posición en
+el archivo: entra como un alumno nuevo en vez de actualizar al existente. Se acepta
+porque D-026 ya deja esa corrección a mano en *Ajustes → Alumnos* como el camino
+principal, precisamente para no depender de reimportar la lista entera.
+
+Dos consecuencias menores, sin cambio de comportamiento real:
+
+- **Equipos y Sorteo**, que D-030 dejaba ordenar por número «a sabiendas» de que no
+  era alfabético, ahora ordenan por un número que sí lo es. No es una regresión:
+  solo deja de ser un orden distinto del alfabético.
+- **Los reportes de un trimestre cerrado** muestran la posición alfabética de
+  *hoy*, no una congelada al cerrar —consistente con que `CierreTrimestre` nunca
+  guardó `numero_lista` en su snapshot.

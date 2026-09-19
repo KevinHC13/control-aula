@@ -1562,3 +1562,46 @@ la falta no tiene sexo, y deja restando de cabeza para saber cuántas eran niña
       es la cuenta que se copia a la hoja, no una alerta
 - [x] La nota del pie lo dice, y `sinAsignar` se sigue contando aparte en las dos
 - [x] Verificado en el navegador y en el PDF: 20 / 24, y los dos cortes suman 24
+
+---
+
+## Fase 14 — El número deja de ser identidad
+
+Lo pidió el usuario mirando el grupo real: los cuatro alumnos dados de alta a mano
+después de la carga inicial se quedaron con los números 38 a 41, al final de la
+lista, en vez de en su lugar por apellido (docs/DECISIONES.md D-033).
+
+### ✅ C59 · `feat(data): calcular numero_lista como posición alfabética al leer`
+
+- [x] `lista()`, `conBajas()`, `deCiclo()` y `deCicloConBajas()` devuelven cada
+      alumno con `numero_lista` sustituido por su posición 1-based en el orden
+      alfabético que ya calculaban (D-030)
+- [x] El valor guardado no sale de `data/dexie/alumnos.adapter.ts`
+- [x] Sin cambio de esquema: ni `db.version()` nuevo ni migración en Supabase
+- [x] Pruebas: el alta tardía aparece donde le toca por apellido, con el número que
+      le corresponde y no el de su alta
+
+### ✅ C60 · `feat(data): fusionar la lista importada por CURP y nombre, no por número`
+
+- [x] `sembrar()` empareja por CURP igual cuando los dos lo tienen, y si no, por
+      nombre exacto igual, sobre los alumnos del ciclo abierto, borrados incluidos
+- [x] Cada alumno existente se consume a lo más una vez por carga
+- [x] Probado contra la base real (solo lectura): 41 alumnos, 37 con CURP
+- [x] Pruebas: identidad por CURP aunque el nombre cambie; sin CURP, un nombre
+      corregido entra como alumno nuevo (el costo aceptado); dos filas iguales no
+      pisan al mismo existente
+
+### ✅ C61 · `feat(app): quitar el número de lista del alta y la corrección manual`
+
+- [x] El campo "Número" sale del formulario de `AdministrarAlumnos`
+- [x] El número interno se asigna solo —el siguiente al más alto del ciclo,
+      contando bajas— y `editar()` ya no lo acepta ni lo cambia
+- [x] `revisarFormulario`, `formularioNuevo` y `formularioDe` sin el campo
+- [x] `siguienteNumero()` se retira de `application/alumnos.ts`: vive, sin
+      exponerse, dentro del adaptador
+
+### ✅ C62 · `docs: asentar que el número de lista ya no es identidad (D-033)`
+
+- [x] `docs/DECISIONES.md` con D-033
+- [x] `docs/DATA-MODEL.md`, `docs/ESTADO.md` y `CLAUDE.md` actualizados
+- [x] `npm run typecheck`, `npm test` (1123 pruebas) y `npm run lint` limpios

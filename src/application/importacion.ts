@@ -228,10 +228,10 @@ export function aDatosAlumno(filas: FilaImportada[]): DatosAlumno[] {
 /**
  * Guarda la lista revisada. La única función impura del módulo.
  *
- * Reutiliza `sembrar()` sin cambiarlo: su fusión por `numero_lista` conservando
- * el `id` es exactamente el comportamiento que se quiere aquí. Reimportar el
- * archivo con un nombre corregido no pierde la asistencia ya capturada, y nadie
- * desaparece del grupo por no estar en el archivo nuevo.
+ * Reutiliza `sembrar()` sin cambiarlo: su fusión por CURP y, si no lo hay, por
+ * nombre exacto (docs/DECISIONES.md D-033) es exactamente el comportamiento que
+ * se quiere aquí. Reimportar el mismo archivo no pierde la asistencia ya
+ * capturada, y nadie desaparece del grupo por no estar en el archivo nuevo.
  */
 export async function importarLista(filas: FilaImportada[]): Promise<void> {
   await repos.alumnos.sembrar(aDatosAlumno(filas))

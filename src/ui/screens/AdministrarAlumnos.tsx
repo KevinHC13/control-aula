@@ -60,9 +60,8 @@ export function AdministrarAlumnos({ alVolver }: { alVolver: () => void }) {
         <>
           {abierto === 'nuevo' ? (
             <Formulario
-              inicial={formularioNuevo(alumnos)}
-              alumnos={alumnos}
-              alGuardar={(formulario) => agregarAlumno(formulario, alumnos)}
+              inicial={formularioNuevo()}
+              alGuardar={(formulario) => agregarAlumno(formulario)}
               alCerrar={() => setAbierto(null)}
               verbo="Agregar"
             />
@@ -84,7 +83,6 @@ export function AdministrarAlumnos({ alVolver }: { alVolver: () => void }) {
               <Renglon
                 key={alumno.id}
                 alumno={alumno}
-                alumnos={alumnos}
                 abierto={abierto === alumno.id}
                 alAbrir={() => setAbierto(abierto === alumno.id ? null : alumno.id)}
                 alCerrar={() => setAbierto(null)}
@@ -102,13 +100,11 @@ export function AdministrarAlumnos({ alVolver }: { alVolver: () => void }) {
 /** Un alumno del grupo: se lee de un vistazo y se abre para corregirlo. */
 function Renglon({
   alumno,
-  alumnos,
   abierto,
   alAbrir,
   alCerrar,
 }: {
   alumno: Alumno
-  alumnos: readonly Alumno[]
   abierto: boolean
   alAbrir: () => void
   alCerrar: () => void
@@ -138,9 +134,7 @@ function Renglon({
         <div className="flex flex-col gap-3 px-4 pb-4">
           <Formulario
             inicial={formularioDe(alumno)}
-            alumnos={alumnos}
-            exceptoId={alumno.id}
-            alGuardar={(formulario) => editarAlumno(alumno.id, formulario, alumnos)}
+            alGuardar={(formulario) => editarAlumno(alumno.id, formulario)}
             alCerrar={alCerrar}
             verbo="Guardar"
           />
@@ -232,15 +226,11 @@ const CAMPO = cn(
  */
 function Formulario({
   inicial,
-  alumnos,
-  exceptoId,
   alGuardar,
   alCerrar,
   verbo,
 }: {
   inicial: FormularioAlumno
-  alumnos: readonly Alumno[]
-  exceptoId?: string
   alGuardar: (formulario: FormularioAlumno) => Promise<void>
   alCerrar: () => void
   verbo: string
@@ -249,7 +239,7 @@ function Formulario({
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
 
-  const problema = revisarFormulario(formulario, alumnos, exceptoId)
+  const problema = revisarFormulario(formulario)
 
   function editar(campo: keyof FormularioAlumno, valor: string) {
     setError('')
@@ -271,28 +261,16 @@ function Formulario({
 
   return (
     <div className="flex flex-col gap-3 rounded-md border border-linea bg-papel p-3">
-      <div className="flex gap-2">
-        <label className="flex w-16 shrink-0 flex-col gap-1">
-          <span className="text-apoyo text-tinta-2">Número</span>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={formulario.numero_lista}
-            onChange={(e) => editar('numero_lista', e.target.value)}
-            className={cn(CAMPO, 'cifra text-center')}
-          />
-        </label>
-        <label className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className="text-apoyo text-tinta-2">Nombre</span>
-          <input
-            type="text"
-            value={formulario.nombre}
-            placeholder="Apellidos, Nombres"
-            onChange={(e) => editar('nombre', e.target.value)}
-            className={CAMPO}
-          />
-        </label>
-      </div>
+      <label className="flex min-w-0 flex-1 flex-col gap-1">
+        <span className="text-apoyo text-tinta-2">Nombre</span>
+        <input
+          type="text"
+          value={formulario.nombre}
+          placeholder="Apellidos, Nombres"
+          onChange={(e) => editar('nombre', e.target.value)}
+          className={CAMPO}
+        />
+      </label>
 
       {/* La CURP va antes que la fecha porque la trae dentro: al escribirla, la
           fecha de abajo se llena sola. Es el mismo trato que en la carga de la
@@ -336,7 +314,7 @@ function Formulario({
       </label>
 
       {/* El problema se enseña mientras se escribe, no al guardar: corregir un
-          número repetido con el formulario todavía abierto es más barato que
+          dato mal escrito con el formulario todavía abierto es más barato que
           descubrirlo después de apretar el botón. */}
       {(problema ?? error) && (
         <p className="text-base text-rojo" aria-live="polite">

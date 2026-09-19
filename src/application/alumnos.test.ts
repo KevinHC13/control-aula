@@ -17,7 +17,6 @@ import {
   reactivarAlumno,
   revisarFormulario,
   separarBajas,
-  siguienteNumero,
 } from './alumnos'
 
 const alumno = (n: number, nombre = `Apellido${n}, Nombre`, baja = false): Alumno => ({
@@ -43,108 +42,51 @@ afterAll(() => {
   db.close()
 })
 
-describe('siguienteNumero', () => {
-  it('con el grupo vacío propone el 1', () => {
-    expect(siguienteNumero([])).toBe(1)
-  })
-
-  it('propone el siguiente al más alto', () => {
-    expect(siguienteNumero([alumno(1), alumno(2), alumno(3)])).toBe(4)
-  })
-
-  it('no recicla el número de un dado de baja', () => {
-    // Reutilizar el 3 haría que `sembrar()` escribiera sobre cualquiera de los
-    // dos al recargar la lista: fusiona por número sobre todos, bajas incluidas.
-    expect(siguienteNumero([alumno(1), alumno(2), alumno(3, 'Se fue', true)])).toBe(4)
-  })
-
-  it('no se confunde con huecos: sigue al más alto, no al primero libre', () => {
-    // Un hueco puede ser deliberado —así viene la lista oficial— y taparlo
-    // pondría a alguien en el sitio de quien la escuela numeró distinto.
-    expect(siguienteNumero([alumno(1), alumno(5)])).toBe(6)
-  })
-})
-
 describe('revisarFormulario', () => {
-  const GRUPO = [alumno(1), alumno(2)]
-
   it('acepta un alumno nuevo bien escrito', () => {
     expect(
-      revisarFormulario(
-        { nombre: 'Nueva, Ana', numero_lista: '3', fecha_nacimiento: '', curp: '', sexo: '' },
-        GRUPO,
-      ),
+      revisarFormulario({ nombre: 'Nueva, Ana', fecha_nacimiento: '', curp: '', sexo: '' }),
     ).toBeUndefined()
   })
 
   it('pide el nombre', () => {
     expect(
-      revisarFormulario({ nombre: '  ', numero_lista: '3', fecha_nacimiento: '', curp: '', sexo: '' }, GRUPO),
+      revisarFormulario({ nombre: '  ', fecha_nacimiento: '', curp: '', sexo: '' }),
     ).toMatch(/Falta el nombre/)
-  })
-
-  it('rechaza un número que no es número, o menor que uno', () => {
-    for (const numero of ['', 'x', '0', '-2', '1.5']) {
-      expect(
-        revisarFormulario({ nombre: 'Ana', numero_lista: numero, fecha_nacimiento: '', curp: '', sexo: '' }, GRUPO),
-        numero,
-      ).toMatch(/no es válido/)
-    }
-  })
-
-  it('rechaza un número ya ocupado', () => {
-    expect(
-      revisarFormulario({ nombre: 'Ana', numero_lista: '2', fecha_nacimiento: '', curp: '', sexo: '' }, GRUPO),
-    ).toMatch(/ya está ocupado/)
-  })
-
-  it('al editar, su propio número no cuenta como repetido', () => {
-    expect(
-      revisarFormulario(
-        { nombre: 'Corregido', numero_lista: '2', fecha_nacimiento: '', curp: '', sexo: '' },
-        GRUPO,
-        'alumno-2',
-      ),
-    ).toBeUndefined()
-  })
-
-  it('cuenta el número de un dado de baja como ocupado', () => {
-    expect(
-      revisarFormulario(
-        { nombre: 'Ana', numero_lista: '3', fecha_nacimiento: '', curp: '', sexo: '' },
-        [...GRUPO, alumno(3, 'Se fue', true)],
-      ),
-    ).toMatch(/ya está ocupado/)
   })
 
   it('la fecha es opcional, pero si viene tiene que ser AAAA-MM-DD', () => {
     expect(
-      revisarFormulario({ nombre: 'Ana', numero_lista: '3', fecha_nacimiento: '', curp: '', sexo: '' }, GRUPO),
+      revisarFormulario({ nombre: 'Ana', fecha_nacimiento: '', curp: '', sexo: '' }),
     ).toBeUndefined()
     expect(
-      revisarFormulario(
-        { nombre: 'Ana', numero_lista: '3', fecha_nacimiento: '14/03/2017', curp: '', sexo: '' },
-        GRUPO,
-      ),
+      revisarFormulario({ nombre: 'Ana', fecha_nacimiento: '14/03/2017', curp: '', sexo: '' }),
     ).toMatch(/AAAA-MM-DD/)
+  })
+
+  it('la CURP es opcional, pero si viene tiene que traer 18 caracteres', () => {
+    expect(
+      revisarFormulario({ nombre: 'Ana', fecha_nacimiento: '', curp: '', sexo: '' }),
+    ).toBeUndefined()
+    expect(
+      revisarFormulario({ nombre: 'Ana', fecha_nacimiento: '', curp: 'CORTA', sexo: '' }),
+    ).toMatch(/18 caracteres/)
   })
 })
 
 describe('formularioNuevo y formularioDe', () => {
-  it('el de alta llega vacío con el número propuesto', () => {
-    expect(formularioNuevo([alumno(1)])).toEqual({
+  it('el de alta llega vacío, sin número que proponer (D-033)', () => {
+    expect(formularioNuevo()).toEqual({
       nombre: '',
-      numero_lista: '2',
       fecha_nacimiento: '',
       curp: '',
       sexo: '',
     })
   })
 
-  it('el de edición llega con lo que el alumno ya tiene', () => {
+  it('el de edición llega con lo que el alumno ya tiene, y sin número', () => {
     expect(formularioDe({ ...alumno(7, 'Ríos, Ana'), fecha_nacimiento: '2017-03-14', curp: null, sexo: null })).toEqual({
       nombre: 'Ríos, Ana',
-      numero_lista: '7',
       fecha_nacimiento: '2017-03-14',
       curp: '',
       sexo: '',
@@ -157,7 +99,7 @@ describe('formularioNuevo y formularioDe', () => {
 })
 
 describe('editarFormulario', () => {
-  const VACIO = { nombre: '', numero_lista: '3', fecha_nacimiento: '', curp: '', sexo: '' }
+  const VACIO = { nombre: '', fecha_nacimiento: '', curp: '', sexo: '' }
 
   it('escribir la CURP llena la fecha de nacimiento', () => {
     // La misma regla que en la carga de la lista: la CURP la trae dentro.
@@ -210,10 +152,7 @@ describe('editarFormulario', () => {
 
 describe('agregarAlumno', () => {
   it('guarda al alumno con los datos limpios', async () => {
-    await agregarAlumno(
-      { nombre: '  Llegó Después, Ana  ', numero_lista: '31', fecha_nacimiento: '', curp: '', sexo: '' },
-      [],
-    )
+    await agregarAlumno({ nombre: '  Llegó Después, Ana  ', fecha_nacimiento: '', curp: '', sexo: '' })
 
     const lista = await repos.alumnos.lista()
     expect(lista).toHaveLength(1)
@@ -225,22 +164,32 @@ describe('agregarAlumno', () => {
   it('vuelve a validar aunque la pantalla ya lo hiciera', async () => {
     // El caso de uso no puede confiar en que alguien lo llame bien.
     await expect(
-      agregarAlumno({ nombre: '', numero_lista: '1', fecha_nacimiento: '', curp: '', sexo: '' }, []),
+      agregarAlumno({ nombre: '', fecha_nacimiento: '', curp: '', sexo: '' }),
     ).rejects.toThrow(/Falta el nombre/)
     expect(await repos.alumnos.lista()).toHaveLength(0)
+  })
+
+  it('dos altas no necesitan número: cada una toma su lugar por apellido', async () => {
+    await agregarAlumno({ nombre: 'Zamora, Bruno', fecha_nacimiento: '', curp: '', sexo: '' })
+    await agregarAlumno({ nombre: 'Aguilar, Ana', fecha_nacimiento: '', curp: '', sexo: '' })
+
+    const lista = await repos.alumnos.lista()
+    expect(lista.map((a) => a.nombre)).toEqual(['Aguilar, Ana', 'Zamora, Bruno'])
+    expect(lista.map((a) => a.numero_lista)).toEqual([1, 2])
   })
 })
 
 describe('editarAlumno', () => {
   it('corrige conservando el id', async () => {
-    await agregarAlumno({ nombre: 'Mal Escrito', numero_lista: '1', fecha_nacimiento: '', curp: '', sexo: '' }, [])
+    await agregarAlumno({ nombre: 'Mal Escrito', fecha_nacimiento: '', curp: '', sexo: '' })
     const antes = (await repos.alumnos.lista())[0]!
 
-    await editarAlumno(
-      antes.id,
-      { nombre: 'Bien Escrito, Ana', numero_lista: '1', fecha_nacimiento: '2017-03-14', curp: '', sexo: '' },
-      [antes],
-    )
+    await editarAlumno(antes.id, {
+      nombre: 'Bien Escrito, Ana',
+      fecha_nacimiento: '2017-03-14',
+      curp: '',
+      sexo: '',
+    })
 
     const despues = (await repos.alumnos.lista())[0]!
     expect(despues.id).toBe(antes.id)
@@ -251,7 +200,7 @@ describe('editarAlumno', () => {
 
 describe('darDeBajaAlumno y reactivarAlumno', () => {
   it('la baja lo saca del grupo sin borrar nada suyo', async () => {
-    await agregarAlumno({ nombre: 'Se Fue, Ana', numero_lista: '1', fecha_nacimiento: '', curp: '', sexo: '' }, [])
+    await agregarAlumno({ nombre: 'Se Fue, Ana', fecha_nacimiento: '', curp: '', sexo: '' })
     const id = (await repos.alumnos.lista())[0]!.id
     // Un registro suyo, para comprobar que sigue ahí.
     await db.asistencia.put({
@@ -271,7 +220,7 @@ describe('darDeBajaAlumno y reactivarAlumno', () => {
   })
 
   it('reactivar lo devuelve al grupo', async () => {
-    await agregarAlumno({ nombre: 'Toqué Mal, Ana', numero_lista: '1', fecha_nacimiento: '', curp: '', sexo: '' }, [])
+    await agregarAlumno({ nombre: 'Toqué Mal, Ana', fecha_nacimiento: '', curp: '', sexo: '' })
     const id = (await repos.alumnos.lista())[0]!.id
 
     await darDeBajaAlumno(id)

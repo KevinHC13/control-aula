@@ -1,6 +1,6 @@
 import { liveQuery } from 'dexie'
 
-import type { AlumnosRepo } from '@/data/ports/alumnos'
+import type { AlumnosRepo, NuevoAlumno } from '@/data/ports/alumnos'
 import type { Alumno, DatosAlumno } from '@/domain/entities'
 import { porNombre } from '@/domain/orden'
 import type { Id, Suscribible } from '@/domain/values'
@@ -8,7 +8,7 @@ import type { Id, Suscribible } from '@/domain/values'
 import { ahora, db, nuevoId } from './db'
 
 /**
- * Dos notas sobre la lectura de este adaptador.
+ * Tres notas sobre la lectura de este adaptador.
  *
  * Nota sobre el orden: se ordena **en memoria por apellido** (`porNombre`) y no
  * con un `orderBy` de Dexie. No hay índice por `nombre` —y uno de IndexedDB
@@ -25,6 +25,16 @@ import { ahora, db, nuevoId } from './db'
  * vivos —los que tienen `deleted_at: null`— simplemente no están en ese índice.
  * El índice sirve para encontrar los borrados; los vivos se filtran en memoria,
  * que con 30 alumnos no cuesta nada.
+ *
+ * Nota sobre `numero_lista` (docs/DECISIONES.md D-033): lo que devuelve un
+ * método de lectura **no es el valor guardado**, es la posición 1-based en este
+ * mismo orden alfabético, calculada aquí y sustituida en el objeto que se
+ * entrega. Deja de coincidir con lo que hay en `db.alumnos` en cuanto alguien se
+ * da de alta a mitad del ciclo, y es a propósito: es lo que hace que el número
+ * que ve la maestra se mueva solo al lugar que le toca por apellido, en vez de
+ * quedarse pegado al final. El valor real —el que asigna `agregar()`, el que
+ * trae el archivo importado— nunca sale de este archivo: fuera de él nadie lo
+ * lee ni lo necesita, porque ya no identifica a nadie.
  */
 function vivos(alumnos: Alumno[]): Alumno[] {
   return alumnos.filter((a) => a.deleted_at === null)
@@ -42,6 +52,15 @@ function vivos(alumnos: Alumno[]): Alumno[] {
  */
 function normalizado(alumno: Alumno): Alumno {
   return { ...alumno, curp: alumno.curp ?? null, sexo: alumno.sexo ?? null }
+}
+
+/**
+ * La vista que sale del adaptador: alfabético, y con `numero_lista` sustituido
+ * por la posición en este arreglo (D-033). El valor guardado de verdad se queda
+ * en la fila de Dexie, nunca en lo que esto devuelve.
+ */
+function conPosicion(alumnos: Alumno[]): Alumno[] {
+  return alumnos.sort(porNombre).map((alumno, i) => ({ ...alumno, numero_lista: i + 1 }))
 }
 
 /**
@@ -63,6 +82,20 @@ async function cicloAbierto(): Promise<string | null> {
   return abiertos.sort((a, b) => b.updated_at.localeCompare(a.updated_at))[0]?.id ?? null
 }
 
+/**
+ * El número interno más alto ya usado en el ciclo, contando a los dados de
+ * baja. Es la mitad de `siguienteNumero()` de antes de D-033: sigue haciendo
+ * falta para no reciclar un número al dar de alta a mano, pero ya no se expone
+ * fuera del adaptador —la maestra no lo elige ni lo ve—.
+ */
+async function numeroMasAlto(ciclo: string | null): Promise<number> {
+  const todos = await db.alumnos.toArray()
+  return todos.reduce(
+    (max, a) => ((a.ciclo_id ?? null) === ciclo ? Math.max(max, a.numero_lista) : max),
+    0,
+  )
+}
+
 export class DexieAlumnosRepo implements AlumnosRepo {
   /**
    * El grupo del ciclo abierto. Sin ciclo configurado devuelve los alumnos que
@@ -72,9 +105,7 @@ export class DexieAlumnosRepo implements AlumnosRepo {
   async lista(): Promise<Alumno[]> {
     const ciclo = await cicloAbierto()
     const todos = (await db.alumnos.toArray()).map(normalizado)
-    return vivos(todos)
-      .filter((a) => (a.ciclo_id ?? null) === ciclo)
-      .sort(porNombre)
+    return conPosicion(vivos(todos).filter((a) => (a.ciclo_id ?? null) === ciclo))
   }
 
   /**
@@ -84,7 +115,7 @@ export class DexieAlumnosRepo implements AlumnosRepo {
   async conBajas(): Promise<Alumno[]> {
     const ciclo = await cicloAbierto()
     const todos = (await db.alumnos.toArray()).map(normalizado)
-    return todos.filter((a) => (a.ciclo_id ?? null) === ciclo).sort(porNombre)
+    return conPosicion(todos.filter((a) => (a.ciclo_id ?? null) === ciclo))
   }
 
   observarConBajas(): Suscribible<Alumno[]> {
@@ -105,30 +136,56 @@ export class DexieAlumnosRepo implements AlumnosRepo {
 
   async deCicloConBajas(cicloId: string): Promise<Alumno[]> {
     const todos = (await db.alumnos.toArray()).map(normalizado)
-    return todos.filter((a) => a.ciclo_id === cicloId).sort(porNombre)
+    return conPosicion(todos.filter((a) => a.ciclo_id === cicloId))
   }
 
   /**
-   * La identidad para fusionar es `[ciclo, numero_lista]`, no `numero_lista` a
-   * secas: con dos generaciones en la base, el alumno 1 del ciclo nuevo no es el
-   * alumno 1 del anterior, y confundirlos le colgaría la asistencia y las
-   * calificaciones del otro.
+   * La identidad para fusionar deja de ser el número de lista (docs/DECISIONES.md
+   * D-033): con el número convertido en una posición que se recalcula sola, dos
+   * cargas de la misma lista ya no traen el mismo número para la misma persona
+   * en cuanto haya habido una alta de por medio.
+   *
+   * La identidad nueva, en este orden, sobre los alumnos del ciclo —borrados
+   * incluidos, para poder revivir a quien vuelve—:
+   *
+   * 1. **CURP igual**, cuando la fila nueva y un alumno existente lo tienen los
+   *    dos. Es el dato que no cambia entre cargas.
+   * 2. **Nombre exacto igual**, cuando no hay CURP de un lado o del otro. La
+   *    mayoría de las listas no trae CURP, y el nombre ya llega limpio y
+   *    capitalizado por `normalizarExtraccion`.
+   * 3. Sin ninguna de las dos, es un alumno nuevo.
+   *
+   * Cada alumno existente se consume a lo más una vez: si dos filas del archivo
+   * calzaran con el mismo existente, la segunda entra como alumno nuevo en vez
+   * de pisar al primero.
    */
   async sembrar(datos: DatosAlumno[]): Promise<void> {
     await db.transaction('rw', db.alumnos, db.ciclos, db.outbox, async () => {
       const ciclo = await cicloAbierto()
-      const existentes = new Map(
-        (await db.alumnos.toArray())
-          .filter((a) => (a.ciclo_id ?? null) === ciclo)
-          .map((a) => [a.numero_lista, a]),
+      const existentes = (await db.alumnos.toArray()).filter(
+        (a) => (a.ciclo_id ?? null) === ciclo,
       )
+      const consumidos = new Set<Id>()
+
+      function buscar(alumno: DatosAlumno): Alumno | undefined {
+        if (alumno.curp !== null) {
+          const porCurp = existentes.find(
+            (e) => !consumidos.has(e.id) && e.curp !== null && e.curp === alumno.curp,
+          )
+          if (porCurp !== undefined) return porCurp
+        }
+        return existentes.find(
+          (e) => !consumidos.has(e.id) && e.nombre === alumno.nombre,
+        )
+      }
+
       const momento = ahora()
 
       // Solo lo que cambió: si la lista ya se cargó y el archivo es el mismo, no
       // se escribe nada y el `outbox` no se llena de pendientes en cada arranque.
       const porEscribir: Alumno[] = []
       for (const alumno of datos) {
-        const existente = existentes.get(alumno.numero_lista)
+        const existente = buscar(alumno)
 
         if (existente === undefined) {
           porEscribir.push({
@@ -143,6 +200,8 @@ export class DexieAlumnosRepo implements AlumnosRepo {
           continue
         }
 
+        consumidos.add(existente.id)
+
         // Cada campo nuevo entra en la comparación o reimportar la misma lista
         // con ese campo no escribiría nada: el resto ya coincide. Pasó con el
         // CURP y volvería a pasar con el sexo, y las dos veces en silencio.
@@ -155,10 +214,13 @@ export class DexieAlumnosRepo implements AlumnosRepo {
         if (igual) continue
 
         // Conserva el `id`: con él se conservan su asistencia y sus
-        // calificaciones, que apuntan a ese identificador.
+        // calificaciones, que apuntan a ese identificador. El `numero_lista`
+        // interno también se conserva —no es el que trae `alumno`— porque ya no
+        // significa nada fuera de este archivo y cambiarlo no compra nada.
         porEscribir.push({
           ...existente,
           ...alumno,
+          numero_lista: existente.numero_lista,
           curp: alumno.curp ?? null,
           sexo: alumno.sexo ?? null,
           updated_at: momento,
@@ -181,36 +243,21 @@ export class DexieAlumnosRepo implements AlumnosRepo {
   }
 
   /**
-   * El número de lista ya tomado en el ciclo, **contando a los dados de baja**.
-   *
-   * Contarlos no es un descuido: `sembrar()` fusiona por número de lista sobre
-   * todos los del ciclo, borrados incluidos —así es como revive a quien vuelve—,
-   * de modo que dos alumnos con el mismo número harían que una recarga de la
-   * lista escribiera sobre cualquiera de los dos, al azar.
+   * Da de alta a un alumno que llegó con el ciclo empezado. El número interno
+   * se asigna solo —el siguiente al más alto del ciclo, contando bajas— y no
+   * lo elige ni lo ve la maestra (D-033): en cuanto se guarda, el alumno
+   * aparece donde le toca por apellido, no al final.
    */
-  private async numeroTomado(
-    ciclo: string | null,
-    numero: number,
-    exceptoId?: Id,
-  ): Promise<boolean> {
-    const todos = await db.alumnos.toArray()
-    return todos.some(
-      (a) =>
-        (a.ciclo_id ?? null) === ciclo && a.numero_lista === numero && a.id !== exceptoId,
-    )
-  }
-
-  async agregar(datos: DatosAlumno): Promise<void> {
+  async agregar(datos: NuevoAlumno): Promise<void> {
     await db.transaction('rw', db.alumnos, db.ciclos, db.outbox, async () => {
       const ciclo = await cicloAbierto()
-      if (await this.numeroTomado(ciclo, datos.numero_lista)) {
-        throw new Error(`El número de lista ${datos.numero_lista} ya está ocupado`)
-      }
+      const numero_lista = (await numeroMasAlto(ciclo)) + 1
 
       const momento = ahora()
       const alumno: Alumno = {
         id: nuevoId(),
         ciclo_id: ciclo,
+        numero_lista,
         ...datos,
         curp: datos.curp ?? null,
         sexo: datos.sexo ?? null,
@@ -228,19 +275,20 @@ export class DexieAlumnosRepo implements AlumnosRepo {
     })
   }
 
-  async editar(id: Id, datos: DatosAlumno): Promise<void> {
+  /**
+   * Corrige a un alumno. Conserva su `id` —y con él su asistencia y sus
+   * calificaciones— y su `numero_lista` interno: la maestra ya no lo edita
+   * (D-033), así que no hay «número de otro» que rechazar aquí.
+   */
+  async editar(id: Id, datos: NuevoAlumno): Promise<void> {
     await db.transaction('rw', db.alumnos, db.outbox, async () => {
       const alumno = await db.alumnos.get(id)
       if (!alumno) throw new Error(`No existe el alumno ${id}`)
 
-      if (await this.numeroTomado(alumno.ciclo_id ?? null, datos.numero_lista, id)) {
-        throw new Error(`El número de lista ${datos.numero_lista} ya está ocupado`)
-      }
-
       const momento = ahora()
-      // El `id` y el `ciclo_id` se conservan: de uno cuelga toda su historia y
-      // del otro, a qué generación pertenece. Editar corrige datos, no muda a
-      // nadie de ciclo.
+      // El `id`, el `ciclo_id` y el `numero_lista` se conservan: de uno cuelga
+      // toda su historia, del otro a qué generación pertenece, y el tercero ya
+      // no es de la maestra para cambiarlo.
       await db.alumnos.put({
         ...alumno,
         ...datos,

@@ -1,6 +1,7 @@
+import type { NuevoAlumno } from '@/data/ports/alumnos'
 import { repos } from '@/data'
 import { curpValido, fechaDeCurp, normalizarCurp, sexoDeCurp } from '@/domain/curp'
-import type { Alumno, DatosAlumno } from '@/domain/entities'
+import type { Alumno } from '@/domain/entities'
 import { fechaValida } from '@/domain/fechas'
 import { comoSexo, type Id } from '@/domain/values'
 
@@ -15,23 +16,26 @@ import { comoSexo, type Id } from '@/domain/values'
  * La validación es la misma que la de la revisión de la lista importada, y a
  * propósito: son las mismas reglas y tenerlas en dos sitios es tenerlas mal en
  * uno de los dos.
+ *
+ * **Sin número de lista** (docs/DECISIONES.md D-033): dejó de ser un dato que
+ * la maestra elija o corrija. El adaptador lo asigna internamente al dar de
+ * alta y lo conserva sin tocar al corregir; lo que ella ve en cada renglón es
+ * la posición alfabética que calcula `lista()`/`conBajas()`, no este valor.
  */
 
 /** Lo que la pantalla edita: todo como texto, incluida la fecha. */
 export interface FormularioAlumno {
   nombre: string
-  numero_lista: string
   fecha_nacimiento: string
   curp: string
   /** `'H'`, `'M'` o vacío. Vacío es «sin asignar», y es una opción legítima. */
   sexo: string
 }
 
-/** El formulario vacío para un alta, con el número ya propuesto. */
-export function formularioNuevo(alumnos: readonly Alumno[]): FormularioAlumno {
+/** El formulario vacío para un alta. */
+export function formularioNuevo(): FormularioAlumno {
   return {
     nombre: '',
-    numero_lista: String(siguienteNumero(alumnos)),
     fecha_nacimiento: '',
     curp: '',
     sexo: '',
@@ -42,7 +46,6 @@ export function formularioNuevo(alumnos: readonly Alumno[]): FormularioAlumno {
 export function formularioDe(alumno: Alumno): FormularioAlumno {
   return {
     nombre: alumno.nombre,
-    numero_lista: String(alumno.numero_lista),
     fecha_nacimiento: alumno.fecha_nacimiento ?? '',
     curp: alumno.curp ?? '',
     sexo: alumno.sexo ?? '',
@@ -81,39 +84,11 @@ export function editarFormulario(
 }
 
 /**
- * El siguiente número libre: el más alto del grupo, más uno.
- *
- * Cuenta a los dados de baja, así que un número no se recicla. Es deliberado:
- * `sembrar()` fusiona por número de lista sobre todos los del ciclo, borrados
- * incluidos, de modo que reutilizar el 14 de quien se fue haría que recargar la
- * lista escribiera sobre cualquiera de los dos.
- *
- * Y no se recorre a nadie (D-026): el alumno 14 sigue siendo el 14 todo el año,
- * porque ella pasa lista por esos números.
- */
-export function siguienteNumero(alumnos: readonly Alumno[]): number {
-  return alumnos.reduce((max, a) => Math.max(max, a.numero_lista), 0) + 1
-}
-
-/**
  * Qué está mal en el formulario, o `undefined` si se puede guardar. El mensaje
  * se muestra tal cual: aquí no hay nadie leyendo la consola.
- *
- * `exceptoId` es el alumno que se está editando, para que su propio número no se
- * cuente como repetido.
  */
-export function revisarFormulario(
-  formulario: FormularioAlumno,
-  alumnos: readonly Alumno[],
-  exceptoId?: Id,
-): string | undefined {
+export function revisarFormulario(formulario: FormularioAlumno): string | undefined {
   if (formulario.nombre.trim() === '') return 'Falta el nombre'
-
-  const numero = Number(formulario.numero_lista)
-  if (!Number.isInteger(numero) || numero < 1) return 'El número de lista no es válido'
-
-  const tomado = alumnos.some((a) => a.numero_lista === numero && a.id !== exceptoId)
-  if (tomado) return `El número de lista ${numero} ya está ocupado`
 
   if (formulario.fecha_nacimiento !== '' && !fechaValida(formulario.fecha_nacimiento)) {
     return 'La fecha debe ser AAAA-MM-DD'
@@ -127,10 +102,9 @@ export function revisarFormulario(
 }
 
 /** La conversión al tipo del dominio. La fecha vacía es un dato ausente. */
-function aDatos(formulario: FormularioAlumno): DatosAlumno {
+function aDatos(formulario: FormularioAlumno): NuevoAlumno {
   return {
     nombre: formulario.nombre.trim(),
-    numero_lista: Number(formulario.numero_lista),
     fecha_nacimiento:
       formulario.fecha_nacimiento === '' ? null : formulario.fecha_nacimiento,
     curp: formulario.curp === '' ? null : normalizarCurp(formulario.curp),
@@ -142,23 +116,16 @@ function aDatos(formulario: FormularioAlumno): DatosAlumno {
  * Da de alta a un alumno. Vuelve a validar antes de escribir: la pantalla ya lo
  * hizo, pero el caso de uso no puede confiar en que alguien lo llame bien.
  */
-export async function agregarAlumno(
-  formulario: FormularioAlumno,
-  alumnos: readonly Alumno[],
-): Promise<void> {
-  const problema = revisarFormulario(formulario, alumnos)
+export async function agregarAlumno(formulario: FormularioAlumno): Promise<void> {
+  const problema = revisarFormulario(formulario)
   if (problema !== undefined) throw new Error(problema)
 
   await repos.alumnos.agregar(aDatos(formulario))
 }
 
 /** Corrige a un alumno, conservando su `id` y con él toda su historia. */
-export async function editarAlumno(
-  id: Id,
-  formulario: FormularioAlumno,
-  alumnos: readonly Alumno[],
-): Promise<void> {
-  const problema = revisarFormulario(formulario, alumnos, id)
+export async function editarAlumno(id: Id, formulario: FormularioAlumno): Promise<void> {
+  const problema = revisarFormulario(formulario)
   if (problema !== undefined) throw new Error(problema)
 
   await repos.alumnos.editar(id, aDatos(formulario))

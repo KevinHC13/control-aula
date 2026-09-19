@@ -23,7 +23,17 @@ export interface Alumno extends Sincronizable {
   ciclo_id: Id | null
   /** "Apellidos, Nombres" — el orden de la lista oficial */
   nombre: string
-  /** Orden en la lista, 1-based **dentro de su ciclo** */
+  /**
+   * Un número interno, 1-based dentro de su ciclo, que el adaptador asigna al
+   * dar de alta y nunca vuelve a tocar.
+   *
+   * **Deja de identificar a nadie fuera de `data/dexie/alumnos.adapter.ts`**
+   * (docs/DECISIONES.md D-033): lo que devuelven `lista()`, `conBajas()` y el
+   * resto de los métodos de lectura no es este valor, es la posición 1-based en
+   * el orden alfabético que ya calculan —recalculada en cada lectura—. Es lo que
+   * ve y canta la maestra al pasar lista, y se mueve solo al lugar que le toca
+   * en cuanto hay un alta, una baja o una corrección de por medio.
+   */
   numero_lista: number
   fecha_nacimiento: Fecha | null
   /**
@@ -34,9 +44,9 @@ export interface Alumno extends Sincronizable {
    * (`C15`). Revierte a sabiendas el «sin CURP» de D-014 (docs/DECISIONES.md
    * D-027).
    *
-   * No es la identidad del alumno: fusionar la lista sigue siendo por
-   * `[ciclo_id+numero_lista]`, que es lo que conserva su asistencia y sus
-   * calificaciones.
+   * No es la identidad del alumno, y desde D-033 tampoco lo es `numero_lista`:
+   * fusionar la lista importada busca primero por CURP y, si no lo hay, por
+   * nombre exacto, que es lo que conserva su asistencia y sus calificaciones.
    */
   curp: string | null
   /**

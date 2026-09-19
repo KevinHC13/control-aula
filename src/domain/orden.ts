@@ -9,9 +9,12 @@ import type { Alumno } from './entities'
  * noviembre toma el 39 y aparecía al final, no donde su apellido lo pone. El
  * orden de alta no puede decidir dónde se busca a un niño.
  *
- * El `numero_lista` no se toca: sigue siendo la identidad con la que se fusiona
- * la lista (`[ciclo_id+numero_lista]`, D-025) y lo que ella canta al pasar
- * lista. Lo único que cambia es en qué renglón sale cada quien.
+ * **Desde D-033, `numero_lista` deja de ser un dato fijo**: el adaptador lo
+ * sustituye por la posición 1-based en este mismo orden antes de devolver cada
+ * `Alumno`, así que el número que ella canta al pasar lista se mueve solo al
+ * lugar que le toca por apellido. Ya no identifica a nadie —ni al fusionar la
+ * lista importada ni al elegir a quién corregir—; para eso, `sembrar()` usa el
+ * CURP y, si no lo hay, el nombre exacto.
  */
 
 /**

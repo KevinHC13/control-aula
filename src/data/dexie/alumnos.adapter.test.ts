@@ -3,6 +3,7 @@ import 'fake-indexeddb/auto'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { NuevoAlumno } from '@/data/ports/alumnos'
 import type { Alumno, DatosAlumno } from '@/domain/entities'
 
 import { DexieAlumnosRepo } from './alumnos.adapter'
@@ -11,6 +12,9 @@ import { db } from './db'
 const repo = new DexieAlumnosRepo()
 
 // Nombres inventados: en el repositorio no va un solo nombre real del salón.
+// El `numero_lista` de estos fixtures es el valor **guardado**, el que ya no
+// sale de ningún método de lectura desde D-033: cada prueba que le importe
+// vuelve a leerlo de `db.alumnos` directamente, nunca de `repo.lista()`.
 const alumno = (numero_lista: number, nombre: string, deleted_at: string | null = null): Alumno => ({
   id: `alumno-${numero_lista}`,
   nombre,
@@ -36,19 +40,37 @@ describe('lista', () => {
       alumno(2, 'Bautista, Ana'),
     ])
 
+    expect((await repo.lista()).map((a) => a.nombre)).toEqual([
+      'Aguilar, Bruno',
+      'Bautista, Ana',
+      'Cruz, Regina',
+    ])
+  })
+
+  it('el numero_lista que devuelve es la posición alfabética, no la guardada (D-033)', async () => {
+    await db.alumnos.bulkPut([
+      alumno(3, 'Cruz, Regina'),
+      alumno(1, 'Aguilar, Bruno'),
+      alumno(2, 'Bautista, Ana'),
+    ])
+
     expect((await repo.lista()).map((a) => a.numero_lista)).toEqual([1, 2, 3])
   })
 
   it('el que se dio de alta después va donde le toca, no al final', async () => {
-    // El caso que el número de lista no sabe resolver: llegó en noviembre, tomó
-    // el 39, y se le busca por la A.
+    // El caso que el número guardado no sabe resolver: llegó en noviembre, con
+    // un número interno más alto que todos, y se le busca por la A.
     await db.alumnos.bulkPut([
       alumno(1, 'Aguilar, Bruno'),
       alumno(2, 'Cruz, Regina'),
       alumno(39, 'Aguirre, Zoe'),
     ])
 
-    expect((await repo.lista()).map((a) => a.numero_lista)).toEqual([1, 39, 2])
+    const lista = await repo.lista()
+    expect(lista.map((a) => a.nombre)).toEqual(['Aguilar, Bruno', 'Aguirre, Zoe', 'Cruz, Regina'])
+    // Y el número que ve la maestra es 1, 2, 3: su lugar en el salón, no su
+    // número interno de alta.
+    expect(lista.map((a) => a.numero_lista)).toEqual([1, 2, 3])
   })
 
   it('un apellido acentuado va donde suena, no después de la Z', async () => {
@@ -73,6 +95,7 @@ describe('lista', () => {
 
     const lista = await repo.lista()
     expect(lista).toHaveLength(1)
+    expect(lista[0]?.nombre).toBe('Aguilar, Bruno')
     expect(lista[0]?.numero_lista).toBe(1)
   })
 
@@ -102,6 +125,11 @@ describe('observarLista', () => {
  * Estos casos vivían en `application/grupo.test.ts`, colgados de la semilla que
  * se retiró. Prueban el puerto, no la semilla: `sembrar()` sigue siendo la vía
  * por la que entra la lista, ahora desde la carga asistida por IA.
+ *
+ * La identidad ya no es `numero_lista` (docs/DECISIONES.md D-033): es CURP
+ * cuando ambos lo tienen, y si no, nombre exacto. Los fixtures de este bloque
+ * traen `curp: null` a propósito para ejercitar el segundo camino, salvo donde
+ * el nombre del caso diga lo contrario.
  */
 describe('sembrar', () => {
   const LISTA: DatosAlumno[] = [
@@ -118,8 +146,11 @@ describe('sembrar', () => {
     await repo.sembrar(LISTA)
 
     const lista = await repo.lista()
-    expect(lista.map((a) => a.numero_lista)).toEqual([1, 2, 3])
-    expect(lista[0]?.nombre).toBe('Aguilar Mendoza, Bruno')
+    expect(lista.map((a) => a.nombre)).toEqual([
+      'Aguilar Mendoza, Bruno',
+      'Barrera Solís, Diego',
+      'Cruz Herrera, Regina',
+    ])
   })
 
   it('genera UUID y updated_at para cada alumno', async () => {
@@ -151,15 +182,16 @@ describe('sembrar', () => {
     expect(await db.outbox.count()).toBe(pendientes)
   })
 
-  it('recargar la lista con CURP se la escribe a quien ya existía', async () => {
-    // Sin el CURP en la comparación de `sembrar`, esta segunda pasada no
-    // escribiría nada: el nombre y la fecha ya coinciden.
+  it('recargar la lista con CURP se la escribe a quien ya existía, emparejando por nombre', async () => {
+    // Sin CURP de ningún lado, la primera pasada solo puede emparejar por
+    // nombre. Sin el CURP en la comparación de `sembrar`, esta segunda pasada
+    // no escribiría nada más: el nombre y la fecha ya coinciden.
     await repo.sembrar(LISTA)
-    const original = (await repo.lista())[0]!
+    const original = (await repo.lista()).find((a) => a.nombre === LISTA[0]!.nombre)!
 
     await repo.sembrar([{ ...LISTA[0]!, curp: 'AUVG160520MNLRLRA3', sexo: null }])
 
-    const despues = (await repo.lista())[0]!
+    const despues = (await repo.lista()).find((a) => a.nombre === LISTA[0]!.nombre)!
     expect(despues.id).toBe(original.id)
     expect(despues.curp).toBe('AUVG160520MNLRLRA3')
   })
@@ -169,13 +201,33 @@ describe('sembrar', () => {
     // comparación de `sembrar`, volver a cargar la lista de la escuela —que sí
     // trae la columna— no escribiría nada, porque el resto ya coincide.
     await repo.sembrar(LISTA)
-    const original = (await repo.lista())[0]!
+    const original = (await repo.lista()).find((a) => a.nombre === LISTA[0]!.nombre)!
 
     await repo.sembrar([{ ...LISTA[0]!, sexo: 'H' }])
 
-    const despues = (await repo.lista())[0]!
+    const despues = (await repo.lista()).find((a) => a.nombre === LISTA[0]!.nombre)!
     expect(despues.id).toBe(original.id)
     expect(despues.sexo).toBe('H')
+  })
+
+  it('con CURP en las dos pasadas, la identidad es el CURP y no el nombre', async () => {
+    const CONCURP: DatosAlumno = {
+      numero_lista: 1,
+      nombre: 'Aguilar Mendoza, Bruno',
+      fecha_nacimiento: '2017-03-14',
+      curp: 'AUVG160520MNLRLRA3',
+      sexo: null,
+    }
+    await repo.sembrar([CONCURP])
+    const original = (await repo.lista())[0]!
+
+    // El nombre cambia, el CURP no: sigue siendo la misma persona.
+    await repo.sembrar([{ ...CONCURP, nombre: 'Aguilar Mendoza, Bruno Alejandro' }])
+
+    const despues = (await repo.lista())[0]!
+    expect(despues.id).toBe(original.id)
+    expect(despues.nombre).toBe('Aguilar Mendoza, Bruno Alejandro')
+    expect(await db.alumnos.count()).toBe(1)
   })
 
   it('una fila escrita antes de que el campo existiera se lee como sin asignar', async () => {
@@ -194,18 +246,19 @@ describe('sembrar', () => {
     expect(leida.curp).toBeNull()
   })
 
-  it('un nombre corregido se actualiza conservando el id', async () => {
+  it('sin CURP, un nombre corregido no se empareja por nombre: entra como alumno nuevo', async () => {
+    // El costo aceptado de dejar el número guardado fuera de la identidad
+    // (D-033): sin CURP, cambiar el nombre en el archivo y volver a cargarlo ya
+    // no se sabe reconocer como la misma persona. La corrección de un nombre
+    // mal leído vive en *Ajustes → Alumnos* (D-026), no en reimportar la lista.
     await repo.sembrar(LISTA)
-    const original = (await repo.lista())[0]
 
     await repo.sembrar([{ ...LISTA[0]!, nombre: 'Aguilar Mendoza, Bruno Alejandro' }])
 
     const lista = await repo.lista()
-    const corregido = lista.find((a) => a.numero_lista === 1)
-    // El id se conserva porque de él cuelgan su asistencia y sus calificaciones.
-    expect(corregido?.id).toBe(original?.id)
-    expect(corregido?.nombre).toBe('Aguilar Mendoza, Bruno Alejandro')
-    expect(lista).toHaveLength(LISTA.length)
+    expect(lista.map((a) => a.nombre)).toContain('Aguilar Mendoza, Bruno')
+    expect(lista.map((a) => a.nombre)).toContain('Aguilar Mendoza, Bruno Alejandro')
+    expect(lista).toHaveLength(LISTA.length + 1)
   })
 
   it('no borra a un alumno que ya no está en la lista nueva', async () => {
@@ -220,7 +273,7 @@ describe('sembrar', () => {
 
   it('revive a un alumno borrado si vuelve a estar en la lista', async () => {
     await repo.sembrar(LISTA)
-    const primero = (await repo.lista())[0]
+    const primero = (await repo.lista()).find((a) => a.nombre === LISTA[0]!.nombre)
     await db.alumnos.update(primero?.id ?? '', { deleted_at: '2026-08-18T09:00:00.000Z' })
     expect(await repo.lista()).toHaveLength(LISTA.length - 1)
 
@@ -228,7 +281,18 @@ describe('sembrar', () => {
 
     const lista = await repo.lista()
     expect(lista).toHaveLength(LISTA.length)
-    expect(lista.find((a) => a.numero_lista === 1)?.id).toBe(primero?.id)
+    expect(lista.find((a) => a.nombre === LISTA[0]!.nombre)?.id).toBe(primero?.id)
+  })
+
+  it('dos filas del archivo no pueden emparejar con el mismo alumno existente', async () => {
+    // Cada existente se consume a lo más una vez: si dos filas nuevas
+    // calzaran por nombre con el mismo alumno, la segunda entra como alumno
+    // nuevo en vez de pisar a la primera.
+    await repo.sembrar([LISTA[0]!])
+
+    await repo.sembrar([LISTA[0]!, LISTA[0]!])
+
+    expect(await repo.lista()).toHaveLength(2)
   })
 })
 
@@ -296,19 +360,19 @@ describe('el grupo se acota al ciclo abierto', () => {
     expect((await repo.lista())[0]?.ciclo_id).toBe('ciclo-a')
   })
 
-  it('el número de lista identifica dentro del ciclo, no entre ciclos', async () => {
-    // La corrupción que esto evita: sin acotar, el alumno 1 del ciclo nuevo
-    // reutilizaría el `id` del alumno 1 del anterior, y con él se llevaría su
-    // asistencia y sus calificaciones.
+  it('el nombre (o el CURP) identifica dentro del ciclo, no entre ciclos', async () => {
+    // La corrupción que esto evita: sin acotar, un alumno de este año podría
+    // emparejar por nombre con uno del ciclo anterior y llevarse su `id` —y con
+    // él su asistencia y sus calificaciones—.
     await db.alumnos.put({ ...alumno(1, 'Del año pasado'), ciclo_id: 'ciclo-viejo' })
     await db.ciclos.put(ciclo('ciclo-nuevo', 'abierto', '2026-08-01T00:00:00.000Z'))
 
     await repo.sembrar([
-      { numero_lista: 1, nombre: 'De este año', fecha_nacimiento: null, curp: null, sexo: null },
+      { numero_lista: 1, nombre: 'Del año pasado', fecha_nacimiento: null, curp: null, sexo: null },
     ])
 
+    // Mismo nombre, pero en un ciclo distinto: no debe emparejar con el viejo.
     const nuevo = (await repo.lista())[0]
-    expect(nuevo?.nombre).toBe('De este año')
     expect(nuevo?.id).not.toBe('alumno-1')
     // Y el del año pasado sigue intacto, con su nombre y su id.
     expect((await db.alumnos.get('alumno-1'))?.nombre).toBe('Del año pasado')
@@ -318,6 +382,9 @@ describe('el grupo se acota al ciclo abierto', () => {
 /**
  * Alta, corrección y baja uno por uno (D-026). La lista completa sigue entrando
  * por `sembrar()`; esto es lo que aquella no puede cubrir.
+ *
+ * Desde D-033 ninguno de los tres pide ni acepta `numero_lista`: el adaptador
+ * lo asigna internamente al dar de alta y lo conserva sin tocar al corregir.
  */
 describe('administrar alumnos', () => {
   beforeEach(async () => {
@@ -325,7 +392,7 @@ describe('administrar alumnos', () => {
     await db.outbox.clear()
   })
 
-  const DATOS = { nombre: 'Llegó Después, Ana', numero_lista: 31, fecha_nacimiento: null, curp: null, sexo: null }
+  const DATOS: NuevoAlumno = { nombre: 'Llegó Después, Ana', fecha_nacimiento: null, curp: null, sexo: null }
 
   it('agregar da de alta con id, updated_at y sin baja', async () => {
     await repo.agregar(DATOS)
@@ -358,26 +425,25 @@ describe('administrar alumnos', () => {
     expect((await repo.lista())[0]?.ciclo_id).toBe('ciclo-a')
   })
 
-  it('agregar se niega si el número ya está tomado', async () => {
+  it('agregar asigna solo el siguiente número interno, sin que nadie lo pida', async () => {
     await repo.agregar(DATOS)
+    await repo.agregar({ ...DATOS, nombre: 'Otra, Otra' })
 
-    await expect(repo.agregar({ ...DATOS, nombre: 'Otro, Otro' })).rejects.toThrow(
-      /ya está ocupado/,
-    )
-    expect(await repo.lista()).toHaveLength(1)
+    // El número interno no sale de ningún método de lectura: se lee crudo,
+    // directo de Dexie, para comprobar que no colisiona.
+    const crudos = (await db.alumnos.toArray()).map((a) => a.numero_lista)
+    expect(new Set(crudos).size).toBe(2)
   })
 
-  it('agregar se niega aunque el que ocupa el número esté dado de baja', async () => {
-    // `sembrar()` fusiona por número de lista sobre todos los del ciclo,
-    // borrados incluidos: dos con el mismo número harían que recargar la lista
-    // escribiera sobre cualquiera de los dos.
+  it('agregar no reutiliza el número interno de un dado de baja', async () => {
     await repo.agregar(DATOS)
-    const id = (await repo.lista())[0]!.id
-    await repo.darDeBaja(id)
+    const primero = (await repo.lista())[0]!.id
+    await repo.darDeBaja(primero)
 
-    await expect(repo.agregar({ ...DATOS, nombre: 'Otro, Otro' })).rejects.toThrow(
-      /ya está ocupado/,
-    )
+    await repo.agregar({ ...DATOS, nombre: 'Otra, Otra' })
+
+    const crudos = (await db.alumnos.toArray()).map((a) => a.numero_lista)
+    expect(new Set(crudos).size).toBe(2)
   })
 
   it('editar corrige conservando el id, que es de donde cuelga su historia', async () => {
@@ -391,24 +457,14 @@ describe('administrar alumnos', () => {
     expect(lista[0]?.nombre).toBe('Corregido, Nombre')
   })
 
-  it('editar deja cambiar el número al que ya tenía', async () => {
-    // Su propio número no puede contar como repetido.
+  it('editar conserva el número interno sin que se le pueda pedir cambiarlo', async () => {
     await repo.agregar(DATOS)
     const id = (await repo.lista())[0]!.id
+    const numeroAntes = (await db.alumnos.get(id))?.numero_lista
 
-    await expect(
-      repo.editar(id, { ...DATOS, nombre: 'Mismo número, otro nombre' }),
-    ).resolves.toBeUndefined()
-  })
+    await repo.editar(id, { ...DATOS, nombre: 'Corregido, Nombre' })
 
-  it('editar se niega ante el número de otro', async () => {
-    await repo.agregar(DATOS)
-    await repo.agregar({ ...DATOS, numero_lista: 32, nombre: 'Otra, Otra' })
-    const segundo = (await repo.lista())[1]!
-
-    await expect(repo.editar(segundo.id, { ...DATOS, numero_lista: 31 })).rejects.toThrow(
-      /ya está ocupado/,
-    )
+    expect((await db.alumnos.get(id))?.numero_lista).toBe(numeroAntes)
   })
 
   it('editar no muda de ciclo', async () => {
@@ -426,7 +482,6 @@ describe('administrar alumnos', () => {
 
     await repo.editar('a-1', {
       nombre: 'Corregido',
-      numero_lista: 1,
       fecha_nacimiento: null,
       curp: null,
       sexo: null,
@@ -474,10 +529,10 @@ describe('administrar alumnos', () => {
 
   it('conBajas trae a los dos, en el mismo orden alfabético', async () => {
     // Una baja no cambia de sitio en la lista, solo deja de contar: aunque el
-    // que se fue tenga el número más alto, su apellido lo pone primero.
-    await repo.agregar({ ...DATOS, numero_lista: 1, nombre: 'Sigue, Aquí' })
-    await repo.agregar({ ...DATOS, numero_lista: 2, nombre: 'Se, Fue' })
-    const seFue = (await repo.lista()).find((a) => a.numero_lista === 2)!
+    // que se fue tenga el número interno más alto, su apellido lo pone primero.
+    await repo.agregar({ ...DATOS, nombre: 'Sigue, Aquí' })
+    await repo.agregar({ ...DATOS, nombre: 'Se, Fue' })
+    const seFue = (await repo.lista()).find((a) => a.nombre === 'Se, Fue')!
     await repo.darDeBaja(seFue.id)
 
     const todos = await repo.conBajas()
